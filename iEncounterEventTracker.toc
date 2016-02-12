@@ -2,7 +2,7 @@
 ## Title: iEET
 ## Notes: Ironi's encounter event tracker
 ## Author: Ironi
-## Version: 1.2
+## Version: 1.300
 ## DefaultState: enabled
 ## SavedVariables: iEETConfig, iEET_Data
 ## X-Curse-Packaged-Version: r20150825215128
