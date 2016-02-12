@@ -485,56 +485,25 @@ function iEET:addSpellDetails(hyperlink, linkData)
 						};
 						count = 1
 					end
-				end		
-				iEET.detailContent1:AddMessage(string.format("%.1f",timestamp), unpack(iEET:getColor(event, sourceGUID, spellID)))
-				if intervall then
-					iEET.detailContent2:AddMessage(string.format("%.1f",intervall), unpack(iEET:getColor(event, sourceGUID, spellID)))
-				else
-					iEET.detailContent2:AddMessage(' ')
 				end
-				if event then
-					if string.len(event) > 24 then
-						event = string.sub(event, 1, 24)
-					end
-					iEET.detailContent3:AddMessage(event, unpack(iEET:getColor(event, sourceGUID, spellID)))
-				else
-					iEET.detailContent3:AddMessage(' ')
-				end
-				if casterName then
-					if string.len(casterName) > 20 then
-						casterName = string.sub(casterName, 1, 20)
-					end
-					iEET.detailContent5:AddMessage(casterName, unpack(iEET:getColor(event, sourceGUID, spellID)))
-				else
-					iEET.detailContent5:AddMessage(' ')
-				end
-				if targetName then
-					if string.len(targetName) > 18 then
-						targetName = string.sub(targetName, 1, 18)
-					end
-					iEET.detailContent6:AddMessage(targetName, unpack(iEET:getColor(event, sourceGUID, spellID)))
-				else
-					iEET.detailContent6:AddMessage(' ')
-				end
-				if count then
-					iEET.detailContent7:AddMessage(count, unpack(iEET:getColor(event, sourceGUID, spellID)))
-				else
-					iEET.detailContent7:AddMessage(' ')
-				end
+				color = iEET:getColor(event, sourceGUID, spellID)
+				iEET:addMessages(2, 1, timestamp, color)
+				iEET:addMessages(2, 2, intervall, color)
+				iEET:addMessages(2, 3, event, color)
+				iEET:addMessages(2, 5, casterName, color)
+				iEET:addMessages(2, 6, targetName, color)
+				iEET:addMessages(2, 7, count, color)
 			end
 		end
 	end
 	iEETDetailInfo:SetText(hyperlink)
 end
 function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID,intervall,count,sourceGUID, hp)
-	iEET.content1:AddMessage(string.format("%.1f",timestamp),unpack(iEET:getColor(event, sourceGUID, spellID)))
-	if intervall then
-		iEET.content2:AddMessage(string.format("%.1f",intervall), unpack(iEET:getColor(event, sourceGUID, spellID)))
-	else
-		iEET.content2:AddMessage(' ')
-	end
-	
-	iEET.content3:AddMessage(event, unpack(iEET:getColor(event, sourceGUID, spellID)))
+	local color = iEET:getColor(event, sourceGUID, spellID)
+	--iEET.content1:AddMessage(string.format("%.1f",timestamp),unpack(iEET:getColor(event, sourceGUID, spellID)))
+	iEET:addMessages(1, 1, timestamp, color)
+	iEET:addMessages(1, 2, intervall, color)
+	iEET:addMessages(1, 3, event, color)
 	if monsterEvents[event] then
 		local msg = spellID
 		if event == 'MONSTER_EMOTE' then --trying to fix monster emotes
@@ -547,7 +516,7 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 			msg = string.gsub(msg, "|c........", "") -- Colors
 			msg = string.gsub(msg, "|r", "") -- Colors 
 		end	
-		iEET.content4:AddMessage('\124HiEETcustomyell:' .. event .. ':' .. msg .. '\124hMessage\124h', unpack(iEET:getColor(event, sourceGUID, spellID)))
+		iEET.content4:AddMessage('\124HiEETcustomyell:' .. event .. ':' .. msg .. '\124hMessage\124h', unpack(iEET:getColor(event, sourceGUID, spellID))) -- NEEDS CHANGING
 	elseif spellID then
 		local spellnametoShow = ''
 		if string.len(spellName) > 20 then
@@ -561,47 +530,37 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 		else
 			npcID = 'NONE'
 		end
-		iEET.content4:AddMessage('\124HiEETcustomspell:' .. event .. ':' .. spellID .. ':' .. spellName .. ':' .. (npcID and npcID or 'NONE').. '!' .. (spawnID and spawnID or '') ..'\124h' .. spellnametoShow .. '\124h', unpack(iEET:getColor(event, sourceGUID, spellID)))
+		iEET.content4:AddMessage('\124HiEETcustomspell:' .. event .. ':' .. spellID .. ':' .. spellName .. ':' .. (npcID and npcID or 'NONE').. '!' .. (spawnID and spawnID or '') ..'\124h' .. spellnametoShow .. '\124h', unpack(iEET:getColor(event, sourceGUID, spellID))) -- NEEDS CHANGING
 	else
 		iEET.content4:AddMessage(' ')
 	end
-	if casterName then
-		if string.len(casterName) > 16 then
-			casterName = string.sub(casterName, 1, 16)
-		end
-		iEET.content5:AddMessage(casterName, unpack(iEET:getColor(event, sourceGUID, spellID)))
-	else
-		iEET.content5:AddMessage(' ')
-	end
-	if targetName then
-		if string.len(targetName) > 16 then
-			targetName = string.sub(targetName, 1, 16)
-		end
-		iEET.content6:AddMessage(targetName, unpack(iEET:getColor(event, sourceGUID, spellID)))
-	else
-		iEET.content6:AddMessage(' ')
-	end
-	if count then
-		iEET.content7:AddMessage(count, unpack(iEET:getColor(event, sourceGUID, spellID)))
-	else
-		iEET.content7:AddMessage(' ')
-	end
-	if hp then
-		iEET.content8:AddMessage(hp, unpack(iEET:getColor(event, sourceGUID, spellID)))
-	else
-		iEET.content8:AddMessage(' ')
-	end
-	
+	iEET:addMessages(1, 5, casterName, color)
+	iEET:addMessages(1, 6, targetName, color)
+	iEET:addMessages(1, 7, count, color)
+	iEET:addMessages(1, 8, hp, color)
 end
 function iEET:addToEncounterAbilities(spellID, spellName)
 	if spellID and tonumber(spellID) and spellName then
 		iEET.encounterAbilitiesContent:AddMessage('\124Hspell:' .. tonumber(spellID) .. '\124h[' .. spellName .. ']\124h\124r')
 	end
 end
-function iEET:addMessages(placeToAdd, ...)
+function iEET:addMessages(placeToAdd, frameID, value, color)
+	local frame = ''
 	if placeToAdd == 1 then
-		
+		frame = iEET['content' .. frameID]
+	elseif placeToAdd == 2 then
+		frame = iEET['detailContent' .. frameID]
 	end
+	if frameID == 1 or frameID == 2 then
+		if value then 
+			value = string.format("%.1f",value) 
+		end
+	elseif frameID == 5 or frameID == 6 then
+		if value and string.len(value) > 16 then
+			value = string.sub(value, 1, 16)
+		end
+	end
+	frame:AddMessage(value and value or ' ', unpack(color))
 end
 function iEET:loopData(msg)
 	local starttime = 0
