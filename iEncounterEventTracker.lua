@@ -4,7 +4,7 @@ better filtering
 exit button
 reset nappi
 target tracking
-----------]]
+--]]
 local _, iEET = ...
 iEET.data = {}
 iEET.font = 'Interface\\AddOns\\iEncounterEventTracker\\Accidental Presidency.ttf'
