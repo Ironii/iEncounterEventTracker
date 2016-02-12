@@ -5,10 +5,6 @@
 ## Version: 1.300
 ## DefaultState: enabled
 ## SavedVariables: iEETConfig, iEET_Data
-## X-Curse-Packaged-Version: r20150825215128
-## X-Curse-Project-Name: iEncounterEventTracker
-## X-Curse-Project-ID: iencountereventtracker
-## X-Curse-Repository-ID: wow/iencountereventtracker/mainline
 
 iEncounterEventTracker.lua
 approvedSpells.lua
