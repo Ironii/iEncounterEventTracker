@@ -1,8 +1,4 @@
 --[[TO DO:--
-#better importing
-#don't save short encounters when automatic saving is on
-#excel exporting
-#only bright colors for events
 compare
 better filtering
 exit button
