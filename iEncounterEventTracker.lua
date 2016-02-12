@@ -1,8 +1,7 @@
 --[[TO DO:--
 compare
-better filtering
-exit button
-reset nappi
+better filtering, STARTED
+reset & exit button
 target tracking
 --]]
 local _, iEET = ...
