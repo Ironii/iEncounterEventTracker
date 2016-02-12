@@ -330,31 +330,78 @@ function iEET:ScrollDetails(delta)
 	end
 end
 function iEET:ShouldShow(eventData) -- NEW, TESTING
-	if iEET.filtering.req then
-		if iEET.filtering.req.from then
-			if iEET.filtering.req.from.timestamp and iEET.filtering.req.from.timestamp >= eventData.timestamp then
-				iEET.filtering.from = true
-				if iEET.filtering.reqFromTimeOnly then
-					return true 
-				end
-			else
-				for k,v in pairs(eventData) do
-					if iEET.filtering.req.from[k] and string.find(string.lower(v), iEET.filtering.req.from[k]) then -- TO DO: END AT TO, MULTIPLE 'FROM' ARGS
-						iEET.filtering.from = true
+	--[[
+	iEET.filtering = {
+		timeBasedFiltering = {
+			[1] = {
+				from = { (or nil)
+					timestamp/event/spellid/etc = X
+				} ,
+				to = { (or nil)
+					timestamp/event/spellid/etc = X
+				},
+				ok = true/false
+			}
+			...
+		},
+		req = {
+			[1] = {
+				event/spellid/etc = X,
+				event/spellid/etc = X,
+				...
+			} ,
+		},
+		requireAll = true/false, --require all from/to combos
+		anyData = X,
+		showTime = true -- show time from nearest 'from' event instead of ENCOUNTER_START
+		
+	}
+	
+	
+	]]
+	local timeOK = true
+	if #iEET.filtering.timeBasedFiltering > 0 then
+		for i = 1, #iEET.filtering.req do -- loop trough every from/to combo
+			if iEET.filtering.timeBasedFiltering[i].from then
+				if iEET.filtering.timeBasedFiltering[i].from.timestamp and iEET.filtering.timeBasedFiltering[i].from.timestamp >= eventData.timestamp then
+					iEET.filtering.timeBasedFiltering[i].from.ok = true
+				elseif iEET.filtering.timeBasedFiltering[i].to.timestamp and iEET.filtering.timeBasedFiltering[i].to.timestamp > eventData.timestamp then
+					iEET.filtering.timeBasedFiltering[i].from.ok = false
+				else
+					for k,v in pairs(eventData) do
+						if iEET.filtering.timeBasedFiltering[i].from[k] and string.find(string.lower(v), iEET.filtering.timeBasedFiltering[i].from[k]) then
+							iEET.filtering.timeBasedFiltering[i].from.ok = true
+						elseif iEET.filtering.timeBasedFiltering[i].to[k] and string.find(string.lower(v), iEET.filtering.timeBasedFiltering[i].to[k]) then
+							iEET.filtering.timeBasedFiltering[i].from.ok = false
+						end
 					end
 				end
 			end
 		end
-		if iEET.filtering.from then
-			for k,v in pairs(eventData) do
-				if (iEET.filtering.req[k] and string.find(string.lower(v), iEET.filtering.req[k])) or string.find(string.lower(v), iEET.filtering.req.any) then -- TO DO: END AT TO
-					return true
-				end
+		local found = 0
+		for i = 1, #iEET.filtering.timeBasedFiltering do
+			if iEET.filtering.timeBasedFiltering[i].ok then
+				found = found + 1
 			end
 		end
-		return false
-	else
-		return true
+		if (iEET.filtering.requireAll and found == #iEET.filtering.timeBasedFiltering) or (found > 0 and not iEET.filtering.requireAll) then
+			timeOK = true
+		else
+			timeOK = false
+		end
+	end
+	if timeOK then
+		if #iEET.filtering.req > 0 then
+			for k,v in pairs(eventData) do -- loop trough current event
+				for requiredData, requiredValue in pairs(iEET.filtering.req) do -- try to find right values
+					if (requiredData and string.find(string.lower(v), requiredData)) or string.find(string.lower(v), iEET.filtering.anyData) then
+						return true -- found right value
+					end
+				end
+			end
+			return false -- found nothing
+		end
+		return true -- nothing to find
 	end
 end
 function iEET:addSpellDetails(hyperlink, linkData)
