@@ -275,9 +275,9 @@ function iEET:getColor(event, sourceGUID, spellID)
 			colors[sourceGUID] = {[event] = {[spellID] = t}}
 		end
 		return {colors[sourceGUID][event][spellID].r,colors[sourceGUID][event][spellID].g,colors[sourceGUID][event][spellID].b}
-	elseif event == 'ENCOUNTER_START' then
+	elseif event and event == 'ENCOUNTER_START' then
 		return {0,1,0}
-	elseif event == 'ENCOUNTER_END' then
+	elseif event and event == 'ENCOUNTER_END' then
 		return {1,0,0}
 	else
 		return {0,0,0}
@@ -598,7 +598,12 @@ function iEET:addToEncounterAbilities(spellID, spellName)
 		iEET.encounterAbilitiesContent:AddMessage('\124Hspell:' .. tonumber(spellID) .. '\124h[' .. spellName .. ']\124h\124r')
 	end
 end
-function iEET:addMessages(msg)
+function iEET:addMessages(placeToAdd, ...)
+	if placeToAdd == 1 then
+		
+	end
+end
+function iEET:loopData(msg)
 	local starttime = 0
 	local intervalls = {}
 	local counts = {}
@@ -789,7 +794,7 @@ function iEET:updateEventlistMenu()
 			end,
 		})
 	end
-	table.insert(iEET.eventlistMenu, { text = 'Save', notCheckable = true, func = function () CloseDropDownMenus(); iEET:updateEventlistMenu(); iEET:addMessages() end})
+	table.insert(iEET.eventlistMenu, { text = 'Save', notCheckable = true, func = function () CloseDropDownMenus(); iEET:updateEventlistMenu(); iEET:loopData() end})
 end
 iEET.eventlistMenuFrame = CreateFrame("Frame", "iEETEventListMenu", UIParent, "UIDropDownMenuTemplate")
 
@@ -872,7 +877,7 @@ function iEET:CreateMainFrame()
 	iEET.frame:SetScript('OnMouseUp', function(self, button)
 		iEET.frame:StopMovingOrSizing()
 	end)
-	iEET.frame:SetScript('OnShow', function() iEET:addMessages() end)
+	iEET.frame:SetScript('OnShow', function() iEET:loopData() end)
 	iEET.frame:Show()
 	iEET.frame:SetFrameStrata('HIGH')
 	iEET.frame:SetFrameLevel(1)
@@ -1149,7 +1154,7 @@ function iEET:CreateMainFrame()
 		iEET.encounterAbilitiesContent:SetScript("OnHyperlinkClick", function(self, linkData, link, button)
 			local spellID = tonumber(string.match(linkData, 'spell:(%d+)'))
 			if spellID then
-				iEET:addMessages(spellID)
+				iEET:loopData(spellID)
 			end
 		end)
 		iEET.encounterAbilitiesContent:EnableMouse(true)
@@ -1191,9 +1196,9 @@ function iEET:CreateMainFrame()
 	iEET.editbox:SetScript('OnEnterPressed', function()
 		iEET.editbox:ClearFocus()
 		if iEET.editbox:GetText() ~= 'Search' then
-			iEET:addMessages(iEET.editbox:GetText())
+			iEET:loopData(iEET.editbox:GetText())
 		else
-			iEET:addMessages()
+			iEET:loopData()
 		end
 	end)
 	iEET.editbox:SetAutoFocus(false)
@@ -1231,7 +1236,7 @@ function iEET:CreateMainFrame()
 	end)
 	iEET:updateEncounterListMenu()
 	----end of encounter list button
-	iEET:addMessages()
+	iEET:loopData()
 	
 end
 function iEET:Toggle(show)
@@ -1382,7 +1387,7 @@ function iEET:ImportData(msg)
 		end
 		table.insert(iEET.data, t)
 	end
-	iEET:addMessages()
+	iEET:loopData()
 	print('iEET: Imported ' .. iEET.encounterInfo .. '.')
 end
 --]]
@@ -1409,7 +1414,7 @@ function iEET:ImportData(dataKey) -- NEW, TESTING
 		end
 		table.insert(iEET.data, tempTable)
 	end
-	iEET:addMessages()
+	iEET:loopData()
 	local s = 
 	print(string.format('iEET: Imported %s on %s (%s), %sman (%s), Time: %s.',iEET.encounterInfoData.encounterName,GetDifficultyInfo(iEET.encounterInfoData.difficulty),iEET.encounterInfoData.fightTime, iEET.encounterInfoData.raidSize, (iEET.encounterInfoData.kill == 1 and 'kill' or 'wipe'), iEET.encounterInfoData.pullTime))
 end
