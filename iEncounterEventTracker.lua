@@ -21,7 +21,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }	
-iEET.version = 1.300
+iEET.version = 1.301
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -121,7 +121,7 @@ end
 function addon:ADDON_LOADED(addonName)
 	if addonName == 'iEncounterEventTracker' then
 		iEETConfig = iEETConfig or {}
-		if not iEETConfig.version or not iEETConfig.tracking or iEETConfig.version < iEET.version then
+		if not iEETConfig.version or not iEETConfig.tracking or iEETConfig.version <= 1.3 then -- Last version with db changes 
 			iEET:LoadDefaults()
 		else
 			iEETConfig.version = iEET.version
@@ -759,67 +759,69 @@ iEET.eventlistMenuFrame = CreateFrame("Frame", "iEETEventListMenu", UIParent, "U
 
 iEET.encounterListMenu = {}
 function iEET:updateEncounterListMenu()
-	iEET.encounterListMenu = nil
-	iEET.encounterListMenu = {}
-	local encountersTempTable = {}
-	for k,_ in pairs(iEET_Data) do -- Get encounters
-		local temp = {}
-		for eK,eV in string.gmatch(k, '{(.-)=(.-)}') do
-			if eK == 'difficulty' or eK == 'raidSize' or eK == 'start' or eK == 'kill' then
-				if tonumber(eV) then
-					eV = tonumber(eV)
+		iEET.encounterListMenu = nil
+		iEET.encounterListMenu = {}
+	if iEET_Data then
+		local encountersTempTable = {}
+		for k,_ in pairs(iEET_Data) do -- Get encounters
+			local temp = {}
+			for eK,eV in string.gmatch(k, '{(.-)=(.-)}') do
+				if eK == 'difficulty' or eK == 'raidSize' or eK == 'start' or eK == 'kill' then
+					if tonumber(eV) then
+						eV = tonumber(eV)
+					end
 				end
+				temp[eK] = eV
 			end
-			temp[eK] = eV
-		end
-		temp.dataKey = k
-		if not encountersTempTable[temp.encounterName] then
-			encountersTempTable[temp.encounterName] = {}
-		end
-		if not encountersTempTable[temp.encounterName][temp.difficulty] then
-			encountersTempTable[temp.encounterName][temp.difficulty] = {}
-		end
-		table.insert(encountersTempTable[temp.encounterName][temp.difficulty], temp)
-	end -- Sorted by encounter -> Sort by ids inside
-	-- temp{} -> encounter{} -> difficulty{} -> fight{}
-	
-	
-	for encounterName,_ in spairs(encountersTempTable) do -- Get alphabetically sorted encounters
-		--Looping bosses
-		--print(encounterName) -- Debug
-		local t = {text = encounterName, hasArrow = true, notCheckable = true, menuList = {}}
-		local t2 = {}
-		for difficultyID,_ in spairs(encountersTempTable[encounterName]) do
-			-- Looping difficulties
-			--print('difficultyID', difficultyID) -- Debug
-			t2 = {text = GetDifficultyInfo(difficultyID), hasArrow = true, notCheckable = true, menuList = {}}
-			--for k,v in pairs(encountersTempTable[encounterName][difficultyID]) do
-			for k,v in spairs(encountersTempTable[encounterName][difficultyID], function(t,a,b) return t[b].pullTime < t[a].pullTime end) do
-				local fightEntry = {
-					text = (v.kill == 1 and '+' or '-') .. v.fightTime .. ' (' .. v.pullTime .. ')',
-					notCheckable = true,
-					hasArrow = true,
-					checked = false,
-					keepShownOnClick = false,
-					func = function() 
-						iEET:ImportData(v.dataKey)
-						iEET:Toggle(true) -- not really needed
-						CloseDropDownMenus()
-					end,
-					menuList = {{ -- delete menu
-						text = 'Delete', 
-						notCheckable = true, 
+			temp.dataKey = k
+			if not encountersTempTable[temp.encounterName] then
+				encountersTempTable[temp.encounterName] = {}
+			end
+			if not encountersTempTable[temp.encounterName][temp.difficulty] then
+				encountersTempTable[temp.encounterName][temp.difficulty] = {}
+			end
+			table.insert(encountersTempTable[temp.encounterName][temp.difficulty], temp)
+		end -- Sorted by encounter -> Sort by ids inside
+		-- temp{} -> encounter{} -> difficulty{} -> fight{}
+		
+		
+		for encounterName,_ in spairs(encountersTempTable) do -- Get alphabetically sorted encounters
+			--Looping bosses
+			--print(encounterName) -- Debug
+			local t = {text = encounterName, hasArrow = true, notCheckable = true, menuList = {}}
+			local t2 = {}
+			for difficultyID,_ in spairs(encountersTempTable[encounterName]) do
+				-- Looping difficulties
+				--print('difficultyID', difficultyID) -- Debug
+				t2 = {text = GetDifficultyInfo(difficultyID), hasArrow = true, notCheckable = true, menuList = {}}
+				--for k,v in pairs(encountersTempTable[encounterName][difficultyID]) do
+				for k,v in spairs(encountersTempTable[encounterName][difficultyID], function(t,a,b) return t[b].pullTime < t[a].pullTime end) do
+					local fightEntry = {
+						text = (v.kill == 1 and '+' or '-') .. v.fightTime .. ' (' .. v.pullTime .. ')',
+						notCheckable = true,
+						hasArrow = true,
+						checked = false,
+						keepShownOnClick = false,
 						func = function() 
-							iEET_Data[v.dataKey] = nil
-							iEET:updateEncounterListMenu()
+							iEET:ImportData(v.dataKey)
+							iEET:Toggle(true) -- not really needed
+							CloseDropDownMenus()
 						end,
-					},}, 
-				}
-				table.insert(t2.menuList, fightEntry)
+						menuList = {{ -- delete menu
+							text = 'Delete', 
+							notCheckable = true, 
+							func = function() 
+								iEET_Data[v.dataKey] = nil
+								iEET:updateEncounterListMenu()
+							end,
+						},}, 
+					}
+					table.insert(t2.menuList, fightEntry)
+				end
+				table.insert(t.menuList, t2)
 			end
-			table.insert(t.menuList, t2)
+			table.insert(iEET.encounterListMenu, t)
 		end
-		table.insert(iEET.encounterListMenu, t)
 	end
 	table.insert(iEET.encounterListMenu, { text = 'Exit', notCheckable = true, func = function () CloseDropDownMenus() end})
 end
