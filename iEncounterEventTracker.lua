@@ -6,7 +6,7 @@ target tracking
 --]]
 local _, iEET = ...
 iEET.data = {}
-iEET.font = 'Interface\\AddOns\\iEncounterEventTracker\\Accidental Presidency.ttf'
+iEET.font = select(4, GetBuildInfo()) > 70000 and 'Fonts\\ARIALN.TTF' or 'Interface\\AddOns\\iEncounterEventTracker\\Accidental Presidency.ttf'
 iEET.fontsize = 12
 iEET.spacing = 2
 iEET.justifyH = 'LEFT'
