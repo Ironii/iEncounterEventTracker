@@ -6,6 +6,7 @@ target tracking
 --]]
 local _, iEET = ...
 iEET.data = {}
+iEET.ignoring = {} -- so ignore list resets on relog, don't want to save it, atleast not yet
 iEET.font = select(4, GetBuildInfo()) >= 70000 and 'Fonts\\ARIALN.TTF' or 'Interface\\AddOns\\iEncounterEventTracker\\Accidental Presidency.ttf'
 iEET.fontsize = 12
 iEET.spacing = 2
@@ -21,7 +22,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }	
-iEET.version = 1.301
+iEET.version = 1.320
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -562,6 +563,24 @@ function iEET:addMessages(placeToAdd, frameID, value, color)
 	end
 	frame:AddMessage(value and value or ' ', unpack(color))
 end
+function iEET:shouldIgnore(t)
+	if t.event == 'ENCOUNTER_START' or t.event == 'ENCOUNTER_END' then
+		return false
+	elseif not iEETConfig.tracking[t.event] then
+		return true 
+	elseif iEET.ignoring[t.casterName] then
+		return true
+	elseif t.event == 'USC_SUCCEEDED' then
+		if string.find(t.targetName, 'nameplate') then
+			t.targetName = 'nameplates'
+		end
+		if iEET.ignoring[t.targetName] then
+		return true
+		end
+	else
+		return false
+	end
+end
 function iEET:loopData(msg)
 	local starttime = 0
 	local intervalls = {}
@@ -588,157 +607,203 @@ function iEET:loopData(msg)
 		end
 	end
 	--end-of-time-filtering--
+	iEET.collector = {
+		['encounterNPCs'] = {},
+		['encounterSpells'] = {},
+	}
 	for k,v in ipairs(iEET.data) do
-		if v.event == 'ENCOUNTER_START' then starttime = v.timestamp end
+		if v.event == 'ENCOUNTER_START' then 
+			starttime = v.timestamp 
+		elseif v.casterName and not iEET.collector.encounterNPCs[v.casterName] and v.event ~= 'USC_SUCCEEDED' and v.event ~= 'ENCOUNTER_END' then -- Collect npc names & spells
+			iEET.collector.encounterNPCs[v.casterName] = true
+		end
+		if v.event == 'USC_SUCCEEDED' then
+			if string.find(v.targetName, 'nameplate') then -- could be safe to assume that there will be atleast one nameplate unitid
+				if not not iEET.collector.encounterNPCs then
+					iEET.collector.encounterNPCs.nameplates = true
+				end
+			elseif v.targetName and not iEET.collector.encounterNPCs[v.targetName] then
+				iEET.collector.encounterNPCs[v.targetName] = true
+			end
+		end
 		if v.spellID and not encounterSpells[v.spellID] then
 			encounterSpells[v.spellID] = v.spellName
 			iEET:addToEncounterAbilities(v.spellID, v.spellName)
 		end	
-		if msg then
-			local found = false
-			--if ShouldShow(v) then -- NEW, TESTING
-			if not from and not to then
-				for k,v in pairs(v) do
-					if string.find(string.lower(v), string.lower(msg)) then found = true end
+		if not iEET:shouldIgnore(v) then --temp function, only for the npc ignore list
+			if msg then
+				local found = false
+				--if ShouldShow(v) then -- NEW, TESTING
+				if not from and not to then
+					for k,v in pairs(v) do
+						if string.find(string.lower(v), string.lower(msg)) then found = true end
+					end
 				end
-			end
-			if found or from or to then
-				if v.event == 'ENCOUNTER_START' then starttime = v.timestamp end
-				local intervall = nil
-				local timestamp = v.timestamp-starttime or nil
-				--time-filtering---------
-				if from and timestamp and timestamp < from or to and timestamp and timestamp > to then else
-				--end-of-time-filtering--
-					local casterName = v.casterName or nil
-					local targetName = v.targetName or nil
-					local spellName = v.spellName or nil
-					local spellID = v.spellID or nil
-					local event = v.event
-					local count = nil
-					local sourceGUID = v.sourceGUID or nil
-					local hp = v.hp or nil
-					
-					--if casterName then
-					if sourceGUID then
-						if intervalls[sourceGUID] then
-							if intervalls[sourceGUID][event] then
-								if intervalls[sourceGUID][event][spellID] then
-									intervall = timestamp - intervalls[sourceGUID][event][spellID]
-									intervalls[sourceGUID][event][spellID] = timestamp
+				if found or from or to then
+					if v.event == 'ENCOUNTER_START' then starttime = v.timestamp end
+					local intervall = nil
+					local timestamp = v.timestamp-starttime or nil
+					--time-filtering---------
+					if from and timestamp and timestamp < from or to and timestamp and timestamp > to then else
+					--end-of-time-filtering--
+						local casterName = v.casterName or nil
+						local targetName = v.targetName or nil
+						local spellName = v.spellName or nil
+						local spellID = v.spellID or nil
+						local event = v.event
+						local count = nil
+						local sourceGUID = v.sourceGUID or nil
+						local hp = v.hp or nil
+						
+						--if casterName then
+						if sourceGUID then
+							if intervalls[sourceGUID] then
+								if intervalls[sourceGUID][event] then
+									if intervalls[sourceGUID][event][spellID] then
+										intervall = timestamp - intervalls[sourceGUID][event][spellID]
+										intervalls[sourceGUID][event][spellID] = timestamp
+									else
+										intervalls[sourceGUID][event][spellID] = timestamp
+									end
 								else
-									intervalls[sourceGUID][event][spellID] = timestamp
+									intervalls[sourceGUID][event] = {
+											[spellID] = timestamp,
+									};
 								end
 							else
-								intervalls[sourceGUID][event] = {
+								intervalls[sourceGUID] = {
+									[event] = {
 										[spellID] = timestamp,
+									};
 								};
 							end
-						else
-							intervalls[sourceGUID] = {
-								[event] = {
-									[spellID] = timestamp,
-								};
-							};
-						end
-						if counts[sourceGUID] then
-							if counts[sourceGUID][event] then
-								if counts[sourceGUID][event][spellID] then
-									counts[sourceGUID][event][spellID] = counts[sourceGUID][event][spellID] + 1
-									count = counts[sourceGUID][event][spellID]
+							if counts[sourceGUID] then
+								if counts[sourceGUID][event] then
+									if counts[sourceGUID][event][spellID] then
+										counts[sourceGUID][event][spellID] = counts[sourceGUID][event][spellID] + 1
+										count = counts[sourceGUID][event][spellID]
+									else
+										counts[sourceGUID][event][spellID] = 1
+										count = 1
+									end
 								else
-									counts[sourceGUID][event][spellID] = 1
-									count = 1
+									counts[sourceGUID][event] = {
+										[spellID] = 1,
+									}
 								end
 							else
-								counts[sourceGUID][event] = {
-									[spellID] = 1,
-								}
+								counts[sourceGUID] = {
+									[event] = {
+										[spellID] = 1,
+									};
+								};
+								count = 1
+							end
+						end
+						if iEETConfig.tracking[event] or event == 'ENCOUNTER_START' or event == 'ENCOUNTER_END' then			
+							iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID, intervall,count, sourceGUID,hp)
+						end
+					end
+				end
+			else
+				if v.event == 'ENCOUNTER_START' then starttime = v.timestamp end
+				local intervall = false
+				local timestamp = v.timestamp-starttime or nil
+				local casterName = v.casterName or nil
+				local targetName = v.targetName or nil
+				local spellName = v.spellName or nil
+				local spellID = v.spellID or nil
+				local event = v.event
+				local count = nil
+				local sourceGUID = v.sourceGUID or nil
+				local hp = v.hp or nil
+				
+				if sourceGUID then
+					if intervalls[sourceGUID] then
+						if intervalls[sourceGUID][event] then
+							if intervalls[sourceGUID][event][spellID] then
+								intervall = timestamp - intervalls[sourceGUID][event][spellID]
+								intervalls[sourceGUID][event][spellID] = timestamp
+							else
+								intervalls[sourceGUID][event][spellID] = timestamp
 							end
 						else
-							counts[sourceGUID] = {
-								[event] = {
-									[spellID] = 1,
-								};
+							intervalls[sourceGUID][event] = {
+									[spellID] = timestamp,
 							};
-							count = 1
-						end
-					end
-					if iEETConfig.tracking[event] or event == 'ENCOUNTER_START' or event == 'ENCOUNTER_END' then
-										
-						iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID, intervall,count, sourceGUID,hp)
-					end
-				end
-			end
-		else
-			if v.event == 'ENCOUNTER_START' then starttime = v.timestamp end
-			local intervall = false
-			local timestamp = v.timestamp-starttime or nil
-			local casterName = v.casterName or nil
-			local targetName = v.targetName or nil
-			local spellName = v.spellName or nil
-			local spellID = v.spellID or nil
-			local event = v.event
-			local count = nil
-			local sourceGUID = v.sourceGUID or nil
-			local hp = v.hp or nil
-			
-			if sourceGUID then
-				if intervalls[sourceGUID] then
-					if intervalls[sourceGUID][event] then
-						if intervalls[sourceGUID][event][spellID] then
-							intervall = timestamp - intervalls[sourceGUID][event][spellID]
-							intervalls[sourceGUID][event][spellID] = timestamp
-						else
-							intervalls[sourceGUID][event][spellID] = timestamp
 						end
 					else
-						intervalls[sourceGUID][event] = {
+						intervalls[sourceGUID] = {
+							[event] = {
 								[spellID] = timestamp,
+							};
 						};
 					end
-				else
-					intervalls[sourceGUID] = {
-						[event] = {
-							[spellID] = timestamp,
-						};
-					};
-				end
-				if counts[sourceGUID] then
-					if counts[sourceGUID][event] then
-						if counts[sourceGUID][event][spellID] then
-							counts[sourceGUID][event][spellID] = counts[sourceGUID][event][spellID] + 1
-							count = counts[sourceGUID][event][spellID]
+					if counts[sourceGUID] then
+						if counts[sourceGUID][event] then
+							if counts[sourceGUID][event][spellID] then
+								counts[sourceGUID][event][spellID] = counts[sourceGUID][event][spellID] + 1
+								count = counts[sourceGUID][event][spellID]
+							else
+								counts[sourceGUID][event][spellID] = 1
+								count = 1
+							end
 						else
-							counts[sourceGUID][event][spellID] = 1
-							count = 1
+							counts[sourceGUID][event] = {
+								[spellID] = 1,
+							}
 						end
 					else
-						counts[sourceGUID][event] = {
-							[spellID] = 1,
-						}
-					end
-				else
-					counts[sourceGUID] = {
-						[event] = {
-							[spellID] = 1,
+						counts[sourceGUID] = {
+							[event] = {
+								[spellID] = 1,
+							};
 						};
-					};
-					count = 1
+						count = 1
+					end
 				end
-			end
-			if iEETConfig.tracking[event] or event == 'ENCOUNTER_START' or event == 'ENCOUNTER_END' then
-				iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID, intervall,count, sourceGUID,hp)
+				if iEETConfig.tracking[event] or event == 'ENCOUNTER_START' or event == 'ENCOUNTER_END' then
+					iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID, intervall,count, sourceGUID,hp)
+				end
 			end
 		end
 	end
-	
 end
-iEET.eventlistMenu = {}
-function iEET:updateEventlistMenu()
-	iEET.eventlistMenu = nil
-	iEET.eventlistMenu = {}
-	for k,_ in pairs(iEETConfig.tracking) do
-		table.insert(iEET.eventlistMenu, { 
+iEET.optionMenu = {}
+function iEET:updateOptionMenu()
+	iEET.optionMenu = nil
+	iEET.optionMenu = {}
+	-- TO DO: Temporary ignore list (npcs rdy, spells inc)
+	if iEET.collector then
+		local tempIgnore = {text = "Ignore list", hasArrow = true, notCheckable = true, menuList = {}}
+		for k in spairs(iEET.collector.encounterNPCs) do
+			table.insert(tempIgnore.menuList, { 
+			text = k, 
+			isNotRadio = true,
+			checked = iEET.ignoring[k],
+			keepShownOnClick = true,
+			func = function()
+				if iEET.ignoring[k] then
+					iEET.ignoring[k] = nil
+				else
+					iEET.ignoring[k] = true
+				end
+			end,
+			})
+		end
+		table.insert(tempIgnore.menuList, { text = 'Save', notCheckable = true, func = function()
+			CloseDropDownMenus()
+			if iEET.editbox:GetText() ~= 'Search' then
+				iEET:loopData(iEET.editbox:GetText())
+			else
+				iEET:loopData() 
+			end
+		end})
+		table.insert(iEET.optionMenu, tempIgnore)
+	end
+	local tempEvents = {text = "Events", hasArrow = true, notCheckable = true, menuList = {}}
+	for k,_ in spairs(iEETConfig.tracking) do
+		table.insert(tempEvents.menuList, { 
 			text = k, 
 			isNotRadio = true,
 			checked = iEETConfig.tracking[k],
@@ -753,9 +818,18 @@ function iEET:updateEventlistMenu()
 			end,
 		})
 	end
-	table.insert(iEET.eventlistMenu, { text = 'Save', notCheckable = true, func = function () CloseDropDownMenus(); iEET:updateEventlistMenu(); iEET:loopData() end})
+	table.insert(tempEvents.menuList, { text = 'Save', notCheckable = true, func = function()
+		CloseDropDownMenus()
+		if iEET.editbox:GetText() ~= 'Search' then
+			iEET:loopData(iEET.editbox:GetText())
+		else
+			iEET:loopData() 
+		end
+	end})
+	table.insert(iEET.optionMenu, tempEvents)
+	table.insert(iEET.optionMenu, { text = 'Close', notCheckable = true, func = function () CloseDropDownMenus(); end})
 end
-iEET.eventlistMenuFrame = CreateFrame("Frame", "iEETEventListMenu", UIParent, "UIDropDownMenuTemplate")
+iEET.optionMenuFrame = CreateFrame("Frame", "iEETEventListMenu", UIParent, "UIDropDownMenuTemplate")
 
 iEET.encounterListMenu = {}
 function iEET:updateEncounterListMenu()
@@ -1181,9 +1255,10 @@ function iEET:CreateMainFrame()
 	iEET.eventlist:Show()
 	iEET.eventlist:RegisterForClicks('AnyUp')
 	iEET.eventlist:SetScript('OnClick',function()
-		EasyMenu(iEET.eventlistMenu, iEET.eventlistMenuFrame, "cursor", 0 , 0, "MENU");
+		iEET:updateOptionMenu()
+		EasyMenu(iEET.optionMenu, iEET.optionMenuFrame, "cursor", 0 , 0, "MENU");
 	end)
-	iEET:updateEventlistMenu()
+	iEET:updateOptionMenu()
 	----end of event list
 	----Encounter list button:
 	iEET.encounterListButton = CreateFrame('BUTTON', 'iEETEncounterListMenuButton', iEET.frame, "UIPanelInfoButton")
