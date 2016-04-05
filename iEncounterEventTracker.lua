@@ -22,7 +22,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }	
-iEET.version = 1.320
+iEET.version = 1.321
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -566,6 +566,8 @@ end
 function iEET:shouldIgnore(t)
 	if t.event == 'ENCOUNTER_START' or t.event == 'ENCOUNTER_END' then
 		return false
+	elseif t.spellID and iEET.ignoring[t.spellID] then
+		return true
 	elseif not iEETConfig.tracking[t.event] then
 		return true 
 	elseif iEET.ignoring[t.casterName] then
@@ -591,7 +593,6 @@ function iEET:loopData(msg)
 	end
 	iEET.encounterAbilitiesContent:Clear()
 	local from, to = false, false
-	local encounterSpells = {}
 	--time-filtering---------
 	if msg then
 		if string.match(msg, '^from:(%d-) to:(%d+)') then
@@ -615,9 +616,17 @@ function iEET:loopData(msg)
 		if v.event == 'ENCOUNTER_START' then 
 			starttime = v.timestamp 
 		elseif v.casterName and not iEET.collector.encounterNPCs[v.casterName] and v.event ~= 'USC_SUCCEEDED' and v.event ~= 'ENCOUNTER_END' then -- Collect npc names & spells
+			if v.spellID and v.spellName and not iEET.collector.encounterSpells[v.spellID] then
+				iEET.collector.encounterSpells[v.spellID] = v.spellName
+				iEET:addToEncounterAbilities(v.spellID, v.spellName)
+			end
 			iEET.collector.encounterNPCs[v.casterName] = true
 		end
 		if v.event == 'USC_SUCCEEDED' then
+			if v.spellID and v.spellName and not iEET.collector.encounterSpells[v.spellID] then
+				iEET.collector.encounterSpells[v.spellID] = v.spellName
+				iEET:addToEncounterAbilities(v.spellID, v.spellName)
+			end
 			if string.find(v.targetName, 'nameplate') then -- could be safe to assume that there will be atleast one nameplate unitid
 				if not not iEET.collector.encounterNPCs then
 					iEET.collector.encounterNPCs.nameplates = true
@@ -626,10 +635,6 @@ function iEET:loopData(msg)
 				iEET.collector.encounterNPCs[v.targetName] = true
 			end
 		end
-		if v.spellID and not encounterSpells[v.spellID] then
-			encounterSpells[v.spellID] = v.spellName
-			iEET:addToEncounterAbilities(v.spellID, v.spellName)
-		end	
 		if not iEET:shouldIgnore(v) then --temp function, only for the npc ignore list
 			if msg then
 				local found = false
@@ -773,11 +778,11 @@ iEET.optionMenu = {}
 function iEET:updateOptionMenu()
 	iEET.optionMenu = nil
 	iEET.optionMenu = {}
-	-- TO DO: Temporary ignore list (npcs rdy, spells inc)
 	if iEET.collector then
-		local tempIgnore = {text = "Ignore list", hasArrow = true, notCheckable = true, menuList = {}}
+		-- NPCs
+		local tempIgnoreNPCs = {text = "Ignore NPCs", hasArrow = true, notCheckable = true, menuList = {}}
 		for k in spairs(iEET.collector.encounterNPCs) do
-			table.insert(tempIgnore.menuList, { 
+			table.insert(tempIgnoreNPCs.menuList, { 
 			text = k, 
 			isNotRadio = true,
 			checked = iEET.ignoring[k],
@@ -791,7 +796,7 @@ function iEET:updateOptionMenu()
 			end,
 			})
 		end
-		table.insert(tempIgnore.menuList, { text = 'Save', notCheckable = true, func = function()
+		table.insert(tempIgnoreNPCs.menuList, { text = 'Save', notCheckable = true, func = function()
 			CloseDropDownMenus()
 			if iEET.editbox:GetText() ~= 'Search' then
 				iEET:loopData(iEET.editbox:GetText())
@@ -799,7 +804,33 @@ function iEET:updateOptionMenu()
 				iEET:loopData() 
 			end
 		end})
-		table.insert(iEET.optionMenu, tempIgnore)
+		table.insert(iEET.optionMenu, tempIgnoreNPCs)
+		-- Spells
+		local tempIgnoreSpells = {text = "Ignore Spells", hasArrow = true, notCheckable = true, menuList = {}}
+		for k,v in spairs(iEET.collector.encounterSpells) do
+			table.insert(tempIgnoreSpells.menuList, { 
+			text = k .. ' - ' .. v, 
+			isNotRadio = true,
+			checked = iEET.ignoring[k],
+			keepShownOnClick = true,
+			func = function()
+				if iEET.ignoring[k] then
+					iEET.ignoring[k] = nil
+				else
+					iEET.ignoring[k] = true
+				end
+			end,
+			})
+		end
+		table.insert(tempIgnoreSpells.menuList, { text = 'Save', notCheckable = true, func = function()
+			CloseDropDownMenus()
+			if iEET.editbox:GetText() ~= 'Search' then
+				iEET:loopData(iEET.editbox:GetText())
+			else
+				iEET:loopData() 
+			end
+		end})
+		table.insert(iEET.optionMenu, tempIgnoreSpells)
 	end
 	local tempEvents = {text = "Events", hasArrow = true, notCheckable = true, menuList = {}}
 	for k,_ in spairs(iEETConfig.tracking) do
