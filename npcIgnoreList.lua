@@ -29,8 +29,11 @@ iEET.npcIgnoreList = {
 	[59262] = true,		--Demonic Gateway
 	[59271] = true,		--Demonic Gateway
 	[82927] = true,		--Inner Demon
+	[98035] = true, 	--Dreadstalker
 	[95468] = true, 	--T18 Demo (Illidari Satyr)
 	[95469] = true,		--T18 Demo (Visicous Hellhound)
+	[103673] = true, 	--Beholder
+	
 	
 --Mage
 	[31216] = true, 	--Mirror Image
