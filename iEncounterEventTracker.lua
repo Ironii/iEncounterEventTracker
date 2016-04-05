@@ -1,3 +1,8 @@
+--[[--------------------------FILTERING-OPTIONS-USAGE-------------
+split different args with ';'
+--]]--------------------------------------------------------------
+
+
 --[[TO DO:--
 compare
 better filtering, STARTED
@@ -22,7 +27,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }	
-iEET.version = 1.325
+iEET.version = 1.329
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -774,6 +779,16 @@ function iEET:loopData(msg)
 		end
 	end
 end
+function iEET:AddNewFiltering(txt)
+	print(text) -- Debug
+	local newFilters = {}
+	-- split by args by ';'
+	local temp = { strsplit(';', txt) }
+	for k,v in pairs(temp) do print(k,v) end
+	local msg = 'event:COMBAT_LOG_EVENT_UNFILTERED, spellID:20125, casterName:*, targetName:*,health:>80'
+	iEET.optionsFrameFilterTexts:AddMessage(msg)
+	--iEET:addNewFilterToOptionsWindow(arg)
+end
 iEET.optionMenu = {}
 function iEET:updateOptionMenu()
 	iEET.optionMenu = nil
@@ -1345,6 +1360,67 @@ function iEET:CreateOptionsFrame()
 	iEET.optionsFrameTopInfo:SetPoint('CENTER', iEET.optionsFrameTop, 'CENTER', 0,0)
 	iEET.optionsFrameTopInfo:SetText('Filtering options')
 	iEET.optionsFrameTopInfo:Show()
+	-- Scrolling Message frame for filters
+	iEET.optionsFrameFilterTexts = CreateFrame('ScrollingMessageFrame', nil, iEET.optionsFrame)
+	iEET.optionsFrameFilterTexts:SetSize(620,380)
+	iEET.optionsFrameFilterTexts:SetPoint('TOP', iEET.optionsFrame, 'TOP', 0, -6)
+	iEET.optionsFrameFilterTexts:SetFont(iEET.font, iEET.fontsize)
+	iEET.optionsFrameFilterTexts:SetFading(false)
+	iEET.optionsFrameFilterTexts:SetInsertMode('TOP')
+	iEET.optionsFrameFilterTexts:SetJustifyH(iEET.justifyH)
+	iEET.optionsFrameFilterTexts:SetMaxLines(50)
+	iEET.optionsFrameFilterTexts:SetSpacing(iEET.spacing)
+	iEET.optionsFrameFilterTexts:EnableMouseWheel(true)
+	iEET.optionsFrameFilterTexts:SetHyperlinksEnabled(true)
+	iEET.optionsFrameFilterTexts:SetScript("OnMouseWheel", function(self, delta)
+		if delta == -1 then
+			if IsShiftKeyDown() then
+				iEET.optionsFrameFilterTexts:PageDown()
+			else
+				iEET.optionsFrameFilterTexts:ScrollDown()
+			end
+		else
+			if IsShiftKeyDown() then
+				iEET.optionsFrameFilterTexts:PageUp()
+			else
+				iEET.optionsFrameFilterTexts:ScrollUp()
+			end				
+		end
+	end)
+	iEET.optionsFrameFilterTexts:EnableMouse(true)
+	iEET.optionsFrameFilterTexts:SetFrameStrata('DIALOG')
+	iEET.optionsFrameFilterTexts:SetFrameLevel(4)
+	-- Options Editbox
+	iEET.optionsFrameEditbox = CreateFrame('EditBox', 'iEETOptionsEditBox', iEET.optionsFrame)
+	iEET.optionsFrameEditbox:SetBackdrop({
+			bgFile = "Interface\\Buttons\\WHITE8x8", 
+			edgeFile = "Interface\\Buttons\\WHITE8x8", 
+			edgeSize = 1, 
+			insets = {
+				left = -1,
+				right = -1,
+				top = -1,
+				bottom = -1,
+			},
+		});
+	iEET.optionsFrameEditbox:SetBackdropColor(0.1,0.1,0.1,0.2)
+	iEET.optionsFrameEditbox:SetBackdropBorderColor(0,0,0,1)
+	iEET.optionsFrameEditbox:SetScript('OnEnterPressed', function()
+		--do something
+		iEET:AddNewFiltering(iEET.optionsFrameEditbox:GetText())
+		print('pressed enter, should maybe do something at some point')
+	end)
+	iEET.optionsFrameEditbox:SetAutoFocus(false)
+	iEET.optionsFrameEditbox:SetWidth(620)
+	iEET.optionsFrameEditbox:SetHeight(200)
+	iEET.optionsFrameEditbox:SetMaxLetters(500)
+	iEET.optionsFrameEditbox:SetTextInsets(2, 2, 1, 0)
+	iEET.optionsFrameEditbox:SetPoint('BOTTOM', iEET.optionsFrame, 'BOTTOM', 0,30)
+	iEET.optionsFrameEditbox:SetFrameStrata('DIALOG')
+	iEET.optionsFrameEditbox:SetFrameLevel(3)
+	iEET.optionsFrameEditbox:SetMultiLine(true)
+	iEET.optionsFrameEditbox:Show()
+	iEET.optionsFrameEditbox:SetFont(iEET.font, iEET.fontsize+2, 'OUTLINE')
 	-- Save button
 	iEET.optionsFrameSaveButton = CreateFrame('BUTTON', nil, iEET.optionsFrame)
 	iEET.optionsFrameSaveButton:SetSize(100, 20)
@@ -1381,34 +1457,7 @@ function iEET:CreateOptionsFrame()
 		print('cancel & close')
 		iEET.optionsFrame:Hide()
 	end)
-	iEET.optionsFrameEditbox = CreateFrame('EditBox', 'iEETOptionsEditBox', iEET.optionsFrame)
-	iEET.optionsFrameEditbox:SetBackdrop({
-			bgFile = "Interface\\Buttons\\WHITE8x8", 
-			edgeFile = "Interface\\Buttons\\WHITE8x8", 
-			edgeSize = 1, 
-			insets = {
-				left = -1,
-				right = -1,
-				top = -1,
-				bottom = -1,
-			},
-		});
-	iEET.optionsFrameEditbox:SetBackdropColor(0.1,0.1,0.1,0.2)
-	iEET.optionsFrameEditbox:SetBackdropBorderColor(0,0,0,1)
-	iEET.optionsFrameEditbox:SetScript('OnEnterPressed', function()
-		--do something
-		print('pressed enter, should maybe do something at some point')
-	end)
-	iEET.optionsFrameEditbox:SetAutoFocus(false)
-	iEET.optionsFrameEditbox:SetWidth(585)
-	iEET.optionsFrameEditbox:SetHeight(200)
-	iEET.optionsFrameEditbox:SetTextInsets(2, 2, 1, 0)
-	iEET.optionsFrameEditbox:SetPoint('BOTTOM', iEET.optionsFrame, 'BOTTOM', 0,30)
-	iEET.optionsFrameEditbox:SetFrameStrata('DIALOG')
-	iEET.optionsFrameEditbox:SetFrameLevel(3)
-	iEET.optionsFrameEditbox:SetMultiLine(true)
-	iEET.optionsFrameEditbox:Show()
-	iEET.optionsFrameEditbox:SetFont(iEET.font, iEET.fontsize+2, 'OUTLINE')
+
 end
 function iEET:Options()
 	if iEET.optionsFrame then
