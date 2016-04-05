@@ -22,7 +22,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }	
-iEET.version = 1.321
+iEET.version = 1.325
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -1306,6 +1306,121 @@ function iEET:CreateMainFrame()
 	iEET:loopData()
 	
 end
+function iEET:CreateOptionsFrame()
+	-- Options main frame
+	iEET.optionsFrame = CreateFrame('Frame', 'iEETOptionsFrame', UIParent)
+	iEET.optionsFrame:SetSize(650,500)
+	iEET.optionsFrame:SetPoint('CENTER', UIParent, 'CENTER', 0,0)
+	iEET.optionsFrame:SetBackdrop(iEET.backdrop);
+	iEET.optionsFrame:SetBackdropColor(0.1,0.1,0.1,0.9)
+	iEET.optionsFrame:SetBackdropBorderColor(0.64,0,0,1)
+	iEET.optionsFrame:Show()
+	iEET.optionsFrame:SetFrameStrata('DIALOG')
+	iEET.optionsFrame:SetFrameLevel(1)
+	iEET.optionsFrame:EnableMouse(true)
+	iEET.optionsFrame:SetMovable(true)
+	local scale = (0.63999998569489/iEET.optionsFrame:GetEffectiveScale())
+	iEET.optionsFrame:SetScale(scale)
+	-- Options title frame
+	iEET.optionsFrameTop = CreateFrame('FRAME', nil, iEET.optionsFrame)
+	iEET.optionsFrameTop:SetSize(650, 25)
+	iEET.optionsFrameTop:SetPoint('BOTTOMRIGHT', iEET.optionsFrame, 'TOPRIGHT', 0, -1)
+	iEET.optionsFrameTop:SetBackdrop(iEET.backdrop);
+	iEET.optionsFrameTop:SetBackdropColor(0.1,0.1,0.1,0.9)
+	iEET.optionsFrameTop:SetBackdropBorderColor(0.64,0,0,1)
+	iEET.optionsFrameTop:SetScript('OnMouseDown', function(self,button)
+		iEET.optionsFrame:ClearAllPoints()
+		iEET.optionsFrame:StartMoving()
+	end)
+	iEET.optionsFrameTop:SetScript('OnMouseUp', function(self, button)
+		iEET.optionsFrame:StopMovingOrSizing()
+	end)
+	iEET.optionsFrameTop:EnableMouse(true)
+	iEET.optionsFrameTop:Show()
+	iEET.optionsFrameTop:SetFrameStrata('DIALOG')
+	iEET.optionsFrameTop:SetFrameLevel(1)
+	-- Options title text
+	iEET.optionsFrameTopInfo = iEET.optionsFrame:CreateFontString('iEETOptionsInfo')
+	iEET.optionsFrameTopInfo:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+	iEET.optionsFrameTopInfo:SetPoint('CENTER', iEET.optionsFrameTop, 'CENTER', 0,0)
+	iEET.optionsFrameTopInfo:SetText('Filtering options')
+	iEET.optionsFrameTopInfo:Show()
+	-- Save button
+	iEET.optionsFrameSaveButton = CreateFrame('BUTTON', nil, iEET.optionsFrame)
+	iEET.optionsFrameSaveButton:SetSize(100, 20)
+	iEET.optionsFrameSaveButton:SetBackdrop(iEET.backdrop);
+	iEET.optionsFrameSaveButton:SetBackdropColor(0.1,0.1,0.1,0.9)
+	iEET.optionsFrameSaveButton.text = iEET.optionsFrameSaveButton:CreateFontString()
+	iEET.optionsFrameSaveButton.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+	iEET.optionsFrameSaveButton.text:SetPoint('CENTER', iEET.optionsFrameSaveButton, 'CENTER', 0,0)
+	iEET.optionsFrameSaveButton.text:SetText('Save')
+	iEET.optionsFrameSaveButton:SetBackdropBorderColor(0.64,0,0,1)
+	iEET.optionsFrameSaveButton:SetPoint('BOTTOMRIGHT', iEET.optionsFrame, 'BOTTOM', -2,4)
+	iEET.optionsFrameSaveButton:Show()
+	iEET.optionsFrameSaveButton:RegisterForClicks('AnyUp')
+	iEET.optionsFrameSaveButton:SetScript('OnClick',function()
+		-- gather all data etc and hide window
+		print('save & close')
+		iEET.optionsFrame:Hide()
+	end)
+	-- Cancel button
+	iEET.optionsFrameCancelButton = CreateFrame('BUTTON', nil, iEET.optionsFrame)
+	iEET.optionsFrameCancelButton:SetSize(100, 20)
+	iEET.optionsFrameCancelButton:SetBackdrop(iEET.backdrop);
+	iEET.optionsFrameCancelButton:SetBackdropColor(0.1,0.1,0.1,0.9)
+	iEET.optionsFrameCancelButton.text = iEET.optionsFrameCancelButton:CreateFontString()
+	iEET.optionsFrameCancelButton.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+	iEET.optionsFrameCancelButton.text:SetPoint('CENTER', iEET.optionsFrameCancelButton, 'CENTER', 0,0)
+	iEET.optionsFrameCancelButton.text:SetText('Close')
+	iEET.optionsFrameCancelButton:SetBackdropBorderColor(0.64,0,0,1)
+	iEET.optionsFrameCancelButton:SetPoint('BOTTOMLEFT', iEET.optionsFrame, 'BOTTOM', 2,4)
+	iEET.optionsFrameCancelButton:Show()
+	iEET.optionsFrameCancelButton:RegisterForClicks('AnyUp')
+	iEET.optionsFrameCancelButton:SetScript('OnClick',function()
+		-- clear unsaved args & close
+		print('cancel & close')
+		iEET.optionsFrame:Hide()
+	end)
+	iEET.optionsFrameEditbox = CreateFrame('EditBox', 'iEETOptionsEditBox', iEET.optionsFrame)
+	iEET.optionsFrameEditbox:SetBackdrop({
+			bgFile = "Interface\\Buttons\\WHITE8x8", 
+			edgeFile = "Interface\\Buttons\\WHITE8x8", 
+			edgeSize = 1, 
+			insets = {
+				left = -1,
+				right = -1,
+				top = -1,
+				bottom = -1,
+			},
+		});
+	iEET.optionsFrameEditbox:SetBackdropColor(0.1,0.1,0.1,0.2)
+	iEET.optionsFrameEditbox:SetBackdropBorderColor(0,0,0,1)
+	iEET.optionsFrameEditbox:SetScript('OnEnterPressed', function()
+		--do something
+		print('pressed enter, should maybe do something at some point')
+	end)
+	iEET.optionsFrameEditbox:SetAutoFocus(false)
+	iEET.optionsFrameEditbox:SetWidth(585)
+	iEET.optionsFrameEditbox:SetHeight(200)
+	iEET.optionsFrameEditbox:SetTextInsets(2, 2, 1, 0)
+	iEET.optionsFrameEditbox:SetPoint('BOTTOM', iEET.optionsFrame, 'BOTTOM', 0,30)
+	iEET.optionsFrameEditbox:SetFrameStrata('DIALOG')
+	iEET.optionsFrameEditbox:SetFrameLevel(3)
+	iEET.optionsFrameEditbox:SetMultiLine(true)
+	iEET.optionsFrameEditbox:Show()
+	iEET.optionsFrameEditbox:SetFont(iEET.font, iEET.fontsize+2, 'OUTLINE')
+end
+function iEET:Options()
+	if iEET.optionsFrame then
+		if iEET.optionsFrame:IsShown() then
+			iEET.optionsFrame:Hide()
+		else
+			iEET.optionsFrame:Show()
+		end
+	else
+		iEET:CreateOptionsFrame()
+	end
+end
 function iEET:Toggle(show)
 	if not InCombatLockdown() then
 		if not iEET.frame then
@@ -1531,6 +1646,7 @@ BINDING_HEADER_IEET = 'iEncounterEventTracker'
 BINDING_NAME_IEET_TOGGLE = 'Toggle window'
 BINDING_NAME_IEET_EXPORT = 'Export Data'
 BINDING_NAME_IEET_COPY = 'Copy currently shown fight to spreadsheet'
+BINDING_NAME_IEET_OPTIONS = 'Show filtering options window'
 function IEET_TOGGLE(window)
 	if window == 'frame' then
 		iEET:Toggle()
@@ -1538,6 +1654,8 @@ function IEET_TOGGLE(window)
 		iEET:copyCurrent()
 	elseif window == 'export' and not InCombatLockdown() then
 		iEET:ExportData()
+	elseif window == 'options' and not InCombatLockdown() then
+		iEET:Options()
 	end
 end
 
