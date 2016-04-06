@@ -19,6 +19,7 @@ iEET.npcIgnoreList = {
 	[61245] = true,		--Capacitor Totem
 	[77936] = true,		--Greater Storm Elemental
 	[77942] = true,		--Primal Storm Elemental
+	[95061] = true, 	--Greater Fire Elemental 
 --Warlock
 	[11859] = true, 	--Doomguard
 	[17252] = true,		--Felguard
