@@ -27,7 +27,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }	
-iEET.version = 1.4
+iEET.version = 1.401
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -119,7 +119,7 @@ function iEET:LoadDefaults()
 		['MONSTER_YELL'] = true,
 	}
 	iEETConfig.version = iEET.version
-	iEETConfig.autoSave = false
+	iEETConfig.autoSave = true
 	iEETConfig.autoDiscard = 30
 	iEETConfig.filtering = {
 		timeBasedFiltering = {},
