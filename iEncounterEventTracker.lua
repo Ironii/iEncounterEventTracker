@@ -27,7 +27,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }	
-iEET.version = 1.329
+iEET.version = 1.332
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -400,7 +400,7 @@ function iEET:ShouldShow(eventData) -- NEW, TESTING
 		if #iEET.filtering.req > 0 then
 			for k,v in pairs(eventData) do -- loop trough current event
 				for requiredData, requiredValue in pairs(iEET.filtering.req) do -- try to find right values
-					if (requiredData and string.find(string.lower(v), requiredData)) or string.find(string.lower(v), iEET.filtering.anyData) then
+					if (requiredData and string.find(string.lower(v), requiredData)) or tonumber(k) and string.find(string.lower(v), requiredData) then
 						return true -- found right value
 					end
 				end
@@ -780,14 +780,26 @@ function iEET:loopData(msg)
 	end
 end
 function iEET:AddNewFiltering(txt)
-	print(text) -- Debug
+	--print(text) -- Debug
 	local newFilters = {}
 	-- split by args by ';'
+	--[[ temp fix for spellid only tracking
 	local temp = { strsplit(';', txt) }
-	for k,v in pairs(temp) do print(k,v) end
-	local msg = 'event:COMBAT_LOG_EVENT_UNFILTERED, spellID:20125, casterName:*, targetName:*,health:>80'
-	iEET.optionsFrameFilterTexts:AddMessage(msg)
+	for v in pairs(temp) do
+		print(v)
+		local msg = 'spellID:' .. v
+	end
+	--]]
+	iEET.optionsFrameFilterTexts:AddMessage(txt)
 	--iEET:addNewFilterToOptionsWindow(arg)
+end
+function iEET:ClearFilteringArgs()
+	iEET.filtering = {
+		timeBasedFiltering = {},
+		req = {},
+		requireAll = false,
+		showTime = false, -- show time from nearest 'from' event instead of ENCOUNTER_START
+	}
 end
 iEET.optionMenu = {}
 function iEET:updateOptionMenu()
@@ -1408,7 +1420,7 @@ function iEET:CreateOptionsFrame()
 	iEET.optionsFrameEditbox:SetScript('OnEnterPressed', function()
 		--do something
 		iEET:AddNewFiltering(iEET.optionsFrameEditbox:GetText())
-		print('pressed enter, should maybe do something at some point')
+		iEET.optionsFrameEditbox:SetText('')
 	end)
 	iEET.optionsFrameEditbox:SetAutoFocus(false)
 	iEET.optionsFrameEditbox:SetWidth(620)
@@ -1435,7 +1447,13 @@ function iEET:CreateOptionsFrame()
 	iEET.optionsFrameSaveButton:Show()
 	iEET.optionsFrameSaveButton:RegisterForClicks('AnyUp')
 	iEET.optionsFrameSaveButton:SetScript('OnClick',function()
-		-- gather all data etc and hide window
+		--gather all data etc and hide window
+			--currently assumes that you want to filter by spellids
+			iEET:ClearFilteringArgs()
+			for i = 1, iEET.optionsFrameFilterTexts:GetNumMessages() do
+				table.insert(iEET.filtering.req, {['spellID'] = iEET.optionsFrameFilterTexts:GetMessageInfo(i)})
+			end
+		--
 		print('save & close')
 		iEET.optionsFrame:Hide()
 	end)
