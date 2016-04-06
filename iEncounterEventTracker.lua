@@ -27,7 +27,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }	
-iEET.version = 1.401
+iEET.version = 1.402
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -1741,6 +1741,8 @@ SLASH_IEET1 = "/ieet"
 SlashCmdList["IEET"] = function(msg)
 	if string.match(msg, 'copy') then
 		iEET:copyCurrent()
+	elseif string.match(msg, 'filters') then
+		iEET:Options()
 	elseif string.match(msg, 'import') then
 		if iEET_Data then
 			iEET:Toggle(true)
