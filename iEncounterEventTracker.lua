@@ -27,7 +27,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }	
-iEET.version = 1.332
+iEET.version = 1.4
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -121,13 +121,18 @@ function iEET:LoadDefaults()
 	iEETConfig.version = iEET.version
 	iEETConfig.autoSave = false
 	iEETConfig.autoDiscard = 30
-	iEETConfig.filtering = {} -- NEW, TESTING
+	iEETConfig.filtering = {
+		timeBasedFiltering = {},
+		req = {},
+		requireAll = false,
+		showTime = false, -- show time from nearest 'from' event instead of ENCOUNTER_START
+	}
 	print('iEET: loaded default settings.')
 end
 function addon:ADDON_LOADED(addonName)
 	if addonName == 'iEncounterEventTracker' then
 		iEETConfig = iEETConfig or {}
-		if not iEETConfig.version or not iEETConfig.tracking or iEETConfig.version <= 1.3 then -- Last version with db changes 
+		if not iEETConfig.version or not iEETConfig.tracking or iEETConfig.version <= 1.335 then -- Last version with db changes 
 			iEET:LoadDefaults()
 		else
 			iEETConfig.version = iEET.version
@@ -335,9 +340,9 @@ function iEET:ScrollDetails(delta)
 		end
 	end
 end
-function iEET:ShouldShow(eventData) -- NEW, TESTING
+function iEET:ShouldShow(eventData,e_time, msg) -- NEW, TESTING msg is a temporary fix
 	--[[
-	iEET.filtering = {
+	iEETConfig.filtering = {
 		timeBasedFiltering = {
 			[1] = {
 				from = { (or nil)
@@ -366,48 +371,102 @@ function iEET:ShouldShow(eventData) -- NEW, TESTING
 	
 	]]
 	local timeOK = true
-	if #iEET.filtering.timeBasedFiltering > 0 then
-		for i = 1, #iEET.filtering.req do -- loop trough every from/to combo
-			if iEET.filtering.timeBasedFiltering[i].from then
-				if iEET.filtering.timeBasedFiltering[i].from.timestamp and iEET.filtering.timeBasedFiltering[i].from.timestamp >= eventData.timestamp then
-					iEET.filtering.timeBasedFiltering[i].from.ok = true
-				elseif iEET.filtering.timeBasedFiltering[i].to.timestamp and iEET.filtering.timeBasedFiltering[i].to.timestamp > eventData.timestamp then
-					iEET.filtering.timeBasedFiltering[i].from.ok = false
+	if #iEETConfig.filtering.timeBasedFiltering > 0 then
+		for i = 1, #iEETConfig.filtering.timeBasedFiltering do -- loop trough every from/to combo
+			if iEETConfig.filtering.timeBasedFiltering[i].from then
+				iEETConfig.filtering.timeBasedFiltering[i].from.ok = false
+				if iEETConfig.filtering.timeBasedFiltering[i].from.timestamp then
+					if iEETConfig.filtering.timeBasedFiltering[i].from.timestamp <= eventData.timestamp-e_time then
+						iEETConfig.filtering.timeBasedFiltering[i].from.ok = true
+					end
 				else
 					for k,v in pairs(eventData) do
-						if iEET.filtering.timeBasedFiltering[i].from[k] and string.find(string.lower(v), iEET.filtering.timeBasedFiltering[i].from[k]) then
-							iEET.filtering.timeBasedFiltering[i].from.ok = true
-						elseif iEET.filtering.timeBasedFiltering[i].to[k] and string.find(string.lower(v), iEET.filtering.timeBasedFiltering[i].to[k]) then
-							iEET.filtering.timeBasedFiltering[i].from.ok = false
+						if iEETConfig.filtering.timeBasedFiltering[i].from[k] and string.find(string.lower(v), iEETConfig.filtering.timeBasedFiltering[i].from[k]) then
+							iEETConfig.filtering.timeBasedFiltering[i].from.ok = true
+						end
+					end
+				end
+			end
+			if iEETConfig.filtering.timeBasedFiltering[i].to then
+				iEETConfig.filtering.timeBasedFiltering[i].to.ok = false
+				if iEETConfig.filtering.timeBasedFiltering[i].to.timestamp then
+					if iEETConfig.filtering.timeBasedFiltering[i].to.timestamp <= eventData.timestamp-e_time then
+						iEETConfig.filtering.timeBasedFiltering[i].to.ok = true
+					end
+				else
+					for k,v in pairs(eventData) do
+						if iEETConfig.filtering.timeBasedFiltering[i].to[k] and string.find(string.lower(v), iEETConfig.filtering.timeBasedFiltering[i].to[k]) then
+							iEETConfig.filtering.timeBasedFiltering[i].to.ok = true
 						end
 					end
 				end
 			end
 		end
 		local found = 0
-		for i = 1, #iEET.filtering.timeBasedFiltering do
-			if iEET.filtering.timeBasedFiltering[i].ok then
+		for i = 1, #iEETConfig.filtering.timeBasedFiltering do
+			local ok = true
+			if iEETConfig.filtering.timeBasedFiltering[i].from and not iEETConfig.filtering.timeBasedFiltering[i].from.ok then
+				ok = false
+			end
+			if iEETConfig.filtering.timeBasedFiltering[i].to and not iEETConfig.filtering.timeBasedFiltering[i].to.ok then
+				ok = false
+			end
+			if ok then
 				found = found + 1
 			end
 		end
-		if (iEET.filtering.requireAll and found == #iEET.filtering.timeBasedFiltering) or (found > 0 and not iEET.filtering.requireAll) then
+		if (iEETConfig.filtering.requireAll and found == #iEETConfig.filtering.timeBasedFiltering) or (found > 0 and not iEETConfig.filtering.requireAll) then
 			timeOK = true
 		else
 			timeOK = false
 		end
 	end
 	if timeOK then
-		if #iEET.filtering.req > 0 then
+		if #iEETConfig.filtering.req > 0 or msg then
 			for k,v in pairs(eventData) do -- loop trough current event
-				for requiredData, requiredValue in pairs(iEET.filtering.req) do -- try to find right values
-					if (requiredData and string.find(string.lower(v), requiredData)) or tonumber(k) and string.find(string.lower(v), requiredData) then
-						return true -- found right value
+				for _,t in ipairs(iEETConfig.filtering.req) do
+					for requiredKey, requiredValue in pairs(t) do -- try to find right values
+						if (k == requiredKey and v == requiredValue) then
+							return true -- found right value
+						end
 					end
+
+				end
+				if msg and string.find(string.lower(v), msg) then
+					return true
 				end
 			end
 			return false -- found nothing
 		end
 		return true -- nothing to find
+	end
+end
+function iEET:shouldIgnore(t)
+	if t.event == 'ENCOUNTER_START' or t.event == 'ENCOUNTER_END' then
+		return false
+	elseif t.spellID and iEET.ignoring[t.spellID] then
+		return true
+	elseif not iEETConfig.tracking[t.event] then
+		return true 
+	elseif iEET.ignoring[t.casterName] then
+		return true
+	elseif t.event == 'USC_SUCCEEDED' then
+		if string.find(t.targetName, 'nameplate') then
+			t.targetName = 'nameplates'
+		end
+		if iEET.ignoring[t.targetName] then
+		return true
+		end
+	else
+		return false
+	end
+end
+function iEET:FillFilters()
+	iEET.optionsFrameFilterTexts:Clear()
+	for _,t in pairs(iEETConfig.filtering.req) do
+		for k,v in pairs(t) do
+			iEET:AddNewFiltering(k .. '=' .. v)
+		end
 	end
 end
 function iEET:addSpellDetails(hyperlink, linkData)
@@ -568,26 +627,6 @@ function iEET:addMessages(placeToAdd, frameID, value, color)
 	end
 	frame:AddMessage(value and value or ' ', unpack(color))
 end
-function iEET:shouldIgnore(t)
-	if t.event == 'ENCOUNTER_START' or t.event == 'ENCOUNTER_END' then
-		return false
-	elseif t.spellID and iEET.ignoring[t.spellID] then
-		return true
-	elseif not iEETConfig.tracking[t.event] then
-		return true 
-	elseif iEET.ignoring[t.casterName] then
-		return true
-	elseif t.event == 'USC_SUCCEEDED' then
-		if string.find(t.targetName, 'nameplate') then
-			t.targetName = 'nameplates'
-		end
-		if iEET.ignoring[t.targetName] then
-		return true
-		end
-	else
-		return false
-	end
-end
 function iEET:loopData(msg)
 	local starttime = 0
 	local intervalls = {}
@@ -598,21 +637,6 @@ function iEET:loopData(msg)
 	end
 	iEET.encounterAbilitiesContent:Clear()
 	local from, to = false, false
-	--time-filtering---------
-	if msg then
-		if string.match(msg, '^from:(%d-) to:(%d+)') then
-			from, to = string.match(msg, '^from:(%d-) to:(%d+)')
-			from = tonumber(from)
-			to = tonumber(to)
-		elseif string.match(msg, '^from:(%d+)') then
-			from = string.match(msg, '^from:(%d+)')
-			from = tonumber(from)
-		elseif string.match(msg, '^to:(%d+)') then
-			to = string.match(msg, '^to:(%d+)')
-			to = tonumber(to)
-		end
-	end
-	--end-of-time-filtering--
 	iEET.collector = {
 		['encounterNPCs'] = {},
 		['encounterSpells'] = {},
@@ -641,80 +665,78 @@ function iEET:loopData(msg)
 			end
 		end
 		if not iEET:shouldIgnore(v) then --temp function, only for the npc ignore list
-			if msg then
-				local found = false
-				--if ShouldShow(v) then -- NEW, TESTING
-				if not from and not to then
-					for k,v in pairs(v) do
-						if string.find(string.lower(v), string.lower(msg)) then found = true end
+			if iEET:ShouldShow(v,starttime, msg) then -- NEW, TESTING, should move @ if not iEET:shouldIgnore(v) then when its done
+				--[[
+				if msg then
+						for k,v in pairs(v) do
+							if string.find(string.lower(v), string.lower(msg)) then found = true end
+						end
 					end
 				end
-				if found or from or to then
-					if v.event == 'ENCOUNTER_START' then starttime = v.timestamp end
-					local intervall = nil
-					local timestamp = v.timestamp-starttime or nil
-					--time-filtering---------
-					if from and timestamp and timestamp < from or to and timestamp and timestamp > to then else
-					--end-of-time-filtering--
-						local casterName = v.casterName or nil
-						local targetName = v.targetName or nil
-						local spellName = v.spellName or nil
-						local spellID = v.spellID or nil
-						local event = v.event
-						local count = nil
-						local sourceGUID = v.sourceGUID or nil
-						local hp = v.hp or nil
-						
-						--if casterName then
-						if sourceGUID then
-							if intervalls[sourceGUID] then
-								if intervalls[sourceGUID][event] then
-									if intervalls[sourceGUID][event][spellID] then
-										intervall = timestamp - intervalls[sourceGUID][event][spellID]
-										intervalls[sourceGUID][event][spellID] = timestamp
-									else
-										intervalls[sourceGUID][event][spellID] = timestamp
-									end
-								else
-									intervalls[sourceGUID][event] = {
-											[spellID] = timestamp,
-									};
-								end
+				--]]
+				local intervall = nil
+				local timestamp = v.timestamp-starttime or nil
+				--[[
+				--time-filtering---------
+				if from and timestamp and timestamp < from or to and timestamp and timestamp > to then else
+				--end-of-time-filtering--
+				--]]
+				local casterName = v.casterName or nil
+				local targetName = v.targetName or nil
+				local spellName = v.spellName or nil
+				local spellID = v.spellID or nil
+				local event = v.event
+				local count = nil
+				local sourceGUID = v.sourceGUID or nil
+				local hp = v.hp or nil
+				if sourceGUID then
+					if intervalls[sourceGUID] then
+						if intervalls[sourceGUID][event] then
+							if intervalls[sourceGUID][event][spellID] then
+								intervall = timestamp - intervalls[sourceGUID][event][spellID]
+								intervalls[sourceGUID][event][spellID] = timestamp
 							else
-								intervalls[sourceGUID] = {
-									[event] = {
-										[spellID] = timestamp,
-									};
-								};
+								intervalls[sourceGUID][event][spellID] = timestamp
 							end
-							if counts[sourceGUID] then
-								if counts[sourceGUID][event] then
-									if counts[sourceGUID][event][spellID] then
-										counts[sourceGUID][event][spellID] = counts[sourceGUID][event][spellID] + 1
-										count = counts[sourceGUID][event][spellID]
-									else
-										counts[sourceGUID][event][spellID] = 1
-										count = 1
-									end
-								else
-									counts[sourceGUID][event] = {
-										[spellID] = 1,
-									}
-								end
+						else
+							intervalls[sourceGUID][event] = {
+									[spellID] = timestamp,
+							};
+						end
+					else
+						intervalls[sourceGUID] = {
+							[event] = {
+								[spellID] = timestamp,
+							};
+						};
+					end
+					if counts[sourceGUID] then
+						if counts[sourceGUID][event] then
+							if counts[sourceGUID][event][spellID] then
+								counts[sourceGUID][event][spellID] = counts[sourceGUID][event][spellID] + 1
+								count = counts[sourceGUID][event][spellID]
 							else
-								counts[sourceGUID] = {
-									[event] = {
-										[spellID] = 1,
-									};
-								};
+								counts[sourceGUID][event][spellID] = 1
 								count = 1
 							end
+						else
+							counts[sourceGUID][event] = {
+								[spellID] = 1,
+							}
 						end
-						if iEETConfig.tracking[event] or event == 'ENCOUNTER_START' or event == 'ENCOUNTER_END' then			
-							iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID, intervall,count, sourceGUID,hp)
-						end
+					else
+						counts[sourceGUID] = {
+							[event] = {
+								[spellID] = 1,
+							};
+						};
+						count = 1
 					end
 				end
+				if iEETConfig.tracking[event] or event == 'ENCOUNTER_START' or event == 'ENCOUNTER_END' then			
+						iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID, intervall,count, sourceGUID,hp)
+					end
+			--[[
 			else
 				if v.event == 'ENCOUNTER_START' then starttime = v.timestamp end
 				local intervall = false
@@ -775,6 +797,7 @@ function iEET:loopData(msg)
 				if iEETConfig.tracking[event] or event == 'ENCOUNTER_START' or event == 'ENCOUNTER_END' then
 					iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID, intervall,count, sourceGUID,hp)
 				end
+				--]]
 			end
 		end
 	end
@@ -794,7 +817,7 @@ function iEET:AddNewFiltering(txt)
 	--iEET:addNewFilterToOptionsWindow(arg)
 end
 function iEET:ClearFilteringArgs()
-	iEET.filtering = {
+	iEETConfig.filtering = {
 		timeBasedFiltering = {},
 		req = {},
 		requireAll = false,
@@ -1288,11 +1311,25 @@ function iEET:CreateMainFrame()
 	iEET.editbox:SetBackdropBorderColor(0,0,0,1)
 	iEET.editbox:SetScript('OnEnterPressed', function()
 		iEET.editbox:ClearFocus()
+		local msg
 		if iEET.editbox:GetText() ~= 'Search' then
-			iEET:loopData(iEET.editbox:GetText())
-		else
-			iEET:loopData()
+			local txt = iEET.editbox:GetText()
+			iEETConfig.filtering.timeBasedFiltering = {}
+			local from, to
+			if string.match(txt, '^from:(%d-) to:(%d+)') then
+				from, to = string.match(txt, '^from:(%d-) to:(%d+)')
+				table.insert(iEETConfig.filtering.timeBasedFiltering, {['from'] = {['timestamp'] = tonumber(from)}, ['to'] = {['timestamp'] = tonumber(to)}})
+			elseif string.match(txt, '^from:(%d+)') then
+				from = string.match(txt, '^from:(%d+)')
+				table.insert(iEETConfig.filtering.timeBasedFiltering, {['from'] = {['timestamp'] = tonumber(from)}})
+			elseif string.match(txt, '^to:(%d+)') then
+				to = string.match(txt, '^to:(%d+)')
+				table.insert(iEETConfig.filtering.timeBasedFiltering, {['to'] = {['timestamp'] = tonumber(to)}})
+			elseif string.len(txt) > 1 then
+				msg = string.lower(txt)
+			end
 		end
+		iEET:loopData(msg)
 	end)
 	iEET.editbox:SetAutoFocus(false)
 	iEET.editbox:SetWidth(300)
@@ -1419,8 +1456,29 @@ function iEET:CreateOptionsFrame()
 	iEET.optionsFrameEditbox:SetBackdropBorderColor(0,0,0,1)
 	iEET.optionsFrameEditbox:SetScript('OnEnterPressed', function()
 		--do something
-		iEET:AddNewFiltering(iEET.optionsFrameEditbox:GetText())
-		iEET.optionsFrameEditbox:SetText('')
+		local txt = iEET.optionsFrameEditbox:GetText()
+		if string.match(txt, 'del:(%d+)') then
+			local toDelete = tonumber(string.match(txt, 'del:(%d+)'))
+			print(toDelete)
+			local t = {}
+			for i = 1, iEET.optionsFrameFilterTexts:GetNumMessages() do
+				if not (i == toDelete) then
+					local line = iEET.optionsFrameFilterTexts:GetMessageInfo(i)
+					table.insert(t,line)
+				end
+			end
+			iEET.optionsFrameFilterTexts:Clear()
+			for _,v in ipairs(t) do
+				iEET:AddNewFiltering(v)
+			end
+		elseif string.lower(txt) == 'clear' then
+			iEET.optionsFrameFilterTexts:Clear()
+		elseif string.match(txt, '^(%a-)=(%d+)') or string.match(txt, '^(%a-)=(%a+)') or tonumber(txt) then
+			iEET:AddNewFiltering(iEET.optionsFrameEditbox:GetText())
+			iEET.optionsFrameEditbox:SetText('')
+		else
+			print('iEET: error, invalid filter')
+		end
 	end)
 	iEET.optionsFrameEditbox:SetAutoFocus(false)
 	iEET.optionsFrameEditbox:SetWidth(620)
@@ -1451,9 +1509,19 @@ function iEET:CreateOptionsFrame()
 			--currently assumes that you want to filter by spellids
 			iEET:ClearFilteringArgs()
 			for i = 1, iEET.optionsFrameFilterTexts:GetNumMessages() do
-				table.insert(iEET.filtering.req, {['spellID'] = iEET.optionsFrameFilterTexts:GetMessageInfo(i)})
+				local line = iEET.optionsFrameFilterTexts:GetMessageInfo(i)
+				local k,v
+				if string.match(line, '^(%a-)=(%d+)') then
+					k,v = string.match(line, '^(%a-)=(%d+)')
+					table.insert(iEETConfig.filtering.req, {['spellID'] = tonumber(v)})
+				elseif string.match(line, '^(%a-)=(%a+)') then
+					k,v = strsplit('=', line)
+					table.insert(iEETConfig.filtering.req, {[k] = v})
+				elseif tonumber(line) then
+					table.insert(iEETConfig.filtering.req, {['spellID'] = tonumber(line)})
+				end
 			end
-		--
+			iEET:loopData()
 		print('save & close')
 		iEET.optionsFrame:Hide()
 	end)
@@ -1473,9 +1541,10 @@ function iEET:CreateOptionsFrame()
 	iEET.optionsFrameCancelButton:SetScript('OnClick',function()
 		-- clear unsaved args & close
 		print('cancel & close')
+		iEET.optionsFrameEditbox:SetText('')
 		iEET.optionsFrame:Hide()
 	end)
-
+	iEET:FillFilters()
 end
 function iEET:Options()
 	if iEET.optionsFrame then
@@ -1483,6 +1552,7 @@ function iEET:Options()
 			iEET.optionsFrame:Hide()
 		else
 			iEET.optionsFrame:Show()
+			iEET:FillFilters()
 		end
 	else
 		iEET:CreateOptionsFrame()
