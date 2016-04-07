@@ -27,7 +27,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }	
-iEET.version = 1.402
+iEET.version = 1.403
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -294,6 +294,9 @@ function iEET:getColor(event, sourceGUID, spellID)
 		return {0,0,0}
 	end
 end
+function iEET:print(msg)
+	print('iEET: ', msg)
+end
 function iEET:ScrollContent(delta)
 	if delta == -1 then
 		for i = 1, 8 do
@@ -370,95 +373,94 @@ function iEET:ShouldShow(eventData,e_time, msg) -- NEW, TESTING msg is a tempora
 	
 	
 	]]
+	local shouldShow = true
+--	if eventData.event == 'ENCOUNTER_START' or eventData.event == 'ENCOUNTER_END' then
+--		shouldIgnore = false
+	if eventData.spellID and iEET.ignoring[eventData.spellID] then
+		shouldShow = false
+	elseif not iEETConfig.tracking[eventData.event] then
+		shouldShow = false
+	elseif iEET.ignoring[eventData.casterName] then
+		shouldShow = false
+	elseif eventData.event == 'USC_SUCCEEDED' then
+		if string.find(eventData.targetName, 'nameplate') then
+			eventData.targetName = 'nameplates'
+		end
+		if iEET.ignoring[eventData.targetName] then
+			shouldShow = false
+		end
+	end
 	local timeOK = true
-	if #iEETConfig.filtering.timeBasedFiltering > 0 then
-		for i = 1, #iEETConfig.filtering.timeBasedFiltering do -- loop trough every from/to combo
-			if iEETConfig.filtering.timeBasedFiltering[i].from then
-				iEETConfig.filtering.timeBasedFiltering[i].from.ok = false
-				if iEETConfig.filtering.timeBasedFiltering[i].from.timestamp then
-					if iEETConfig.filtering.timeBasedFiltering[i].from.timestamp <= eventData.timestamp-e_time then
-						iEETConfig.filtering.timeBasedFiltering[i].from.ok = true
-					end
-				else
-					for k,v in pairs(eventData) do
-						if iEETConfig.filtering.timeBasedFiltering[i].from[k] and string.find(string.lower(v), iEETConfig.filtering.timeBasedFiltering[i].from[k]) then
+	if shouldShow then
+		if #iEETConfig.filtering.timeBasedFiltering > 0 then
+			for i = 1, #iEETConfig.filtering.timeBasedFiltering do -- loop trough every from/to combo
+				if iEETConfig.filtering.timeBasedFiltering[i].from then
+					iEETConfig.filtering.timeBasedFiltering[i].from.ok = false
+					if iEETConfig.filtering.timeBasedFiltering[i].from.timestamp then
+						if iEETConfig.filtering.timeBasedFiltering[i].from.timestamp <= eventData.timestamp-e_time then
 							iEETConfig.filtering.timeBasedFiltering[i].from.ok = true
 						end
+					else
+						for k,v in pairs(eventData) do
+							if iEETConfig.filtering.timeBasedFiltering[i].from[k] and string.find(string.lower(v), iEETConfig.filtering.timeBasedFiltering[i].from[k]) then
+								iEETConfig.filtering.timeBasedFiltering[i].from.ok = true
+							end
+						end
 					end
 				end
-			end
-			if iEETConfig.filtering.timeBasedFiltering[i].to then
-				iEETConfig.filtering.timeBasedFiltering[i].to.ok = false
-				if iEETConfig.filtering.timeBasedFiltering[i].to.timestamp then
-					if iEETConfig.filtering.timeBasedFiltering[i].to.timestamp <= eventData.timestamp-e_time then
-						iEETConfig.filtering.timeBasedFiltering[i].to.ok = true
-					end
-				else
-					for k,v in pairs(eventData) do
-						if iEETConfig.filtering.timeBasedFiltering[i].to[k] and string.find(string.lower(v), iEETConfig.filtering.timeBasedFiltering[i].to[k]) then
+				if iEETConfig.filtering.timeBasedFiltering[i].to then
+					iEETConfig.filtering.timeBasedFiltering[i].to.ok = false
+					if iEETConfig.filtering.timeBasedFiltering[i].to.timestamp then
+						if iEETConfig.filtering.timeBasedFiltering[i].to.timestamp <= eventData.timestamp-e_time then
 							iEETConfig.filtering.timeBasedFiltering[i].to.ok = true
 						end
-					end
-				end
-			end
-		end
-		local found = 0
-		for i = 1, #iEETConfig.filtering.timeBasedFiltering do
-			local ok = true
-			if iEETConfig.filtering.timeBasedFiltering[i].from and not iEETConfig.filtering.timeBasedFiltering[i].from.ok then
-				ok = false
-			end
-			if iEETConfig.filtering.timeBasedFiltering[i].to and not iEETConfig.filtering.timeBasedFiltering[i].to.ok then
-				ok = false
-			end
-			if ok then
-				found = found + 1
-			end
-		end
-		if (iEETConfig.filtering.requireAll and found == #iEETConfig.filtering.timeBasedFiltering) or (found > 0 and not iEETConfig.filtering.requireAll) then
-			timeOK = true
-		else
-			timeOK = false
-		end
-	end
-	if timeOK then
-		if #iEETConfig.filtering.req > 0 or msg then
-			for k,v in pairs(eventData) do -- loop trough current event
-				for _,t in ipairs(iEETConfig.filtering.req) do
-					for requiredKey, requiredValue in pairs(t) do -- try to find right values
-						if (k == requiredKey and v == requiredValue) then
-							return true -- found right value
+					else
+						for k,v in pairs(eventData) do
+							if iEETConfig.filtering.timeBasedFiltering[i].to[k] and string.find(string.lower(v), iEETConfig.filtering.timeBasedFiltering[i].to[k]) then
+								iEETConfig.filtering.timeBasedFiltering[i].to.ok = true
+							end
 						end
 					end
-
-				end
-				if msg and string.find(string.lower(v), msg) then
-					return true
 				end
 			end
-			return false -- found nothing
+			local found = 0
+			for i = 1, #iEETConfig.filtering.timeBasedFiltering do
+				local ok = true
+				if iEETConfig.filtering.timeBasedFiltering[i].from and not iEETConfig.filtering.timeBasedFiltering[i].from.ok then
+					ok = false
+				end
+				if iEETConfig.filtering.timeBasedFiltering[i].to and not iEETConfig.filtering.timeBasedFiltering[i].to.ok then
+					ok = false
+				end
+				if ok then
+					found = found + 1
+				end
+			end
+			if (iEETConfig.filtering.requireAll and found == #iEETConfig.filtering.timeBasedFiltering) or (found > 0 and not iEETConfig.filtering.requireAll) then
+				timeOK = true
+			else
+				timeOK = false
+			end
 		end
-		return true -- nothing to find
-	end
-end
-function iEET:shouldIgnore(t)
-	if t.event == 'ENCOUNTER_START' or t.event == 'ENCOUNTER_END' then
-		return false
-	elseif t.spellID and iEET.ignoring[t.spellID] then
-		return true
-	elseif not iEETConfig.tracking[t.event] then
-		return true 
-	elseif iEET.ignoring[t.casterName] then
-		return true
-	elseif t.event == 'USC_SUCCEEDED' then
-		if string.find(t.targetName, 'nameplate') then
-			t.targetName = 'nameplates'
+		if timeOK then
+			if #iEETConfig.filtering.req > 0 or msg then
+				for k,v in pairs(eventData) do -- loop trough current event
+					for _,t in ipairs(iEETConfig.filtering.req) do
+						for requiredKey, requiredValue in pairs(t) do -- try to find right values
+							if (k == requiredKey and v == requiredValue) then
+								return true -- found right value
+							end
+						end
+
+					end
+					if msg and string.find(string.lower(v), msg) then
+						return true
+					end
+				end
+				return false -- found nothing
+			end
+			return true -- nothing to find
 		end
-		if iEET.ignoring[t.targetName] then
-		return true
-		end
-	else
-		return false
 	end
 end
 function iEET:FillFilters()
@@ -628,6 +630,7 @@ function iEET:addMessages(placeToAdd, frameID, value, color)
 	frame:AddMessage(value and value or ' ', unpack(color))
 end
 function iEET:loopData(msg)
+	iEET.frame:Hide()
 	local starttime = 0
 	local intervalls = {}
 	local counts = {}
@@ -664,143 +667,67 @@ function iEET:loopData(msg)
 				iEET.collector.encounterNPCs[v.targetName] = true
 			end
 		end
-		if not iEET:shouldIgnore(v) then --temp function, only for the npc ignore list
-			if iEET:ShouldShow(v,starttime, msg) then -- NEW, TESTING, should move @ if not iEET:shouldIgnore(v) then when its done
-				--[[
-				if msg then
-						for k,v in pairs(v) do
-							if string.find(string.lower(v), string.lower(msg)) then found = true end
-						end
-					end
-				end
-				--]]
-				local intervall = nil
-				local timestamp = v.timestamp-starttime or nil
-				--[[
-				--time-filtering---------
-				if from and timestamp and timestamp < from or to and timestamp and timestamp > to then else
-				--end-of-time-filtering--
-				--]]
-				local casterName = v.casterName or nil
-				local targetName = v.targetName or nil
-				local spellName = v.spellName or nil
-				local spellID = v.spellID or nil
-				local event = v.event
-				local count = nil
-				local sourceGUID = v.sourceGUID or nil
-				local hp = v.hp or nil
-				if sourceGUID then
-					if intervalls[sourceGUID] then
-						if intervalls[sourceGUID][event] then
-							if intervalls[sourceGUID][event][spellID] then
-								intervall = timestamp - intervalls[sourceGUID][event][spellID]
-								intervalls[sourceGUID][event][spellID] = timestamp
-							else
-								intervalls[sourceGUID][event][spellID] = timestamp
-							end
+		if iEET:ShouldShow(v,starttime, msg) then -- NEW, TESTING
+			local intervall = nil
+			local timestamp = v.timestamp-starttime or nil
+			local casterName = v.casterName or nil
+			local targetName = v.targetName or nil
+			local spellName = v.spellName or nil
+			local spellID = v.spellID or nil
+			local event = v.event
+			local count = nil
+			local sourceGUID = v.sourceGUID or nil
+			local hp = v.hp or nil
+			if sourceGUID then
+				if intervalls[sourceGUID] then
+					if intervalls[sourceGUID][event] then
+						if intervalls[sourceGUID][event][spellID] then
+							intervall = timestamp - intervalls[sourceGUID][event][spellID]
+							intervalls[sourceGUID][event][spellID] = timestamp
 						else
-							intervalls[sourceGUID][event] = {
-									[spellID] = timestamp,
-							};
+							intervalls[sourceGUID][event][spellID] = timestamp
 						end
 					else
-						intervalls[sourceGUID] = {
-							[event] = {
+						intervalls[sourceGUID][event] = {
 								[spellID] = timestamp,
-							};
 						};
 					end
-					if counts[sourceGUID] then
-						if counts[sourceGUID][event] then
-							if counts[sourceGUID][event][spellID] then
-								counts[sourceGUID][event][spellID] = counts[sourceGUID][event][spellID] + 1
-								count = counts[sourceGUID][event][spellID]
-							else
-								counts[sourceGUID][event][spellID] = 1
-								count = 1
-							end
-						else
-							counts[sourceGUID][event] = {
-								[spellID] = 1,
-							}
-						end
-					else
-						counts[sourceGUID] = {
-							[event] = {
-								[spellID] = 1,
-							};
+				else
+					intervalls[sourceGUID] = {
+						[event] = {
+							[spellID] = timestamp,
 						};
-						count = 1
-					end
+					};
 				end
-				if iEETConfig.tracking[event] or event == 'ENCOUNTER_START' or event == 'ENCOUNTER_END' then			
-						iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID, intervall,count, sourceGUID,hp)
-					end
-			--[[
-			else
-				if v.event == 'ENCOUNTER_START' then starttime = v.timestamp end
-				local intervall = false
-				local timestamp = v.timestamp-starttime or nil
-				local casterName = v.casterName or nil
-				local targetName = v.targetName or nil
-				local spellName = v.spellName or nil
-				local spellID = v.spellID or nil
-				local event = v.event
-				local count = nil
-				local sourceGUID = v.sourceGUID or nil
-				local hp = v.hp or nil
-				
-				if sourceGUID then
-					if intervalls[sourceGUID] then
-						if intervalls[sourceGUID][event] then
-							if intervalls[sourceGUID][event][spellID] then
-								intervall = timestamp - intervalls[sourceGUID][event][spellID]
-								intervalls[sourceGUID][event][spellID] = timestamp
-							else
-								intervalls[sourceGUID][event][spellID] = timestamp
-							end
+				if counts[sourceGUID] then
+					if counts[sourceGUID][event] then
+						if counts[sourceGUID][event][spellID] then
+							counts[sourceGUID][event][spellID] = counts[sourceGUID][event][spellID] + 1
+							count = counts[sourceGUID][event][spellID]
 						else
-							intervalls[sourceGUID][event] = {
-									[spellID] = timestamp,
-							};
+							counts[sourceGUID][event][spellID] = 1
+							count = 1
 						end
 					else
-						intervalls[sourceGUID] = {
-							[event] = {
-								[spellID] = timestamp,
-							};
-						};
+						counts[sourceGUID][event] = {
+							[spellID] = 1,
+						}
 					end
-					if counts[sourceGUID] then
-						if counts[sourceGUID][event] then
-							if counts[sourceGUID][event][spellID] then
-								counts[sourceGUID][event][spellID] = counts[sourceGUID][event][spellID] + 1
-								count = counts[sourceGUID][event][spellID]
-							else
-								counts[sourceGUID][event][spellID] = 1
-								count = 1
-							end
-						else
-							counts[sourceGUID][event] = {
-								[spellID] = 1,
-							}
-						end
-					else
-						counts[sourceGUID] = {
-							[event] = {
-								[spellID] = 1,
-							};
+				else
+					counts[sourceGUID] = {
+						[event] = {
+							[spellID] = 1,
 						};
-						count = 1
-					end
+					};
+					count = 1
 				end
-				if iEETConfig.tracking[event] or event == 'ENCOUNTER_START' or event == 'ENCOUNTER_END' then
+			end
+			if iEETConfig.tracking[event] or event == 'ENCOUNTER_START' or event == 'ENCOUNTER_END' then			
 					iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID, intervall,count, sourceGUID,hp)
-				end
-				--]]
 			end
 		end
 	end
+	iEET.frame:Show()
 end
 function iEET:AddNewFiltering(txt)
 	--print(text) -- Debug
@@ -993,7 +920,8 @@ function iEET:CreateMainFrame()
 	iEET.frame:SetScript('OnMouseUp', function(self, button)
 		iEET.frame:StopMovingOrSizing()
 	end)
-	iEET.frame:SetScript('OnShow', function() iEET:loopData() end)
+	iEET.frame:SetScript('OnShow', function() --iEET:loopData() 
+	end)
 	iEET.frame:Show()
 	iEET.frame:SetFrameStrata('HIGH')
 	iEET.frame:SetFrameLevel(1)
@@ -1459,7 +1387,7 @@ function iEET:CreateOptionsFrame()
 		local txt = iEET.optionsFrameEditbox:GetText()
 		if string.match(txt, 'del:(%d+)') then
 			local toDelete = tonumber(string.match(txt, 'del:(%d+)'))
-			print(toDelete)
+			iEET:print(toDelete)
 			local t = {}
 			for i = 1, iEET.optionsFrameFilterTexts:GetNumMessages() do
 				if not (i == toDelete) then
@@ -1477,7 +1405,7 @@ function iEET:CreateOptionsFrame()
 			iEET:AddNewFiltering(iEET.optionsFrameEditbox:GetText())
 			iEET.optionsFrameEditbox:SetText('')
 		else
-			print('iEET: error, invalid filter')
+			iEET:print('error, invalid filter')
 		end
 	end)
 	iEET.optionsFrameEditbox:SetAutoFocus(false)
@@ -1522,7 +1450,7 @@ function iEET:CreateOptionsFrame()
 				end
 			end
 			iEET:loopData()
-		print('save & close')
+		iEET:print('save & close')
 		iEET.optionsFrame:Hide()
 	end)
 	-- Cancel button
@@ -1540,7 +1468,7 @@ function iEET:CreateOptionsFrame()
 	iEET.optionsFrameCancelButton:RegisterForClicks('AnyUp')
 	iEET.optionsFrameCancelButton:SetScript('OnClick',function()
 		-- clear unsaved args & close
-		print('cancel & close')
+		iEET:print('cancel & close')
 		iEET.optionsFrameEditbox:SetText('')
 		iEET.optionsFrame:Hide()
 	end)
@@ -1625,39 +1553,12 @@ function iEET:copyCurrent()
 	iEET:toggleCopyFrame(true)
 	iEET.copyFrame:SetText(totalData)
 end
---[[ OLD
 function iEET:ExportData(auto)
-	if auto and InCombatLockdown() then
-		C_Timer.After(3, 
-		function() 
-			iEET:ExportData(true)
-		end)
-		return
-	end
-	local str = '|E|' .. (iEET.encounterInfo and iEET.encounterInfo or 'Unknown') .. '|E|'
-	for k,v in ipairs(iEET.data) do
-		local t = ''
-		for a,b in pairs(v) do
-			t = t .. '{' .. a .. '=' .. b .. '}'
-		end
-		str = str .. '|D|' .. t .. '|D|'
-		
-	end
-	if not iEET_Data then
-		iEET_Data = {}
-	end
-	table.insert(iEET_Data, str)
-	print((iEET.encounterInfo and iEET.encounterInfo or 'Unknown').." exported."..(auto and '(autosave)' or ''))
-	--iEET.InputBox:SetText(str)
-	--iEET.InputBox:Show()
-end
---]]
-function iEET:ExportData(auto) -- NEW, TESTING
 	if auto then
 		local m,s = string.match(iEET.encounterInfoData.fightTime, '(%d):(%d)')
 		--print(iEET.encounterInfoData.fightTime)
 		if m*60+s < iEETConfig.autoDiscard then
-			print('discarded', m*60+s)
+			iEET:print('discarded', m*60+s)
 			return
 		end
 		if InCombatLockdown() then
@@ -1686,31 +1587,11 @@ function iEET:ExportData(auto) -- NEW, TESTING
 	end
 	--table.insert(iEET_Data, str)
 	iEET_Data[encounterString] = dataString
-	print((iEET.encounterInfoData.encounterName and iEET.encounterInfoData.encounterName or 'Unknown').." exported."..(auto and ' (autosave)' or ''))
+	iEET:print((iEET.encounterInfoData.encounterName and iEET.encounterInfoData.encounterName or 'Unknown').." exported."..(auto and ' (autosave)' or ''))
 	--iEET.InputBox:SetText(str)
 	--iEET.InputBox:Show()
 end
---[[ OLD
-function iEET:ImportData(msg)
-	iEET.data = {}
-	iEET.encounterInfo = string.match(msg, '^|E|(.-)|E|')
-	for v in string.gmatch(msg, 'D|(.-)|D') do
-		local t = {}
-		for dataKey,dataValue in string.gmatch(v, '{(.-)=(.-)}') do
-			if dataKey == 'spellID' or dataKey == 'timestamp' then
-				if tonumber(dataValue) then
-					dataValue = tonumber(dataValue)
-				end
-			end
-			t[dataKey] = dataValue
-		end
-		table.insert(iEET.data, t)
-	end
-	iEET:loopData()
-	print('iEET: Imported ' .. iEET.encounterInfo .. '.')
-end
---]]
-function iEET:ImportData(dataKey) -- NEW, TESTING
+function iEET:ImportData(dataKey)
 	iEET.data = {}
 	iEET.encounterInfoData = {}
 	for eK,eV in string.gmatch(dataKey, '{(.-)=(.-)}') do
@@ -1735,7 +1616,7 @@ function iEET:ImportData(dataKey) -- NEW, TESTING
 	end
 	iEET:loopData()
 	local s = 
-	print(string.format('iEET: Imported %s on %s (%s), %sman (%s), Time: %s.',iEET.encounterInfoData.encounterName,GetDifficultyInfo(iEET.encounterInfoData.difficulty),iEET.encounterInfoData.fightTime, iEET.encounterInfoData.raidSize, (iEET.encounterInfoData.kill == 1 and 'kill' or 'wipe'), iEET.encounterInfoData.pullTime))
+	iEET:print(string.format('Imported %s on %s (%s), %sman (%s), Time: %s.',iEET.encounterInfoData.encounterName,GetDifficultyInfo(iEET.encounterInfoData.difficulty),iEET.encounterInfoData.fightTime, iEET.encounterInfoData.raidSize, (iEET.encounterInfoData.kill == 1 and 'kill' or 'wipe'), iEET.encounterInfoData.pullTime))
 end
 SLASH_IEET1 = "/ieet"
 SlashCmdList["IEET"] = function(msg)
@@ -1750,33 +1631,33 @@ SlashCmdList["IEET"] = function(msg)
 			if iEET_Data[id] then
 				iEET:ImportData(id)
 			else
-				print('iEET: key [' .. id .. '] not found')
+				iEET:print('key [' .. id .. '] not found')
 			end
 		else
-			print('iEET: No data to import.')
+			iEET:print('No data to import.')
 		end
 	elseif string.match(msg, 'clear') then
 		iEET_Data = nil
 		iEET_Data = {}
-		print('iEET_Data wiped.')
+		iEET:print('iEET_Data wiped.')
 	elseif string.match(msg, 'autosave') then
 		if iEETConfig.autoSave then
 			iEETConfig.autoSave = false
-			print('iEET: Automatic saving after ENCOUNTER_END off.')
+			iEET:print('Automatic saving after ENCOUNTER_END off.')
 		else
 			iEETConfig.autoSave = true
-			print('iEET: Automatic saving after ENCOUNTER_END on.')
+			iEET:print('Automatic saving after ENCOUNTER_END on.')
 		end
 	elseif string.match(msg, 'autodiscard') then
 		local timer = string.match(msg, 'autodiscard (%d+)')
 		if timer then
-			print('iEET: Auto discard timer changed from ' .. iEETConfig.autoDiscard .. ' to ' .. timer .. '.')
+			iEET:print('Auto discard timer changed from ' .. iEETConfig.autoDiscard .. ' to ' .. timer .. '.')
 			iEETConfig.autoDiscard = tonumber(timer)
 		else
-			print('iEET: Invalid number')
+			iEET:print('Invalid number')
 		end
 	elseif string.match(msg, 'help') then
-		print('iEET: /ieet autosave to toggle autosaving\r/ieet autodiscard X to change auto discard timer\r/ieet clear to delete every fight entry')
+		iEET:print('/ieet autosave to toggle autosaving\r/ieet autodiscard X to change auto discard timer\r/ieet clear to delete every fight entry')
 	else
 		iEET:Toggle()
 	end
