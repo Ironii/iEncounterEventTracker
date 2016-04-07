@@ -27,7 +27,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }	
-iEET.version = 1.403
+iEET.version = 1.404
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -920,7 +920,12 @@ function iEET:CreateMainFrame()
 	iEET.frame:SetScript('OnMouseUp', function(self, button)
 		iEET.frame:StopMovingOrSizing()
 	end)
-	iEET.frame:SetScript('OnShow', function() --iEET:loopData() 
+	iEET.frame:SetScript('OnShow', function()
+		if not iEET.lastShowCall or (iEET.lastShowCall and (GetTime() - iEET.lastShowCall > 0.2)) then -- avoid infinite loops
+			iEET.lastShowCall = GetTime()
+			iEET:loopData()
+		end
+		iEET.lastShowCall = GetTime()
 	end)
 	iEET.frame:Show()
 	iEET.frame:SetFrameStrata('HIGH')
