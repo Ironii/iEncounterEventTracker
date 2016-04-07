@@ -374,8 +374,6 @@ function iEET:ShouldShow(eventData,e_time, msg) -- NEW, TESTING msg is a tempora
 	
 	]]
 	local shouldShow = true
---	if eventData.event == 'ENCOUNTER_START' or eventData.event == 'ENCOUNTER_END' then
---		shouldIgnore = false
 	if eventData.spellID and iEET.ignoring[eventData.spellID] then
 		shouldShow = false
 	elseif not iEETConfig.tracking[eventData.event] then
@@ -383,10 +381,11 @@ function iEET:ShouldShow(eventData,e_time, msg) -- NEW, TESTING msg is a tempora
 	elseif iEET.ignoring[eventData.casterName] then
 		shouldShow = false
 	elseif eventData.event == 'USC_SUCCEEDED' then
+		local targetName = eventData.targetName
 		if string.find(eventData.targetName, 'nameplate') then
-			eventData.targetName = 'nameplates'
+			targetName = 'nameplate'
 		end
-		if iEET.ignoring[eventData.targetName] then
+		if iEET.ignoring[targetName] then
 			shouldShow = false
 		end
 	end
@@ -443,6 +442,8 @@ function iEET:ShouldShow(eventData,e_time, msg) -- NEW, TESTING msg is a tempora
 			end
 		end
 		if timeOK then
+			if msg then
+			end
 			if #iEETConfig.filtering.req > 0 or msg then
 				for k,v in pairs(eventData) do -- loop trough current event
 					for _,t in ipairs(iEETConfig.filtering.req) do
@@ -451,16 +452,20 @@ function iEET:ShouldShow(eventData,e_time, msg) -- NEW, TESTING msg is a tempora
 								return true -- found right value
 							end
 						end
-
 					end
-					if msg and string.find(string.lower(v), msg) then
+					if msg and string.find(string.lower(v),msg) then
 						return true
 					end
 				end
 				return false -- found nothing
+			else
+				return true -- nothing to find
 			end
-			return true -- nothing to find
+		else
+			return false
 		end
+	else
+		return false
 	end
 end
 function iEET:FillFilters()
@@ -630,6 +635,7 @@ function iEET:addMessages(placeToAdd, frameID, value, color)
 	frame:AddMessage(value and value or ' ', unpack(color))
 end
 function iEET:loopData(msg)
+	iEET.loopDataCall = GetTime()
 	iEET.frame:Hide()
 	local starttime = 0
 	local intervalls = {}
@@ -921,11 +927,14 @@ function iEET:CreateMainFrame()
 		iEET.frame:StopMovingOrSizing()
 	end)
 	iEET.frame:SetScript('OnShow', function()
-		if not iEET.lastShowCall or (iEET.lastShowCall and (GetTime() - iEET.lastShowCall > 0.2)) then -- avoid infinite loops
-			iEET.lastShowCall = GetTime()
-			iEET:loopData()
+		if not iEET.loopDataCall or (iEET.loopDataCall and (GetTime() - iEET.loopDataCall > 0.5)) then -- avoid infinite loops
+			iEET.loopDataCall = GetTime()
+			if iEET.editbox:GetText() ~= 'Search' then
+				iEET:loopData(iEET.editbox:GetText())
+			else
+				iEET:loopData() 
+			end
 		end
-		iEET.lastShowCall = GetTime()
 	end)
 	iEET.frame:Show()
 	iEET.frame:SetFrameStrata('HIGH')
@@ -1392,7 +1401,6 @@ function iEET:CreateOptionsFrame()
 		local txt = iEET.optionsFrameEditbox:GetText()
 		if string.match(txt, 'del:(%d+)') then
 			local toDelete = tonumber(string.match(txt, 'del:(%d+)'))
-			iEET:print(toDelete)
 			local t = {}
 			for i = 1, iEET.optionsFrameFilterTexts:GetNumMessages() do
 				if not (i == toDelete) then

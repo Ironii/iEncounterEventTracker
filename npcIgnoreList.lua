@@ -5,6 +5,7 @@ iEET.npcIgnoreList = {
 	[27829] = true,		--Ebon Gargoyle
 	[27893] = true, 	--Rune Weapon
 	[82521] = true,		--Defile
+	[99773] = true,		--Bloodworm
 --Shaman
 	[2523] = true, 		--Searing Totem
 	[2630] = true, 		--Earthbinding Totem
@@ -33,6 +34,7 @@ iEET.npcIgnoreList = {
 	[98035] = true, 	--Dreadstalker
 	[95468] = true, 	--T18 Demo (Illidari Satyr)
 	[95469] = true,		--T18 Demo (Visicous Hellhound)
+	[99737] = true,		--Wild Imp
 	[103673] = true, 	--Beholder
 	
 	
