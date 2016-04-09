@@ -745,7 +745,7 @@ function iEET:addSpellDetails(hyperlink, linkData)
 				end
 				color = iEET:getColor(event, sourceGUID, spellID)
 				iEET:addMessages(2, 1, timestamp, color)
-				iEET:addMessages(2, 2, intervall, color)
+				iEET:addMessages(2, 2, intervall, color, intervall and ('\124HiEETtime:' .. intervall ..'\124h%s\124h') or nil)
 				iEET:addMessages(2, 3, iEET.events.fromID[event].s, color)
 				iEET:addMessages(2, 5, casterName, color)
 				iEET:addMessages(2, 6, targetName, color)
@@ -758,7 +758,7 @@ end
 function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID,intervall,count,sourceGUID, hp)
 	local color = iEET:getColor(event, sourceGUID, spellID)
 	iEET:addMessages(1, 1, timestamp, color)
-	iEET:addMessages(1, 2, intervall, color)
+	iEET:addMessages(1, 2, intervall, color, intervall and ('\124HiEETtime:' .. intervall ..'\124h%s\124h') or nil)
 	iEET:addMessages(1, 3, iEET.events.fromID[event].s, color)
 	if event == 29 or event == 30 or event == 31 then -- MONSTER_EMOTE = 29, MOSNTER_SAY = 30, MONSTER_YELL = 31
 		local msg = spellID
@@ -800,7 +800,7 @@ function iEET:addToEncounterAbilities(spellID, spellName)
 		iEET.encounterAbilitiesContent:AddMessage('\124Hspell:' .. tonumber(spellID) .. '\124h[' .. spellName .. ']\124h\124r')
 	end
 end
-function iEET:addMessages(placeToAdd, frameID, value, color)
+function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink)
 	local frame = ''
 	if placeToAdd == 1 then
 		frame = iEET['content' .. frameID]
@@ -810,6 +810,9 @@ function iEET:addMessages(placeToAdd, frameID, value, color)
 	if frameID == 1 or frameID == 2 then
 		if value then 
 			value = string.format("%.1f",value) 
+		end
+		if hyperlink then
+			value = hyperlink:format(value)
 		end
 	elseif frameID == 5 or frameID == 6 then
 		if value and string.len(value) > 16 then
@@ -1256,7 +1259,7 @@ function iEET:CreateMainFrame()
 		iEET['content' .. i]:SetScript("OnMouseWheel", function(self, delta)
 			iEET:ScrollContent(delta)
 		end)
-		if i == 4 then --allow hyperlinks for 4th frame only
+		if i == 4 or i == 2 then --allow hyperlinks for intervall time and spellname only
 			iEET['content' .. i]:SetHyperlinksEnabled(true)
 			iEET['content' .. i]:SetScript("OnHyperlinkEnter", function(self, linkData, link)
 				GameTooltip:SetOwner(iEET.frame, "ANCHOR_TOPRIGHT", 0-iEET.frame:GetWidth(), 0-iEET.frame:GetHeight())
@@ -1273,6 +1276,9 @@ function iEET:CreateMainFrame()
 					GameTooltip:SetHyperlink('spell:' .. tonumber(spellID))
 					GameTooltip:AddLine('spellID:' .. spellID)
 					GameTooltip:AddLine('npcID:' .. npcID)
+				elseif linkType == 'iEETtime' then
+					local _, txt = strsplit(':',linkData)
+					GameTooltip:SetText(txt)
 				else
 					GameTooltip:SetHyperlink(link)		
 				end
@@ -1331,21 +1337,23 @@ function iEET:CreateMainFrame()
 		iEET['detailContent' .. i]:SetPoint('CENTER', iEET['detailAnchor' .. i], 'CENTER', 0, 0)
 		iEET['detailContent' .. i]:SetFont(iEET.font, iEET.fontsize)
 		iEET['detailContent' .. i]:SetFading(false)
-		iEET['detailContent' .. i]:SetInsertMode("BOTTOM")
+		iEET['detailContent' .. i]:SetInsertMode('BOTTOM')
 		iEET['detailContent' .. i]:SetJustifyH(iEET.justifyH)
 		iEET['detailContent' .. i]:SetMaxLines(5000)
 		iEET['detailContent' .. i]:SetSpacing(iEET.spacing)
 		iEET['detailContent' .. i]:EnableMouseWheel(true)
-		iEET['detailContent' .. i]:SetHyperlinksEnabled(true)
 		iEET['detailContent' .. i]:SetScript("OnMouseWheel", function(self, delta)
 			iEET:ScrollDetails(delta)
 		end)
-		iEET['detailContent' .. i]:SetScript("OnHyperlinkEnter", function(self, linkData, link)
-			GameTooltip:SetOwner(iEET.frame, "ANCHOR_TOPRIGHT", 0-iEET.frame:GetWidth(), 0-iEET.frame:GetHeight())
-			GameTooltip:ClearLines()		
-			GameTooltip:SetHyperlink(link)		
-			GameTooltip:Show()
-		end)
+		if i == 2 then --allow hyperlinks for intervall time only
+			iEET['detailContent' .. i]:SetHyperlinksEnabled(true)
+			iEET['detailContent' .. i]:SetScript('OnHyperlinkEnter', function(self, linkData, link)
+				GameTooltip:SetOwner(iEET.frame, "ANCHOR_TOPRIGHT", 0-iEET.frame:GetWidth(), 0-iEET.frame:GetHeight())
+				GameTooltip:ClearLines()		
+				GameTooltip:SetHyperlink(link)		
+				GameTooltip:Show()
+			end)
+		end
 		iEET['detailContent' .. i]:EnableMouse(true)
 		iEET['detailContent' .. i]:SetFrameStrata('HIGH')
 		iEET['detailContent' .. i]:SetFrameLevel(2)
@@ -1866,9 +1874,6 @@ function iEET:ConvertOldReports()
 		end
 	end
 	iEET:print('Converted ' .. count .. ' old reports to new format.')
-end
-function ico() -- for testing
-	iEET:ConvertOldReports()
 end
 SLASH_IEET1 = "/ieet"
 SlashCmdList["IEET"] = function(msg)
