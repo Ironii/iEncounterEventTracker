@@ -1,5 +1,7 @@
 local _, iEET = ...
 iEET.ignoredSpells = {
+--General
+	[143924] = true,	--Leech
 --Death Knight
 	[145629] = true,	--Anti-Magic Zone
 	[155166] = true, 	--Breath of Sindragosa	
