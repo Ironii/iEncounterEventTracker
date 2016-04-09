@@ -625,8 +625,6 @@ function iEET:ShouldShow(eventData,e_time, msg) -- NEW, TESTING msg is a tempora
 			end
 		end
 		if timeOK then
-			if msg then
-			end
 			if #iEETConfig.filtering.req > 0 or msg then
 				for k,v in pairs(eventData) do -- loop trough current event
 					for _,t in ipairs(iEETConfig.filtering.req) do
@@ -823,6 +821,11 @@ function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink)
 	frame:AddMessage(value and value or ' ', unpack(color))
 end
 function iEET:loopData(msg)
+	if #iEETConfig.filtering.timeBasedFiltering > 0 or #iEETConfig.filtering.req > 0 then
+		iEET.top:SetBackdropBorderColor(0.64,0,0,1)
+	else
+		iEET.top:SetBackdropBorderColor(0,0,0,1)
+	end
 	iEET.loopDataCall = GetTime()
 	iEET.frame:Hide()
 	local starttime = 0
