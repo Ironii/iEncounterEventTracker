@@ -321,7 +321,7 @@ function addon:ENCOUNTER_START(encounterID, encounterName)
 		['k'] = 0,
 	}
 	iEET.encounterInfo = date('%d.%m.%y %H:%M') .. ' ' .. encounterName
-	table.insert(iEET.data, {['e'] = 'ENCOUNTER_START', ['t'] = GetTime(), ['cN'] = encounterName, ['tN'] = encounterID, ['v'] = iEET.version})
+	table.insert(iEET.data, {['e'] = 27, ['t'] = GetTime(), ['cN'] = encounterName, ['tN'] = encounterID, ['v'] = iEET.version})
 	addon:RegisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
 	addon:RegisterEvent('CHAT_MSG_MONSTER_SAY')
 	addon:RegisterEvent('CHAT_MSG_MONSTER_EMOTE')
@@ -329,7 +329,7 @@ function addon:ENCOUNTER_START(encounterID, encounterName)
 	addon:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
 end
 function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize, kill)
-	table.insert(iEET.data, {['e'] = 'ENCOUNTER_END', ['t'] = GetTime() ,['cN'] = kill == 1 and 'Victory!' or 'Wipe'})
+	table.insert(iEET.data, {['e'] = 28, ['t'] = GetTime() ,['cN'] = kill == 1 and 'Victory!' or 'Wipe'})
 	addon:UnregisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
 	addon:UnregisterEvent('CHAT_MSG_MONSTER_SAY')
 	addon:UnregisterEvent('CHAT_MSG_MONSTER_EMOTE')
@@ -360,7 +360,7 @@ function addon:UNIT_SPELLCAST_SUCCEEDED(unitID, spellName,_,_,spellID)
 		if not iEET.npcIgnoreList[tonumber(npcID)] then
 			if not iEET.ignoredSpells[spellID] then
 				table.insert(iEET.data, {
-					['e'] = 'USC_SUCCEEDED',
+					['e'] = 26,
 					['t'] = GetTime(),
 					['sG'] = sourceGUID or 'NONE',
 					['cN'] = sourceName or 'NONE',
@@ -401,23 +401,26 @@ function addon:CHAT_MSG_MONSTER_YELL(msg, sourceName)
 	});
 end
 function addon:COMBAT_LOG_EVENT_UNFILTERED(timestamp,event,hideCaster,sourceGUID,sourceName,sourceFlags,sourceRaidFlags,destGUID,destName,destFlags,destRaidFlags,spellID, spellName,...)
-	if event == 'UNIT_DIED' then
-		table.insert(iEET.data, {
-			['e'] = 25,
-			['t'] = GetTime(),
-			['sG'] = destGUID or 'NONE',
-			['cN'] = destName or 'NONE',
-			['sN'] = 'Death',
-			['sI'] = 'NONE',
-		});
-	elseif event == 'SPELL_INTERRUPT' then
-		
-	elseif eventsToTrack[event] then
+	if eventsToTrack[event] then
+		if event == 'SPELL_DISPEL' then -- debug
+			print(timestamp,event,hideCaster,sourceGUID,sourceName,sourceFlags,sourceRaidFlags,destGUID,destName,destFlags,destRaidFlags,spellID, spellName)
+		end
 		local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
 		if sourceGUID then -- fix for arena id's
 			unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
 		end
-		if (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and iEET.approvedSpells[spellID]) or not sourceGUID or hideCaster or event == 'SPELL_DISPEL' then
+		if event == 'UNIT_DIED' then
+			if (unitType == 'Creature') or (unitType == 'Vehicle') or (unitType == 'Player') then
+				table.insert(iEET.data, {
+					['e'] = 25,
+					['t'] = GetTime(),
+					['sG'] = destGUID or 'NONE',
+					['cN'] = destName or 'NONE',
+					['sN'] = 'Death',
+					['sI'] = 'NONE',
+				});
+			end
+		elseif (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and iEET.approvedSpells[spellID]) or not sourceGUID or hideCaster or event == 'SPELL_INTERRUPT' or event == 'SPELL_DISPEL' then
 			if spellID and not iEET.ignoredSpells[spellID] then
 				if not iEET.npcIgnoreList[tonumber(npcID)] then
 					table.insert(iEET.data, {
@@ -681,11 +684,7 @@ function iEET:addSpellDetails(hyperlink, linkData)
 		if linkType == 'iEETcustomspell' or linkType == 'iEETcustomyell' then
 			local found = false
 			if v.sI then
-				if v.sI == spellIDToFind then
-					print(eventToFind, v.e)
-				end
 				if v.sI == spellIDToFind and v.e == eventToFind then
-				print('found')
 					found = true 
 				end
 			end
@@ -1034,7 +1033,6 @@ function iEET:updateOptionMenu()
 	table.insert(iEET.optionMenu, { text = 'Close', notCheckable = true, func = function () CloseDropDownMenus(); end})
 end
 iEET.optionMenuFrame = CreateFrame("Frame", "iEETEventListMenu", UIParent, "UIDropDownMenuTemplate")
-
 iEET.encounterListMenu = {}
 function iEET:updateEncounterListMenu()
 		iEET.encounterListMenu = nil
@@ -1108,7 +1106,6 @@ function iEET:updateEncounterListMenu()
 	table.insert(iEET.encounterListMenu, { text = 'Exit', notCheckable = true, func = function () CloseDropDownMenus() end})
 end
 iEET.encounterListMenuFrame = CreateFrame("Frame", "iEETEncounterListMenu", UIParent, "UIDropDownMenuTemplate")
-
 function iEET:CreateMainFrame()
 	iEET.frame = CreateFrame("Frame", "iEETFrame", UIParent)
 	iEET.frame:SetSize(554,800)
@@ -1271,7 +1268,9 @@ function iEET:CreateMainFrame()
 					--iEET_content4:AddMessage('\124HiEETcustomspell:' .. event .. ':' .. spellID .. ':' .. spellname ..'\124h' .. spellName .. '\124h', unpack(getColor(event, sourceGUID, spellID)))
 				elseif linkType == 'iEETcustomspell' then
 					local _, event, spellID, spellName, npcID = strsplit(':',linkData)
-					--print(event, spellID, spellName)
+					if spellID == 'NONE' then
+						return
+					end
 					local hyperlink = '\124Hspell:' .. tonumber(spellID)
 					GameTooltip:SetHyperlink('spell:' .. tonumber(spellID))
 					GameTooltip:AddLine('spellID:' .. spellID)
@@ -1285,6 +1284,9 @@ function iEET:CreateMainFrame()
 				GameTooltip:Show()
 			end)
 			iEET['content' .. i]:SetScript("OnHyperlinkClick", function(self, linkData, link, button)
+				if string.find(linkData, 'iEETtime') then
+					return
+				end
 				if IsShiftKeyDown() and IsInRaid() then
 					local linkType = strsplit(':', linkData)
 					if linkType == 'iEETcustomyell' then
@@ -1349,8 +1351,9 @@ function iEET:CreateMainFrame()
 			iEET['detailContent' .. i]:SetHyperlinksEnabled(true)
 			iEET['detailContent' .. i]:SetScript('OnHyperlinkEnter', function(self, linkData, link)
 				GameTooltip:SetOwner(iEET.frame, "ANCHOR_TOPRIGHT", 0-iEET.frame:GetWidth(), 0-iEET.frame:GetHeight())
-				GameTooltip:ClearLines()		
-				GameTooltip:SetHyperlink(link)		
+				GameTooltip:ClearLines()
+				local _, txt = strsplit(':',linkData)
+				GameTooltip:SetText(txt)	
 				GameTooltip:Show()
 			end)
 		end
