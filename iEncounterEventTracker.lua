@@ -27,7 +27,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }	
-iEET.version = 1.412
+iEET.version = 1.413
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -55,6 +55,8 @@ local eventsToTrack = {
 	['SPELL_PERIODIC_CREATE'] = 'SP_CREATE',
 	['SPELL_PERIODIC_SUMMON'] = 'SP_SUMMON',
 	['SPELL_PERIODIC_HEAL'] = 'SP_HEAL',
+	
+	['UNIT_DIED'] = 'UNIT_DIED',
 };
 local addon = CreateFrame("Frame")
 addon:SetScript("OnEvent", function(self, event, ...)
@@ -285,6 +287,9 @@ function iEET:LoadDefaults()
 		['MONSTER_EMOTE'] = true,
 		['MONSTER_SAY'] = true,
 		['MONSTER_YELL'] = true,
+		
+		['ENCOUNTER_START'] = true,
+		['ENCOUNTER_END'] = true,
 	}
 	iEETConfig.version = iEET.version
 	iEETConfig.autoSave = true
@@ -300,7 +305,7 @@ end
 function addon:ADDON_LOADED(addonName)
 	if addonName == 'iEncounterEventTracker' then
 		iEETConfig = iEETConfig or {}
-		if not iEETConfig.version or not iEETConfig.tracking or iEETConfig.version < 1.412 then -- Last version with db changes 
+		if not iEETConfig.version or not iEETConfig.tracking or iEETConfig.version < 1.413 then -- Last version with db changes 
 			iEET:LoadDefaults()
 		else
 			iEETConfig.version = iEET.version
@@ -402,9 +407,6 @@ function addon:CHAT_MSG_MONSTER_YELL(msg, sourceName)
 end
 function addon:COMBAT_LOG_EVENT_UNFILTERED(timestamp,event,hideCaster,sourceGUID,sourceName,sourceFlags,sourceRaidFlags,destGUID,destName,destFlags,destRaidFlags,spellID, spellName,...)
 	if eventsToTrack[event] then
-		if event == 'SPELL_DISPEL' then -- debug
-			print(timestamp,event,hideCaster,sourceGUID,sourceName,sourceFlags,sourceRaidFlags,destGUID,destName,destFlags,destRaidFlags,spellID, spellName)
-		end
 		local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
 		if sourceGUID then -- fix for arena id's
 			unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
@@ -591,7 +593,7 @@ function iEET:ShouldShow(eventData,e_time, msg) -- NEW, TESTING msg is a tempora
 				if iEETConfig.filtering.timeBasedFiltering[i].to then
 					iEETConfig.filtering.timeBasedFiltering[i].to.ok = false
 					if iEETConfig.filtering.timeBasedFiltering[i].to.timestamp then
-						if iEETConfig.filtering.timeBasedFiltering[i].to.timestamp <= eventData.t-e_time then
+						if iEETConfig.filtering.timeBasedFiltering[i].to.timestamp >= eventData.t-e_time then
 							iEETConfig.filtering.timeBasedFiltering[i].to.ok = true
 						end
 					else
