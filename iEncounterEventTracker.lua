@@ -27,7 +27,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }	
-iEET.version = 1.404
+iEET.version = 1.410
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -41,6 +41,8 @@ local eventsToTrack = {
 	['SPELL_CREATE'] = 'SPELL_CREATE',
 	['SPELL_SUMMON'] = 'SPELL_SUMMON',
 	['SPELL_HEAL'] = 'SPELL_HEAL',
+	['SPELL_DISPEL'] = 'SPELL_DISPEL',
+	['SPELL_INTERRUPT'] = 'S_INTERRUPT',
 	
 	['SPELL_PERIODIC_CAST_START'] = 'SPC_START',
 	['SPELL_PERIODIC_CAST_SUCCESS'] = 'SPC_SUCCESS',
@@ -67,6 +69,149 @@ end)
 addon:RegisterEvent('ENCOUNTER_START')
 addon:RegisterEvent('ENCOUNTER_END')
 addon:RegisterEvent('ADDON_LOADED')
+local iEET.events = {
+	['eventsToID'] = {
+		['SPELL_CAST_START'] = 1,
+		['SPELL_CAST_SUCCESS'] = 2,
+		['SPELL_AURA_APPLIED'] = 3,
+		['SPELL_AURA_REMOVED'] = 4,
+		['SPELL_AURA_APPLIED_DOSE'] = 5,
+		['SPELL_AURA_REMOVED_DOSE'] = 6,
+		['SPELL_AURA_REFRESH'] = 7,
+		['SPELL_CAST_FAILED'] = 8,
+		['SPELL_CREATE'] = 9,
+		['SPELL_SUMMON'] = 10,
+		['SPELL_HEAL'] = 11,
+		['SPELL_DISPEL'] = 12,
+		['SPELL_INTERRUPT'] = 13,
+		
+		['SPELL_PERIODIC_CAST_START'] = 14,
+		['SPELL_PERIODIC_CAST_SUCCESS'] = 15,
+		['SPELL_PERIODIC_AURA_APPLIED'] = 16,
+		['SPELL_PERIODIC_AURA_REMOVED'] = 17,
+		['SPELL_PERIODIC_AURA_APPLIED_DOSE'] = 18,
+		['SPELL_PERIODIC_AURA_REMOVED_DOSE'] = 19,
+		['SPELL_PERIODIC_AURA_REFRESH'] = 20,
+		['SPELL_PERIODIC_CAST_FAILED'] = 21,
+		['SPELL_PERIODIC_CREATE'] = 22,
+		['SPELL_PERIODIC_SUMMON'] = 23,
+		['SPELL_PERIODIC_HEAL'] = 24,
+		
+		['UNIT_DIED'] = 25,
+	},
+	['idToEvents'] = {
+		[1] = {
+			l = 'SPELL_CAST_START',
+			s = 'SC_START',
+		},
+		[2] = {
+			l = 'SPELL_CAST_SUCCESS',
+			s = 'SC_SUCCESS',
+		},
+		[3] = {
+			l = 'SPELL_AURA_APPLIED',
+			s = '+SAURA',
+		},
+		[4] = {
+			l = 'SPELL_AURA_REMOVED',
+			s = '-SAURA',
+		},
+		[5] = {
+			l = 'SPELL_AURA_APPLIED_DOSE',
+			s = '+SA_DOSE',
+		},
+		[6] = {
+			l = 'SPELL_AURA_REMOVED_DOSE',
+			s = '-SA_DOSE',
+		},
+		[7] = {
+			l = 'SPELL_AURA_REFRESH',
+			s = 'SAURA_R',
+		},
+		[8] = { 
+			l = 'SPELL_CAST_FAILED',
+			s = 'SC_FAILED',
+		},
+		[9] = {
+			l = 'SPELL_CREATE',
+			s = 'SPELL_CREATE',
+		},
+		[10] = {
+			l = 'SPELL_SUMMON',
+			s = 'SPELL_SUMMON',
+		},
+		[11] = {
+			l = 'SPELL_HEAL',
+			s = 'SPELL_HEAL',
+		},
+		[12] = {
+			l = 'SPELL_DISPEL',
+			s = 'SPELL_DISPEL',
+		},
+		[13] = {
+			l = 'SPELL_INTERRUPT',
+			s = 'S_INTERRUPT',
+		},
+		[14] = {
+			l = 'SPELL_PERIODIC_CAST_START',
+			s = 'SPC_START',
+		},
+		[15] = {
+			l = 'SPELL_PERIODIC_CAST_SUCCESS',
+			s = 'SPC_SUCCESS',
+		},
+		[16] = {
+			l = 'SPELL_PERIODIC_AURA_APPLIED',
+			s = '+SPAURA',
+		},
+		[17] = {
+			l = 'SPELL_PERIODIC_AURA_REMOVED',
+			s = '-SPAURA',
+		},
+		[18] = {
+			l = 'SPELL_PERIODIC_AURA_APPLIED_DOSE',
+			s = '+SPA_DOSE',
+		},
+		[19] = {
+			l = 'SPELL_PERIODIC_AURA_REMOVED_DOSE',
+			s = '-SPA_DOSE',
+		},
+		[20] = {
+			l = 'SPELL_PERIODIC_AURA_REFRESH',
+			s = 'SPAURA_R',
+		},
+		[21] = {
+			l = 'SPELL_PERIODIC_CAST_FAILED',
+			s = 'SPC_FAILED',
+		},
+		[22] = {
+			l = 'SPELL_PERIODIC_CREATE',
+			s = 'SP_CREATE',
+		},
+		[23] = {
+			l = 'SPELL_PERIODIC_SUMMON',
+			s = 'SP_SUMMON',
+		},
+		[24] = {
+			l = 'SPELL_PERIODIC_HEAL',
+			s = 'SP_HEAL',
+		},
+		[25] = {
+			l = 'UNIT_DIED'
+			s = 'UNIT_DIED',
+		},
+	},
+}
+local vars = {
+	timestamp = 't',
+	casterName = 'cN',
+	targetName = 'tN',
+	spellName = 'sN',
+	spellID = 'sI',
+	event = 'e',
+	sourceGUID = 'sG',
+	hp = 'hp',
+}
 local function spairs(t, order)
     -- collect the keys
     local keys = {}
@@ -100,9 +245,11 @@ function iEET:LoadDefaults()
 		['-SA_DOSE'] = true,
 		['SAURA_R'] = true,
 		['SC_FAILED'] = true,
+		['S_INTERRUPT'] = true,
 		['SPELL_CREATE'] = true,
 		['SPELL_SUMMON'] = true,
 		['SPELL_HEAL'] = true,
+		['SPELL_DISPEL'] = true,
 		['SPC_START'] = true,
 		['SPC_SUCCESS'] = true,
 		['+SPAURA'] = true,
@@ -117,6 +264,7 @@ function iEET:LoadDefaults()
 		['MONSTER_SAY'] = true,
 		['MONSTER_EMOTE'] = true,
 		['MONSTER_YELL'] = true,
+		--['UNIT_DIED'] = true,
 	}
 	iEETConfig.version = iEET.version
 	iEETConfig.autoSave = true
@@ -232,14 +380,24 @@ function addon:CHAT_MSG_MONSTER_YELL(msg, sourceName)
 		['sourceGUID'] = sourceName,
 	});
 end
-function addon:COMBAT_LOG_EVENT_UNFILTERED(timestamp,event,hideCaster,sourceGUID,sourceName,sourceFlags,sourceRaidFlags,destGUID,destName,destFlags,destRaidFlags,...)
-	if eventsToTrack[event] then
-		local spellID, spellName = ...
+function addon:COMBAT_LOG_EVENT_UNFILTERED(timestamp,event,hideCaster,sourceGUID,sourceName,sourceFlags,sourceRaidFlags,destGUID,destName,destFlags,destRaidFlags,spellID, spellName,...)
+	if event == 'UNIT_DIED' then
+		table.insert(iEET.data, {
+			['event'] = 'UNIT_DIED',
+			['timestamp'] = GetTime(),
+			['sourceGUID'] = destGUID or 'NONE',
+			['casterName'] = destName or 'NONE',
+			['spellName'] = 'Death',
+			['spellID'] = 'NONE',
+		});
+	elseif event == 'SPELL_INTERRUPT' then
+		
+	elseif eventsToTrack[event] then
 		local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
 		if sourceGUID then -- fix for arena id's
 			unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
 		end
-		if (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and iEET.approvedSpells[spellID]) or not sourceGUID or hideCaster then
+		if (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and iEET.approvedSpells[spellID]) or not sourceGUID or hideCaster or event == 'SPELL_DISPEL' then
 			if spellID and not iEET.ignoredSpells[spellID] then
 				if not iEET.npcIgnoreList[tonumber(npcID)] then
 					table.insert(iEET.data, {
