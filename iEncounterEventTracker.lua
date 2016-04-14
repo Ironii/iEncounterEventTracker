@@ -1,5 +1,16 @@
 --[[--------------------------FILTERING-OPTIONS-USAGE-------------
-split different args with ';'
+split different args with ';' NOT DONE
+x=x
+possible key values:
+t	time 		number
+e	event 		number or string	(long(SPELL_CAST_START instead of SC_START) event name or number, numbers under iEET.events)
+sG	sourceGUID	string	UNIT_DIED:destGUID
+cN	sourceName	string	UNIT_DIED:destName
+tN	destName		string	USCS: source unitID
+sN	spellName	string
+sI	spellID		number
+hp	Health		number	USCS only
+
 --]]--------------------------------------------------------------
 
 
@@ -324,9 +335,10 @@ function addon:ENCOUNTER_START(encounterID, encounterName)
 		['d']= 0,
 		['rS'] = 0,
 		['k'] = 0,
+		['v'] = iEET.version,
 	}
 	iEET.encounterInfo = date('%d.%m.%y %H:%M') .. ' ' .. encounterName
-	table.insert(iEET.data, {['e'] = 27, ['t'] = GetTime(), ['cN'] = encounterName, ['tN'] = encounterID, ['v'] = iEET.version})
+	table.insert(iEET.data, {['e'] = 27, ['t'] = GetTime(), ['cN'] = encounterName, ['tN'] = encounterID})
 	addon:RegisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
 	addon:RegisterEvent('CHAT_MSG_MONSTER_SAY')
 	addon:RegisterEvent('CHAT_MSG_MONSTER_EMOTE')
@@ -950,6 +962,95 @@ function iEET:ClearFilteringArgs()
 		requireAll = false,
 		showTime = false, -- show time from nearest 'from' event instead of ENCOUNTER_START
 	}
+end
+function iEET:GetFiltersFromLine(line)
+	local t = {}
+	for _,arg in pairs({strsplit(';', line)}) do
+		if string.match(arg, '^(%a-)=(%d+)') then --change to elseif when from/to filtering is done?
+			k,v = string.match(arg, '^(%a-)=(%d+)')
+			table.insert(t, {[k] = tonumber(v)})
+		elseif string.match(arg, '^(%a-)=(%a+)') then
+			k,v = strsplit('=', arg)
+			if k == 'e' then
+				if not tonumber(v) then
+					v = iEET.events.toID[v]
+				end
+			end
+			table.insert(t, {[k] = v})
+		elseif tonumber(arg) then
+			table.insert(t, {['sI'] = tonumber(arg)})
+		end
+	end
+	if #t > 0 then
+		return t
+	else
+		return
+	end
+end
+function iEET:ParseFilters()
+	local function GetFiltersFromLine(line)
+		local t = {}
+		for _,arg in pairs({strsplit(';', line)}) do
+			if string.match(arg, '^(%a-)=(%d+)') then --change to elseif when from/to filtering is done?
+				local k,v = string.match(arg, '^(%a-)=(%d+)')
+				table.insert(t, {[k] = tonumber(v)})
+			elseif string.match(arg, '^(%a-)=(%a+)') then
+				local k,v = strsplit('=', arg)
+				if k == 'e' then
+					if not tonumber(v) then
+						v = iEET.events.toID[v]
+					end
+				end
+				table.insert(t, {[k] = v})
+			elseif tonumber(arg) then
+				table.insert(t, {['sI'] = tonumber(arg)})
+			end
+		end
+		if #t > 0 then
+			return t
+		else
+			return
+		end
+	end
+	--gather all data etc and hide window
+	iEET:ClearFilteringArgs()	--Clear old filters
+	for i = 1, iEET.optionsFrameFilterTexts:GetNumMessages() do
+		local line = iEET.optionsFrameFilterTexts:GetMessageInfo(i)
+		--[[
+		if string.find(line, 'FROM') or string.find(line, 'TO') then
+			local fromTo = {}
+			for _,v pairs({strsplit(' AND ', line)}) do	-- NEEDS TESTING
+				if string.find(v,'FROM') then
+					fromTo.from = GetFiltersFromLine(v)
+				else --TO
+					fromTo.to = GetFiltersFromLine(v)
+				end
+			end
+			table.insert(iEETConfig.filtering.timeBasedFiltering)
+		else
+			local t = GetFiltersFromLine(line)
+			if t then
+				table.insert(iEETConfig.filtering.req, t)
+			end
+		end
+		--]]
+		if string.match(line, '^(%a-)=(%d+)') then --change to elseif when from/to filtering is done?
+			local k,v = string.match(line, '^(%a-)=(%d+)')
+			table.insert(iEETConfig.filtering.req, {[k] = tonumber(v)})
+		elseif string.match(line, '^(%a-)=(%a+)') then
+			local k,v = strsplit('=', line)
+			if k == 'e' then
+				if not tonumber(v) then
+					v = iEET.events.toID[v]
+				end
+			end
+			table.insert(iEETConfig.filtering.req, {[k] = v})
+		elseif tonumber(line) then
+			table.insert(iEETConfig.filtering.req, {['sI'] = tonumber(line)})
+		end
+	end
+	iEET:loopData()
+	iEET.optionsFrame:Hide()
 end
 iEET.optionMenu = {}
 function iEET:updateOptionMenu()
@@ -1607,7 +1708,7 @@ function iEET:CreateOptionsFrame()
 	iEET.optionsFrameEditbox:SetBackdropColor(0.1,0.1,0.1,0.2)
 	iEET.optionsFrameEditbox:SetBackdropBorderColor(0,0,0,1)
 	iEET.optionsFrameEditbox:SetScript('OnEnterPressed', function()
-		--do something
+		--TO DO: allow ';' splitting
 		local txt = iEET.optionsFrameEditbox:GetText()
 		if string.match(txt, 'del:(%d+)') then
 			local toDelete = tonumber(string.match(txt, 'del:(%d+)'))
@@ -1658,28 +1759,8 @@ function iEET:CreateOptionsFrame()
 	iEET.optionsFrameSaveButton:Show()
 	iEET.optionsFrameSaveButton:RegisterForClicks('AnyUp')
 	iEET.optionsFrameSaveButton:SetScript('OnClick',function()
-		--gather all data etc and hide window
-		iEET:ClearFilteringArgs()
-		for i = 1, iEET.optionsFrameFilterTexts:GetNumMessages() do
-			local line = iEET.optionsFrameFilterTexts:GetMessageInfo(i)
-			local k,v
-			if string.match(line, '^(%a-)=(%d+)') then
-				k,v = string.match(line, '^(%a-)=(%d+)')
-				table.insert(iEETConfig.filtering.req, {[k] = tonumber(v)})
-			elseif string.match(line, '^(%a-)=(%a+)') then
-				k,v = strsplit('=', line)
-				if k == 'e' then
-					if not tonumber(v) then
-						v = iEET.events.toID[v]
-					end
-				end
-				table.insert(iEETConfig.filtering.req, {[k] = v})
-			elseif tonumber(line) then
-				table.insert(iEETConfig.filtering.req, {['sI'] = tonumber(line)})
-			end
-		end
-		iEET:loopData()
-		iEET.optionsFrame:Hide()
+		--Parse filters from scrolling message frame
+		iEET:ParseFilters()
 	end)
 	-- Cancel button
 	iEET.optionsFrameCancelButton = CreateFrame('BUTTON', nil, iEET.optionsFrame)
