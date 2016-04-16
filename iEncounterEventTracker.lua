@@ -374,13 +374,8 @@ function addon:UNIT_SPELLCAST_SUCCEEDED(unitID, spellName,_,arg4,spellID)
 		if chp and maxhp then
 			php = math.floor(chp/maxhp*1000+0.5)/10
 		end
-<<<<<<< HEAD
 		--3-2084-1520-9097-202968-0028916A53
-		if select(4, GetBuildInfo()) >= 70000 then
-=======
-		if select(4, GetBuildInfo()) >= 70000 then
-			--3-2084-1520-9097-202968-0028916A53
->>>>>>> cfb37cb32822c8b74adf380115db56567b65c2c1
+		if select(4, GetBuildInfo()) >= 70000 then	
 			local id = select(5, strsplit('-', arg4))
 			spellID = tonumber(id)
 		end
