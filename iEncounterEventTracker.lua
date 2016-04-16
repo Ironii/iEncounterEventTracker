@@ -12,8 +12,6 @@ sI	spellID		number
 hp	Health		number	USCS only
 
 --]]--------------------------------------------------------------
-
-
 --[[TO DO:--
 compare
 better filtering, STARTED
@@ -38,7 +36,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }	
-iEET.version = 1.413
+iEET.version = 1.414
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -571,10 +569,16 @@ function iEET:ShouldShow(eventData,e_time, msg) -- NEW, TESTING msg is a tempora
 		
 	}
 	
-	
+	i = 0.1
+	d = 0.2
 	]]
 	local shouldShow = true
+	--[[	
 	if eventData.sI and iEET.ignoring[eventData.sI] then
+		shouldShow = false
+	elseif iEET.interrupts[eventData.sI] and iEET.ignoring[0.1] then --0.1 = interrupts
+		shouldShow = false
+	elseif iEET.dispels[eventData.sI] and iEET.ignoring[0.2] then --0.2 = dispels
 		shouldShow = false
 	elseif not iEETConfig.tracking[iEET.events.fromID[eventData.e].l] then
 		shouldShow = false
@@ -584,6 +588,22 @@ function iEET:ShouldShow(eventData,e_time, msg) -- NEW, TESTING msg is a tempora
 		local targetName = eventData.tN
 		if string.find(eventData.tN, 'nameplate') then
 			targetName = 'nameplate'
+		end
+		if iEET.ignoring[targetName] then
+			shouldShow = false
+		end
+	end
+	--]]	
+	if (eventData.sI and iEET.ignoring[eventData.sI]) or
+	(iEET.interrupts[eventData.sI] and iEET.ignoring[0.1]) or --0.1 = interrupts
+	(iEET.dispels[eventData.sI] and iEET.ignoring[0.2]) or --0.2 = dispels
+	(not iEETConfig.tracking[iEET.events.fromID[eventData.e].l]) or
+	(iEET.ignoring[eventData.cN]) then
+		shouldShow = false
+	elseif eventData.e == 26 then -- UNIT_SPELLCAST_SUCCEEDED
+		local targetName = eventData.tN
+		if string.find(eventData.tN, 'nameplate') then
+			targetName = 'nameplates'
 		end
 		if iEET.ignoring[targetName] then
 			shouldShow = false
@@ -861,17 +881,49 @@ function iEET:loopData(msg)
 	for k,v in ipairs(iEET.data) do
 		if v.e == 27 then -- ENCOUNTER_START
 			starttime = v.t 
-		elseif v.cN and not iEET.collector.encounterNPCs[v.cN] and v.e ~= 26 and v.e ~= 27 then -- Collect npc names & spells| 26 = USCS, 27 = ENCOUNTER_START
-			if v.sI and v.sN and not iEET.collector.encounterSpells[v.sI] then
+		end
+		if v.cN and not iEET.collector.encounterNPCs[v.cN] and v.e ~= 27 and v.e ~= 28 then -- Collect npc names, 27 = ENCOUNTER_START, 28 = ENCOUNTER_END
+			if v.e == 26 then -- UNIT_SPELLCAST_SUCCEEDED
+				if string.find(v.tN, 'nameplate') then -- could be safe to assume that there will be atleast one nameplate unitid
+					if not iEET.collector.encounterNPCs.nameplates then
+						iEET.collector.encounterNPCs.nameplates = true
+					end
+				elseif v.tN and not iEET.collector.encounterNPCs[v.tN] then
+					iEET.collector.encounterNPCs[v.tN] = true
+				end
+			else
+				iEET.collector.encounterNPCs[v.cN] = true
+			end
+		end
+		if v.sI and v.sN and not iEET.collector.encounterSpells[v.sI] and v.e ~= 27 and v.e ~= 28 then -- Collect spells, 27 = ENCOUNTER_START, 28 = ENCOUNTER_END
+			if iEET.interrupts[v.sI] then
+				if not iEET.collector.encounterSpells[0.1] then
+					iEET.collector.encounterSpells[0.1] = 'Interrupts'
+				end
+			elseif iEET.dispels[v.sI] then
+				if not iEET.collector.encounterSpells[0.2] then
+					iEET.collector.encounterSpells[0.2] = 'Dispels'
+				end
+			else
 				iEET.collector.encounterSpells[v.sI] = v.sN
 				iEET:addToEncounterAbilities(v.sI, v.sN)
 			end
-			iEET.collector.encounterNPCs[v.cN] = true
 		end
+		--[[
 		if v.e == 26 then -- UNIT_SPELLCAST_SUCCEEDED
 			if v.sI and v.sN and not iEET.collector.encounterSpells[v.sI] then
-				iEET.collector.encounterSpells[v.sI] = v.sN
-				iEET:addToEncounterAbilities(v.sI, v.sN)
+				if iEET.interrupts[v.sI] then
+					if not iEET.collector.encounterSpells[0.1] then
+						iEET.collector.encounterSpells[0.1] = 'Interrupts'
+					end
+				elseif iEET.dispels[v.sI] then
+					if not iEET.collector.encounterSpells[0.2] then
+						iEET.collector.encounterSpells[0.2] = 'Dispels'
+					end
+				else
+					iEET.collector.encounterSpells[v.sI] = v.sN
+					iEET:addToEncounterAbilities(v.sI, v.sN)
+				end
 			end
 			if string.find(v.tN, 'nameplate') then -- could be safe to assume that there will be atleast one nameplate unitid
 				if not not iEET.collector.encounterNPCs then
@@ -881,6 +933,7 @@ function iEET:loopData(msg)
 				iEET.collector.encounterNPCs[v.tN] = true
 			end
 		end
+		--]]
 		if iEET:ShouldShow(v,starttime, msg) then -- NEW, TESTING
 			local intervall = nil
 			local timestamp = v.t-starttime or nil
