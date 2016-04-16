@@ -2,7 +2,7 @@
 ## Title: iEET
 ## Notes: Ironi's encounter event tracker
 ## Author: Ironi
-## Version: 1.413
+## Version: 1.414
 ## DefaultState: enabled
 ## SavedVariables: iEETConfig, iEET_Data
 
@@ -10,3 +10,5 @@ iEncounterEventTracker.lua
 approvedSpells.lua
 ignoredSpells.lua
 npcIgnoreList.lua
+dispels.lua
+interrupts.lua
