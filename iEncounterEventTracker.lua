@@ -360,7 +360,7 @@ function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize,
 		iEET:ExportData(true)
 	end
 end
-function addon:UNIT_SPELLCAST_SUCCEEDED(unitID, spellName,_,_,spellID)
+function addon:UNIT_SPELLCAST_SUCCEEDED(unitID, spellName,_,arg4,spellID)
 	local sourceGUID = UnitGUID(unitID)
 	local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
 	if sourceGUID then -- fix for arena id's
@@ -373,6 +373,11 @@ function addon:UNIT_SPELLCAST_SUCCEEDED(unitID, spellName,_,_,spellID)
 		local php = nil
 		if chp and maxhp then
 			php = math.floor(chp/maxhp*1000+0.5)/10
+		end
+		if select(4, GetBuildInfo()) >= 70000 then
+			--3-2084-1520-9097-202968-0028916A53
+			local id = select(5, strsplit('-', arg4))
+			spellID = tonumber(id)
 		end
 		if not iEET.npcIgnoreList[tonumber(npcID)] then
 			if not iEET.ignoredSpells[spellID] then
