@@ -5,8 +5,10 @@ iEET.npcIgnoreList = {
 	[27829] = true,		--Ebon Gargoyle
 	[27893] = true, 	--Rune Weapon
 	[82521] = true,		--Defile
+	[97055] = true,		--Shambling Horror
 	[99773] = true,		--Bloodworm
 	[100876] = true,	--Val'kyr Battlemaiden
+	
 --Shaman
 	[2523] = true, 		--Searing Totem
 	[2630] = true, 		--Earthbinding Totem
@@ -24,6 +26,7 @@ iEET.npcIgnoreList = {
 	[95061] = true, 	--Greater Fire Elemental 
 	[97285] = true,		--Wind Rush Totem
 	[100820] = true,	--Spirit Wolf
+	
 --Warlock
 	[11859] = true, 	--Doomguard
 	[17252] = true,		--Felguard
@@ -39,7 +42,6 @@ iEET.npcIgnoreList = {
 	[95469] = true,		--T18 Demo (Visicous Hellhound)
 	[99737] = true,		--Wild Imp
 	[103673] = true, 	--Beholder
-	
 	
 --Mage
 	[31216] = true, 	--Mirror Image
@@ -77,7 +79,9 @@ iEET.npcIgnoreList = {
 	[86187] = true, 	--Beast
 	[95021] = true, 	--Felboar (hunter 4pc?)
 	[90521] = true,		--Binding Shot
+	[94072] = true,		--Dark Minion
 	[95582] = true,		--Beast
+	
 --General
 	[35642] = true, 	--Jeeves
 	[77789] = true,		--Blingtron 5000
