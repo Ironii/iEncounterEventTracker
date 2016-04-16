@@ -6,6 +6,7 @@ iEET.npcIgnoreList = {
 	[27893] = true, 	--Rune Weapon
 	[82521] = true,		--Defile
 	[99773] = true,		--Bloodworm
+	[100876] = true,	--Val'kyr Battlemaiden
 --Shaman
 	[2523] = true, 		--Searing Totem
 	[2630] = true, 		--Earthbinding Totem
@@ -21,6 +22,8 @@ iEET.npcIgnoreList = {
 	[77936] = true,		--Greater Storm Elemental
 	[77942] = true,		--Primal Storm Elemental
 	[95061] = true, 	--Greater Fire Elemental 
+	[97285] = true,		--Wind Rush Totem
+	[100820] = true,	--Spirit Wolf
 --Warlock
 	[11859] = true, 	--Doomguard
 	[17252] = true,		--Felguard
