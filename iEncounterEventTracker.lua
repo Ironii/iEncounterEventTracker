@@ -458,7 +458,11 @@ function addon:UNIT_TARGET(unitID)
 
 end
 function iEET:getColor(event, sourceGUID, spellID)
-	if sourceGUID then
+	if event and event == 27 then
+		return {0,1,0}
+	elseif event and event == 28 then
+		return {1,0,0}
+	elseif sourceGUID then
 		if colors[sourceGUID] and colors[sourceGUID][event] and colors[sourceGUID][event][spellID] then
 			return {colors[sourceGUID][event][spellID].r,colors[sourceGUID][event][spellID].g,colors[sourceGUID][event][spellID].b}
 		end
@@ -484,12 +488,8 @@ function iEET:getColor(event, sourceGUID, spellID)
 			colors[sourceGUID] = {[event] = {[spellID] = t}}
 		end
 		return {colors[sourceGUID][event][spellID].r,colors[sourceGUID][event][spellID].g,colors[sourceGUID][event][spellID].b}
-	elseif event and event == 'ENCOUNTER_START' then
-		return {0,1,0}
-	elseif event and event == 'ENCOUNTER_END' then
-		return {1,0,0}
 	else
-		return {0,0,0}
+		return {1,1,1}
 	end
 end
 function iEET:print(msg)
@@ -911,63 +911,55 @@ function iEET:loopData(msg)
 			end
 		end
 		if iEET:ShouldShow(v,starttime, msg) then
-			--TO DO: Clean up
 			local intervall = nil
 			local timestamp = v.t-starttime or nil
-			local casterName = v.cN or nil
-			local targetName = v.tN or nil
-			local spellName = v.sN or nil
-			local spellID = v.sI or nil
-			local event = v.e
 			local count = nil
-			local sourceGUID = v.sG or nil
-			local hp = v.hp or nil
-			if sourceGUID then
-				if intervalls[sourceGUID] then
-					if intervalls[sourceGUID][event] then
-						if intervalls[sourceGUID][event][spellID] then
-							intervall = timestamp - intervalls[sourceGUID][event][spellID]
-							intervalls[sourceGUID][event][spellID] = timestamp
+			if v.sG then
+				if intervalls[v.sG] then
+					if intervalls[v.sG][v.e] then
+						if intervalls[v.sG][v.e][v.sI] then
+							intervall = timestamp - intervalls[v.sG][v.e][v.sI]
+							intervalls[v.sG][v.e][v.sI] = timestamp
 						else
-							intervalls[sourceGUID][event][spellID] = timestamp
+							intervalls[v.sG][v.e][v.sI] = timestamp
 						end
 					else
-						intervalls[sourceGUID][event] = {
-								[spellID] = timestamp,
+						intervalls[v.sG][v.e] = {
+								[v.sI] = timestamp,
 						};
 					end
 				else
-					intervalls[sourceGUID] = {
-						[event] = {
-							[spellID] = timestamp,
+					intervalls[v.sG] = {
+						[v.e] = {
+							[v.sI] = timestamp,
 						};
 					};
 				end
-				if counts[sourceGUID] then
-					if counts[sourceGUID][event] then
-						if counts[sourceGUID][event][spellID] then
-							counts[sourceGUID][event][spellID] = counts[sourceGUID][event][spellID] + 1
-							count = counts[sourceGUID][event][spellID]
+				if counts[v.sG] then
+					if counts[v.sG][v.e] then
+						if counts[v.sG][v.e][v.sI] then
+							counts[v.sG][v.e][v.sI] = counts[v.sG][v.e][v.sI] + 1
+							count = counts[v.sG][v.e][v.sI]
 						else
-							counts[sourceGUID][event][spellID] = 1
+							counts[v.sG][v.e][v.sI] = 1
 							count = 1
 						end
 					else
-						counts[sourceGUID][event] = {
-							[spellID] = 1,
+						counts[v.sG][v.e] = {
+							[v.sI] = 1,
 						}
 					end
 				else
-					counts[sourceGUID] = {
-						[event] = {
-							[spellID] = 1,
+					counts[v.sG] = {
+						[v.e] = {
+							[v.sI] = 1,
 						};
 					};
 					count = 1
 				end
 			end
-			if iEETConfig.tracking[iEET.events.fromID[event].l] or event == 27 or event == 28 then -- ENCOUNTER_START & ENCOUNTER_END
-					iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID, intervall,count, sourceGUID,hp)
+			if iEETConfig.tracking[iEET.events.fromID[v.e].l] or v.e == 27 or v.e == 28 then -- ENCOUNTER_START & ENCOUNTER_END
+					iEET:addToContent(timestamp,v.e,v.cN,v.tN,v.sN,v.sI, intervall,count, v.sG,v.hp)
 			end
 		end
 	end
