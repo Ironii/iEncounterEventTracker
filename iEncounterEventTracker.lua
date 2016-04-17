@@ -26,16 +26,16 @@ iEET.fontsize = 12
 iEET.spacing = 2
 iEET.justifyH = 'LEFT'
 iEET.backdrop = {
-	bgFile = 'Interface\\Buttons\\WHITE8x8', 
-	edgeFile = 'Interface\\Buttons\\WHITE8x8', 
-	edgeSize = 1, 
+	bgFile = 'Interface\\Buttons\\WHITE8x8',
+	edgeFile = 'Interface\\Buttons\\WHITE8x8',
+	edgeSize = 1,
 	insets = {
 		left = -1,
 		right = -1,
 		top = -1,
 		bottom = -1,
 	}
-}	
+}
 iEET.version = 1.414
 local colors = {}
 local eventsToTrack = {
@@ -52,7 +52,7 @@ local eventsToTrack = {
 	['SPELL_HEAL'] = 'SPELL_HEAL',
 	['SPELL_DISPEL'] = 'SPELL_DISPEL',
 	['SPELL_INTERRUPT'] = 'S_INTERRUPT',
-	
+
 	['SPELL_PERIODIC_CAST_START'] = 'SPC_START',
 	['SPELL_PERIODIC_CAST_SUCCESS'] = 'SPC_SUCCESS',
 	['SPELL_PERIODIC_AURA_APPLIED'] = '+SPAURA',
@@ -64,7 +64,7 @@ local eventsToTrack = {
 	['SPELL_PERIODIC_CREATE'] = 'SP_CREATE',
 	['SPELL_PERIODIC_SUMMON'] = 'SP_SUMMON',
 	['SPELL_PERIODIC_HEAL'] = 'SP_HEAL',
-	
+
 	['UNIT_DIED'] = 'UNIT_DIED',
 };
 local addon = CreateFrame("Frame")
@@ -89,7 +89,7 @@ iEET.events = {
 		['SPELL_HEAL'] = 11,
 		['SPELL_DISPEL'] = 12,
 		['SPELL_INTERRUPT'] = 13,
-		
+
 		['SPELL_PERIODIC_CAST_START'] = 14,
 		['SPELL_PERIODIC_CAST_SUCCESS'] = 15,
 		['SPELL_PERIODIC_AURA_APPLIED'] = 16,
@@ -101,14 +101,14 @@ iEET.events = {
 		['SPELL_PERIODIC_CREATE'] = 22,
 		['SPELL_PERIODIC_SUMMON'] = 23,
 		['SPELL_PERIODIC_HEAL'] = 24,
-		
+
 		['UNIT_DIED'] = 25,
-		
+
 		['UNIT_SPELLCAST_SUCCEEDED'] = 26,
-		
+
 		['ENCOUNTER_START'] = 27,
 		['ENCOUNTER_END'] = 28,
-		
+
 		['MONSTER_EMOTE'] = 29,
 		['MONSTER_SAY'] = 30,
 		['MONSTER_YELL'] = 31,
@@ -142,7 +142,7 @@ iEET.events = {
 			l = 'SPELL_AURA_REFRESH',
 			s = 'SAURA_R',
 		},
-		[8] = { 
+		[8] = {
 			l = 'SPELL_CAST_FAILED',
 			s = 'SC_FAILED',
 		},
@@ -244,9 +244,9 @@ local function spairs(t, order)
     -- collect the keys
     local keys = {}
     for k in pairs(t) do keys[#keys+1] = k end
-	
+
     -- if order function given, sort by it by passing the table and keys a, b,
-    -- otherwise just sort the keys 
+    -- otherwise just sort the keys
     if order then
         table.sort(keys, function(a,b) return order(t, a, b) end)
     else
@@ -277,7 +277,7 @@ function iEET:LoadDefaults()
 		['SPELL_HEAL'] = true,
 		['SPELL_DISPEL'] = true,
 		['SPELL_INTERRUPT'] = true,
-		
+
 		['SPELL_PERIODIC_CAST_START'] = true,
 		['SPELL_PERIODIC_CAST_SUCCESS'] = true,
 		['SPELL_PERIODIC_AURA_APPLIED'] = true,
@@ -289,14 +289,14 @@ function iEET:LoadDefaults()
 		['SPELL_PERIODIC_CREATE'] = true,
 		['SPELL_PERIODIC_SUMMON'] = true,
 		['SPELL_PERIODIC_HEAL'] = true,
-		
+
 		['UNIT_DIED'] = true,
-		
+
 		['UNIT_SPELLCAST_SUCCEEDED'] = true,
 		['MONSTER_EMOTE'] = true,
 		['MONSTER_SAY'] = true,
 		['MONSTER_YELL'] = true,
-		
+
 		['ENCOUNTER_START'] = true,
 		['ENCOUNTER_END'] = true,
 	}
@@ -314,7 +314,7 @@ end
 function addon:ADDON_LOADED(addonName)
 	if addonName == 'iEncounterEventTracker' then
 		iEETConfig = iEETConfig or {}
-		if not iEETConfig.version or not iEETConfig.tracking or iEETConfig.version < 1.413 then -- Last version with db changes 
+		if not iEETConfig.version or not iEETConfig.tracking or iEETConfig.version < 1.413 then -- Last version with db changes
 			iEET:LoadDefaults()
 		else
 			iEETConfig.version = iEET.version
@@ -373,7 +373,7 @@ function addon:UNIT_SPELLCAST_SUCCEEDED(unitID, spellName,_,arg4,spellID)
 			php = math.floor(chp/maxhp*1000+0.5)/10
 		end
 		--3-2084-1520-9097-202968-0028916A53
-		if select(4, GetBuildInfo()) >= 70000 then	
+		if select(4, GetBuildInfo()) >= 70000 then
 			local id = select(5, strsplit('-', arg4))
 			spellID = tonumber(id)
 		end
@@ -391,7 +391,7 @@ function addon:UNIT_SPELLCAST_SUCCEEDED(unitID, spellName,_,arg4,spellID)
 				});
 			end
 		end
-	end	
+	end
 end
 function addon:CHAT_MSG_MONSTER_EMOTE(msg, sourceName)
 	table.insert(iEET.data, {
@@ -455,7 +455,7 @@ function addon:COMBAT_LOG_EVENT_UNFILTERED(timestamp,event,hideCaster,sourceGUID
 	end
 end
 function addon:UNIT_TARGET(unitID)
-	
+
 end
 function iEET:getColor(event, sourceGUID, spellID)
 	if sourceGUID then
@@ -499,7 +499,6 @@ function iEET:ScrollContent(delta)
 	if delta == -1 then
 		for i = 1, 8 do
 			--local f = _G['iEET_content' .. i]
-			
 			if IsShiftKeyDown() then
 				iEET['content' .. i]:PageDown()
 			else
@@ -512,7 +511,7 @@ function iEET:ScrollContent(delta)
 				iEET['content' .. i]:PageUp()
 			else
 				iEET['content' .. i]:ScrollUp()
-			end				
+			end
 		end
 	end
 end
@@ -536,7 +535,7 @@ function iEET:ScrollDetails(delta)
 					iEET['detailContent' .. i]:PageUp()
 				else
 					iEET['detailContent' .. i]:ScrollUp()
-				end	
+				end
 			end
 		end
 	end
@@ -566,14 +565,14 @@ function iEET:ShouldShow(eventData,e_time, msg) -- NEW, TESTING msg is a tempora
 		requireAll = true/false, --require all from/to combos
 		anyData = X,
 		showTime = true -- show time from nearest 'from' event instead of ENCOUNTER_START
-		
+
 	}
-	
+
 	i = 0.1
 	d = 0.2
 	]]
 	local shouldShow = true
-	--[[	
+	--[[
 	if eventData.sI and iEET.ignoring[eventData.sI] then
 		shouldShow = false
 	elseif iEET.interrupts[eventData.sI] and iEET.ignoring[0.1] then --0.1 = interrupts
@@ -593,7 +592,7 @@ function iEET:ShouldShow(eventData,e_time, msg) -- NEW, TESTING msg is a tempora
 			shouldShow = false
 		end
 	end
-	--]]	
+	--]]
 	if (eventData.sI and iEET.ignoring[eventData.sI]) or
 	(iEET.interrupts[eventData.sI] and iEET.ignoring[0.1]) or --0.1 = interrupts
 	(iEET.dispels[eventData.sI] and iEET.ignoring[0.2]) or --0.2 = dispels
@@ -722,13 +721,13 @@ function iEET:addSpellDetails(hyperlink, linkData)
 			local found = false
 			if v.sI then
 				if v.sI == spellIDToFind and v.e == eventToFind then
-					found = true 
+					found = true
 				end
 			end
 			if found then
 				local intervall = false
-				local timestamp = v.t-starttime or nil 
-				local casterName = v.cN or nil 
+				local timestamp = v.t-starttime or nil
+				local casterName = v.cN or nil
 				local targetName = v.tN or nil
 				local spellID = v.sI or nil
 				local event = v.e or nil
@@ -806,8 +805,8 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 			msg = string.gsub(msg, "|h", "") -- Spells
 			msg = string.gsub(msg, "|H", "") -- Spells
 			msg = string.gsub(msg, "|c........", "") -- Colors
-			msg = string.gsub(msg, "|r", "") -- Colors 
-		end	
+			msg = string.gsub(msg, "|r", "") -- Colors
+		end
 		iEET.content4:AddMessage('\124HiEETcustomyell:' .. event .. ':' .. msg .. '\124hMessage\124h', unpack(iEET:getColor(event, sourceGUID, spellID))) -- NEEDS CHANGING
 	elseif spellID then
 		local spellnametoShow = ''
@@ -844,8 +843,8 @@ function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink)
 		frame = iEET['detailContent' .. frameID]
 	end
 	if frameID == 1 or frameID == 2 then
-		if value then 
-			value = string.format("%.1f",value) 
+		if value then
+			value = string.format("%.1f",value)
 		end
 		if hyperlink then
 			value = hyperlink:format(value)
@@ -873,14 +872,13 @@ function iEET:loopData(msg)
 		iEET['content' .. i]:Clear()
 	end
 	iEET.encounterAbilitiesContent:Clear()
-	local from, to = false, false
 	iEET.collector = {
 		['encounterNPCs'] = {},
 		['encounterSpells'] = {},
 	}
 	for k,v in ipairs(iEET.data) do
 		if v.e == 27 then -- ENCOUNTER_START
-			starttime = v.t 
+			starttime = v.t
 		end
 		if v.cN and not iEET.collector.encounterNPCs[v.cN] and v.e ~= 27 and v.e ~= 28 then -- Collect npc names, 27 = ENCOUNTER_START, 28 = ENCOUNTER_END
 			if v.e == 26 then -- UNIT_SPELLCAST_SUCCEEDED
@@ -934,7 +932,8 @@ function iEET:loopData(msg)
 			end
 		end
 		--]]
-		if iEET:ShouldShow(v,starttime, msg) then -- NEW, TESTING
+		if iEET:ShouldShow(v,starttime, msg) then
+			--TO DO: Clean up
 			local intervall = nil
 			local timestamp = v.t-starttime or nil
 			local casterName = v.cN or nil
@@ -1118,8 +1117,8 @@ function iEET:updateOptionMenu()
 		-- NPCs
 		local tempIgnoreNPCs = {text = "Ignore NPCs", hasArrow = true, notCheckable = true, menuList = {}}
 		for k in spairs(iEET.collector.encounterNPCs) do
-			table.insert(tempIgnoreNPCs.menuList, { 
-			text = k, 
+			table.insert(tempIgnoreNPCs.menuList, {
+			text = k,
 			isNotRadio = true,
 			checked = iEET.ignoring[k],
 			keepShownOnClick = true,
@@ -1137,15 +1136,15 @@ function iEET:updateOptionMenu()
 			if iEET.editbox:GetText() ~= 'Search' then
 				iEET:loopData(iEET.editbox:GetText())
 			else
-				iEET:loopData() 
+				iEET:loopData()
 			end
 		end})
 		table.insert(iEET.optionMenu, tempIgnoreNPCs)
 		-- Spells
 		local tempIgnoreSpells = {text = "Ignore Spells", hasArrow = true, notCheckable = true, menuList = {}}
 		for k,v in spairs(iEET.collector.encounterSpells) do
-			table.insert(tempIgnoreSpells.menuList, { 
-			text = k .. ' - ' .. v, 
+			table.insert(tempIgnoreSpells.menuList, {
+			text = k .. ' - ' .. v,
 			isNotRadio = true,
 			checked = iEET.ignoring[k],
 			keepShownOnClick = true,
@@ -1163,20 +1162,20 @@ function iEET:updateOptionMenu()
 			if iEET.editbox:GetText() ~= 'Search' then
 				iEET:loopData(iEET.editbox:GetText())
 			else
-				iEET:loopData() 
+				iEET:loopData()
 			end
 		end})
 		table.insert(iEET.optionMenu, tempIgnoreSpells)
 	end
 	local tempEvents = {text = "Events", hasArrow = true, notCheckable = true, menuList = {}}
 	for k,_ in spairs(iEETConfig.tracking) do
-		table.insert(tempEvents.menuList, { 
-			text = k, 
+		table.insert(tempEvents.menuList, {
+			text = k,
 			isNotRadio = true,
 			checked = iEETConfig.tracking[k],
 			--checked = false,
 			keepShownOnClick = true,
-			func = function() 
+			func = function()
 				if iEETConfig.tracking[k] then
 					iEETConfig.tracking[k] = false
 				else
@@ -1190,7 +1189,7 @@ function iEET:updateOptionMenu()
 		if iEET.editbox:GetText() ~= 'Search' then
 			iEET:loopData(iEET.editbox:GetText())
 		else
-			iEET:loopData() 
+			iEET:loopData()
 		end
 	end})
 	table.insert(iEET.optionMenu, tempEvents)
@@ -1227,8 +1226,8 @@ function iEET:updateEncounterListMenu()
 			table.insert(encountersTempTable[temp.eN][temp.d], temp)
 		end -- Sorted by encounter -> Sort by ids inside
 		-- temp{} -> encounter{} -> difficulty{} -> fight{}
-		
-		
+
+
 		for encounterName,_ in spairs(encountersTempTable) do -- Get alphabetically sorted encounters
 			--Looping bosses
 			--print(encounterName) -- Debug
@@ -1246,19 +1245,19 @@ function iEET:updateEncounterListMenu()
 						hasArrow = true,
 						checked = false,
 						keepShownOnClick = false,
-						func = function() 
+						func = function()
 							iEET:ImportData(v.dataKey)
 							iEET:Toggle(true) -- not really needed
 							CloseDropDownMenus()
 						end,
 						menuList = {{ -- delete menu
-							text = 'Delete', 
-							notCheckable = true, 
-							func = function() 
+							text = 'Delete',
+							notCheckable = true,
+							func = function()
 								iEET_Data[v.dataKey] = nil
 								iEET:updateEncounterListMenu()
 							end,
-						},}, 
+						},},
 					}
 					table.insert(t2.menuList, fightEntry)
 				end
@@ -1287,7 +1286,7 @@ function iEET:CreateMainFrame()
 			if iEET.editbox:GetText() ~= 'Search' then
 				iEET:loopData(iEET.editbox:GetText())
 			else
-				iEET:loopData() 
+				iEET:loopData()
 			end
 		end
 	end)
@@ -1307,7 +1306,7 @@ function iEET:CreateMainFrame()
 	iEET.top:SetScript('OnMouseUp', function(self, button)
 		iEET.frame:StopMovingOrSizing()
 	end)
-	
+
 	iEET.top:EnableMouse(true)
 	iEET.top:Show()
 	iEET.top:SetFrameStrata('HIGH')
@@ -1316,9 +1315,9 @@ function iEET:CreateMainFrame()
 	iEET.detailtop:SetSize(405, 25)
 	iEET.detailtop:SetPoint('RIGHT', iEET.top, 'LEFT', 1, 0)
 	iEET.detailtop:SetBackdrop({
-		bgFile = "Interface\\Buttons\\WHITE8x8", 
-		edgeFile = "Interface\\Buttons\\WHITE8x8", 
-		edgeSize = 1, 
+		bgFile = "Interface\\Buttons\\WHITE8x8",
+		edgeFile = "Interface\\Buttons\\WHITE8x8",
+		edgeSize = 1,
 		insets = {
 			left = -1,
 			right = -1,
@@ -1339,14 +1338,14 @@ function iEET:CreateMainFrame()
 	iEET.detailtop:SetFrameStrata('HIGH')
 	iEET.detailtop:SetFrameLevel(1)
 	iEET.detailtop:EnableMouse(true)
-	
+
 	iEET.encounterAbilities = CreateFrame('FRAME', nil, iEET.frame)
 	iEET.encounterAbilities:SetSize(200, 25)
 	iEET.encounterAbilities:SetPoint('LEFT', iEET.top, 'RIGHT', -1, 0)
 	iEET.encounterAbilities:SetBackdrop({
-		bgFile = "Interface\\Buttons\\WHITE8x8", 
-		edgeFile = "Interface\\Buttons\\WHITE8x8", 
-		edgeSize = 1, 
+		bgFile = "Interface\\Buttons\\WHITE8x8",
+		edgeFile = "Interface\\Buttons\\WHITE8x8",
+		edgeSize = 1,
 		insets = {
 			left = -1,
 			right = -1,
@@ -1385,15 +1384,15 @@ function iEET:CreateMainFrame()
 		iEET['contentAnchor' .. i]:SetSize(slices[i], 834)
 		if not lastframe then
 			iEET['contentAnchor' .. i]:SetPoint('TOPLEFT', iEET.frame, 'TOPLEFT', 0, 0)
-			lastframe = 'contentAnchor' .. i 
+			lastframe = 'contentAnchor' .. i
 		else
 			iEET['contentAnchor' .. i]:SetPoint('LEFT', iEET[lastframe], 'RIGHT', -1,0)
-			lastframe = 'contentAnchor' .. i 
+			lastframe = 'contentAnchor' .. i
 		end
 		iEET['contentAnchor' .. i]:SetBackdrop({
-			bgFile = "Interface\\Buttons\\WHITE8x8", 
-			edgeFile = "Interface\\Buttons\\WHITE8x8", 
-			edgeSize = 1, 
+			bgFile = "Interface\\Buttons\\WHITE8x8",
+			edgeFile = "Interface\\Buttons\\WHITE8x8",
+			edgeSize = 1,
 			insets = {
 				left = -1,
 				right = -1,
@@ -1404,7 +1403,7 @@ function iEET:CreateMainFrame()
 		iEET['contentAnchor' .. i]:SetBackdropColor(0.1,0.1,0.1,0.9)
 		iEET['contentAnchor' .. i]:SetBackdropBorderColor(0,0,0,1)
 		---
-		
+
 		iEET['content' .. i] = CreateFrame('ScrollingMessageFrame', nil, iEET['contentAnchor' .. i])
 		iEET['content' .. i]:SetSize(slices[i]-8,828)
 		iEET['content' .. i]:SetPoint('CENTER', iEET['contentAnchor' .. i], 'CENTER', 0, 0)
@@ -1415,7 +1414,7 @@ function iEET:CreateMainFrame()
 		iEET['content' .. i]:SetMaxLines(5000)
 		iEET['content' .. i]:SetSpacing(iEET.spacing)
 		iEET['content' .. i]:EnableMouseWheel(true)
-		
+
 		iEET['content' .. i]:SetIndentedWordWrap(false)
 		iEET['content' .. i]:SetScript("OnMouseWheel", function(self, delta)
 			iEET:ScrollContent(delta)
@@ -1443,7 +1442,7 @@ function iEET:CreateMainFrame()
 					local _, txt = strsplit(':',linkData)
 					GameTooltip:SetText(txt)
 				else
-					GameTooltip:SetHyperlink(link)		
+					GameTooltip:SetHyperlink(link)
 				end
 				GameTooltip:Show()
 			end)
@@ -1473,21 +1472,21 @@ function iEET:CreateMainFrame()
 	lastframe = false
 	for i=7, 1, -1 do ---detail content
 		---anhorframe
-		if i == 4 then 
+		if i == 4 then
 		else
 		iEET['detailAnchor' .. i] = CreateFrame('FRAME', nil, iEET.frame)
 		iEET['detailAnchor' .. i]:SetSize(slices[i], 400)
 		if not lastframe then
 			iEET['detailAnchor' .. i]:SetPoint('TOPRIGHT', iEET.frame, 'TOPLEFT', 1, 0)
-			lastframe = 'detailAnchor' .. i 
+			lastframe = 'detailAnchor' .. i
 		else
 			iEET['detailAnchor' .. i]:SetPoint('RIGHT', iEET[lastframe], 'LEFT', 1,0)
 			lastframe = 'detailAnchor' .. i
 		end
 		iEET['detailAnchor' .. i]:SetBackdrop({
-			bgFile = "Interface\\Buttons\\WHITE8x8", 
-			edgeFile = "Interface\\Buttons\\WHITE8x8", 
-			edgeSize = 1, 
+			bgFile = "Interface\\Buttons\\WHITE8x8",
+			edgeFile = "Interface\\Buttons\\WHITE8x8",
+			edgeSize = 1,
 			insets = {
 				left = -1,
 				right = -1,
@@ -1517,7 +1516,7 @@ function iEET:CreateMainFrame()
 				GameTooltip:SetOwner(iEET.frame, "ANCHOR_TOPRIGHT", 0-iEET.frame:GetWidth(), 0-iEET.frame:GetHeight())
 				GameTooltip:ClearLines()
 				local _, txt = strsplit(':',linkData)
-				GameTooltip:SetText(txt)	
+				GameTooltip:SetText(txt)
 				GameTooltip:Show()
 			end)
 		end
@@ -1533,9 +1532,9 @@ function iEET:CreateMainFrame()
 		iEET.encounterAbilitiesAnchor:SetSize(200, 400)
 		iEET.encounterAbilitiesAnchor:SetPoint('TOPLEFT', iEET.frame, 'TOPRIGHT', -1, 0)
 		iEET.encounterAbilitiesAnchor:SetBackdrop({
-			bgFile = "Interface\\Buttons\\WHITE8x8", 
-			edgeFile = "Interface\\Buttons\\WHITE8x8", 
-			edgeSize = 1, 
+			bgFile = "Interface\\Buttons\\WHITE8x8",
+			edgeFile = "Interface\\Buttons\\WHITE8x8",
+			edgeSize = 1,
 			insets = {
 				left = -1,
 				right = -1,
@@ -1569,13 +1568,13 @@ function iEET:CreateMainFrame()
 					iEET.encounterAbilitiesContent:PageUp()
 				else
 					iEET.encounterAbilitiesContent:ScrollUp()
-				end				
+				end
 			end
 		end)
 		iEET.encounterAbilitiesContent:SetScript("OnHyperlinkEnter", function(self, linkData, link)
 			GameTooltip:SetOwner(iEET.frame, "ANCHOR_TOPRIGHT", 0-iEET.frame:GetWidth(), 0-iEET.frame:GetHeight())
-			GameTooltip:ClearLines()		
-			GameTooltip:SetHyperlink(link)		
+			GameTooltip:ClearLines()
+			GameTooltip:SetHyperlink(link)
 			GameTooltip:Show()
 		end)
 		iEET.encounterAbilitiesContent:SetScript("OnHyperlinkClick", function(self, linkData, link, button)
@@ -1608,9 +1607,9 @@ function iEET:CreateMainFrame()
 	iEET.editbox = CreateFrame('EditBox', 'iEETEditBox', iEET.frame)
 	--local editbox = CreateFrame('EditBox', 'iEETEditBox', f, 'InputBoxTemplate')
 	iEET.editbox:SetBackdrop({
-			bgFile = "Interface\\Buttons\\WHITE8x8", 
-			edgeFile = "Interface\\Buttons\\WHITE8x8", 
-			edgeSize = 1, 
+			bgFile = "Interface\\Buttons\\WHITE8x8",
+			edgeFile = "Interface\\Buttons\\WHITE8x8",
+			edgeSize = 1,
 			insets = {
 				left = -1,
 				right = -1,
@@ -1679,7 +1678,7 @@ function iEET:CreateMainFrame()
 	iEET:updateEncounterListMenu()
 	----end of encounter list button
 	iEET:loopData()
-	
+
 end
 function iEET:CreateOptionsFrame()
 	-- Options main frame
@@ -1744,7 +1743,7 @@ function iEET:CreateOptionsFrame()
 				iEET.optionsFrameFilterTexts:PageUp()
 			else
 				iEET.optionsFrameFilterTexts:ScrollUp()
-			end				
+			end
 		end
 	end)
 	iEET.optionsFrameFilterTexts:EnableMouse(true)
@@ -1753,9 +1752,9 @@ function iEET:CreateOptionsFrame()
 	-- Options Editbox
 	iEET.optionsFrameEditbox = CreateFrame('EditBox', 'iEETOptionsEditBox', iEET.optionsFrame)
 	iEET.optionsFrameEditbox:SetBackdrop({
-			bgFile = "Interface\\Buttons\\WHITE8x8", 
-			edgeFile = "Interface\\Buttons\\WHITE8x8", 
-			edgeSize = 1, 
+			bgFile = "Interface\\Buttons\\WHITE8x8",
+			edgeFile = "Interface\\Buttons\\WHITE8x8",
+			edgeSize = 1,
 			insets = {
 				left = -1,
 				right = -1,
@@ -1859,7 +1858,7 @@ function iEET:Toggle(show)
 		elseif iEET.frame:IsShown() and not show then
 			iEET.frame:Hide()
 		else
-			iEET.frame:Show()		
+			iEET.frame:Show()
 			iEET:updateEncounterListMenu()
 		end
 	elseif iEET.frame and not show then
@@ -1871,9 +1870,9 @@ function iEET:toggleCopyFrame(forceShow)
 	if not iEET.copyFrame and not InCombatLockdown() then
 		iEET.copyFrame = CreateFrame('EditBox', 'iEETCopyFrame', UIParent)
 		iEET.copyFrame:SetBackdrop({
-				bgFile = "Interface\\Buttons\\WHITE8x8", 
-				edgeFile = "Interface\\Buttons\\WHITE8x8", 
-				edgeSize = 1, 
+				bgFile = "Interface\\Buttons\\WHITE8x8",
+				edgeFile = "Interface\\Buttons\\WHITE8x8",
+				edgeSize = 1,
 				insets = {
 					left = -1,
 					right = -1,
@@ -1906,12 +1905,12 @@ function iEET:toggleCopyFrame(forceShow)
 	end
 end
 function iEET:copyCurrent()
-	
+
 	--iEET['content' .. i]GetCurrentLine()
 	local totalData = ''
 	for line = 1, iEET.content1:GetNumMessages() do
 		local lineData = ''
-		for i = 1, 8 do 
+		for i = 1, 8 do
 			lineData = lineData .. iEET['content' .. i]:GetMessageInfo(line) .. '\t'
 		end
 		totalData = totalData .. '\r' .. string.gsub(lineData, '+', '') --+SAURA etc messes excel so remove +, should be enough for excel
@@ -1929,7 +1928,7 @@ function iEET:ExportData(auto)
 				return
 			end
 			if InCombatLockdown() then
-				C_Timer.After(3, function() 
+				C_Timer.After(3, function()
 					iEET:ExportData(true)
 				end)
 				return
@@ -1946,7 +1945,7 @@ function iEET:ExportData(auto)
 				t = t .. '{' .. a .. '=' .. b .. '}'
 			end
 			dataString = dataString .. '|D|' .. t .. '|D|'
-			
+
 		end
 		if not iEET_Data then
 			iEET_Data = {}
@@ -1979,7 +1978,7 @@ function iEET:ImportData(dataKey)
 		table.insert(iEET.data, tempTable)
 	end
 	iEET:loopData()
-	local s = 
+	local s =
 	iEET:print(string.format('Imported %s on %s (%s), %sman (%s), Time: %s.',iEET.encounterInfoData.eN,GetDifficultyInfo(iEET.encounterInfoData.d),iEET.encounterInfoData.fT, iEET.encounterInfoData.rS, (iEET.encounterInfoData.k == 1 and 'kill' or 'wipe'), iEET.encounterInfoData.pT))
 end
 function iEET:ConvertOldReports()
@@ -2084,7 +2083,6 @@ function IEET_TOGGLE(window)
 		iEET:Options()
 	end
 end
-
 function iEET_Debug(v)
 	return iEET[v]
 end
