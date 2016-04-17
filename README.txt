@@ -11,6 +11,8 @@ bnet:
 --General------------------
 ---------------------------
 
+red line on the top of the main window indicates that you have filters active that doens't show up in the main window (check filtering options)
+
 use mousewheel to scroll down/up
 shift+mousewheel for fast scrolling
 
