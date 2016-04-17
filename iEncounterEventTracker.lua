@@ -662,16 +662,24 @@ function iEET:ShouldShow(eventData,e_time, msg) -- NEW, TESTING msg is a tempora
 		end
 		if timeOK then
 			if #iEETConfig.filtering.req > 0 or msg then
-				for k,v in pairs(eventData) do -- loop trough current event
-					for _,t in ipairs(iEETConfig.filtering.req) do
-						for requiredKey, requiredValue in pairs(t) do -- try to find right values
-							if (k == requiredKey and v == requiredValue) then
-								return true -- found right value
-							end
+				for _,t in ipairs(iEETConfig.filtering.req) do
+					local found = 0
+					local c = 0
+					for requiredKey, requiredValue in pairs(t) do -- try to find right values
+						if eventData[requiredKey] and eventData[requiredKey] == requiredValue then
+							found = found + 1
 						end
+						c = c + 1
 					end
-					if msg and string.find(string.lower(v),msg) then
-						return true
+					if found > 0 and found == c then
+						return true -- found right values
+					end
+				end
+				if msg then
+					for k,v in pairs(eventData) do -- loop trough current event
+						if msg and string.find(string.lower(v),msg) then
+							return true
+						end
 					end
 				end
 				return false -- found nothing
@@ -688,12 +696,7 @@ end
 function iEET:FillFilters()
 	iEET.optionsFrameFilterTexts:Clear()
 	for _,t in pairs(iEETConfig.filtering.req) do
-		for k,v in pairs(t) do
-			if k == 'e' then
-				v = iEET.events.fromID[v].l
-			end
-			iEET:AddNewFiltering(k .. '=' .. v)
-		end
+		iEET:AddNewFiltering(t)
 	end
 end
 function iEET:addSpellDetails(hyperlink, linkData)
@@ -907,31 +910,6 @@ function iEET:loopData(msg)
 				iEET:addToEncounterAbilities(v.sI, v.sN)
 			end
 		end
-		--[[
-		if v.e == 26 then -- UNIT_SPELLCAST_SUCCEEDED
-			if v.sI and v.sN and not iEET.collector.encounterSpells[v.sI] then
-				if iEET.interrupts[v.sI] then
-					if not iEET.collector.encounterSpells[0.1] then
-						iEET.collector.encounterSpells[0.1] = 'Interrupts'
-					end
-				elseif iEET.dispels[v.sI] then
-					if not iEET.collector.encounterSpells[0.2] then
-						iEET.collector.encounterSpells[0.2] = 'Dispels'
-					end
-				else
-					iEET.collector.encounterSpells[v.sI] = v.sN
-					iEET:addToEncounterAbilities(v.sI, v.sN)
-				end
-			end
-			if string.find(v.tN, 'nameplate') then -- could be safe to assume that there will be atleast one nameplate unitid
-				if not not iEET.collector.encounterNPCs then
-					iEET.collector.encounterNPCs.nameplates = true
-				end
-			elseif v.tN and not iEET.collector.encounterNPCs[v.tN] then
-				iEET.collector.encounterNPCs[v.tN] = true
-			end
-		end
-		--]]
 		if iEET:ShouldShow(v,starttime, msg) then
 			--TO DO: Clean up
 			local intervall = nil
@@ -995,22 +973,24 @@ function iEET:loopData(msg)
 	end
 	iEET.frame:Show()
 end
-function iEET:AddNewFiltering(txt)
-	--print(text) -- Debug
-	local newFilters = {}
-	-- split by args by ';'
-	--[[ temp fix for spellid only tracking
-	local temp = { strsplit(';', txt) }
-	for v in pairs(temp) do
-		print(v)
-		local msg = 'spellID:' .. v
+function iEET:AddNewFiltering(msg)
+	if type(msg) == 'table' then
+		local s = false
+		for k,v in pairs(msg) do
+			if k == 'e' then
+				v = iEET.events.fromID[v].l
+			end
+			if not s then
+				s = k .. '=' .. v
+			else
+				s = s .. ';' .. k .. '=' .. v
+			end
+		end
+		msg = s
+	elseif tonumber(msg) then
+		msg = 'sI=' .. msg 
 	end
-	--]]
-	if tonumber(txt) then
-		txt = 'sI=' .. txt
-	end
-	iEET.optionsFrameFilterTexts:AddMessage(txt)
-	--iEET:addNewFilterToOptionsWindow(arg)
+	iEET.optionsFrameFilterTexts:AddMessage(msg)
 end
 function iEET:ClearFilteringArgs()
 	iEETConfig.filtering = {
@@ -1020,50 +1000,70 @@ function iEET:ClearFilteringArgs()
 		showTime = false, -- show time from nearest 'from' event instead of ENCOUNTER_START
 	}
 end
-function iEET:GetFiltersFromLine(line)
-	local t = {}
-	for _,arg in pairs({strsplit(';', line)}) do
-		if string.match(arg, '^(%a-)=(%d+)') then --change to elseif when from/to filtering is done?
-			k,v = string.match(arg, '^(%a-)=(%d+)')
-			table.insert(t, {[k] = tonumber(v)})
-		elseif string.match(arg, '^(%a-)=(%a+)') then
-			k,v = strsplit('=', arg)
-			if k == 'e' then
-				if not tonumber(v) then
-					v = iEET.events.toID[v]
-				end
-			end
-			table.insert(t, {[k] = v})
-		elseif tonumber(arg) then
-			table.insert(t, {['sI'] = tonumber(arg)})
-		end
-	end
-	if #t > 0 then
-		return t
-	else
-		return
-	end
-end
 function iEET:ParseFilters()
+	local possibleNames = {
+		['event'] = 'e',
+		['spellid'] = 'sI',
+		['spellname'] = 'sN',
+		['time'] = 't',
+		['sourceguid'] = 'sG',
+		['sourcename'] = 'cN',
+		['destname'] = 'tN',
+		['unitid'] = 'tN',
+		['health'] = 'hp',
+		['e'] = 'e',
+		['si'] = 'sI',
+		['sn'] = 'sN',
+		['t'] = 't',
+		['sg'] = 'sG',
+		['cn'] = 'cN',
+		['tn'] = 'tN',
+		['hp'] = 'hp',
+	}
 	local function GetFiltersFromLine(line)
 		local t = {}
 		for _,arg in pairs({strsplit(';', line)}) do
+			arg = arg:gsub('^%s*(.-)%s*$', '%1')
 			if string.match(arg, '^(%a-)=(%d+)') then --change to elseif when from/to filtering is done?
 				local k,v = string.match(arg, '^(%a-)=(%d+)')
-				table.insert(t, {[k] = tonumber(v)})
+				if possibleNames[string.lower(k)] then
+					k = possibleNames[string.lower(k)]
+				end
+				t[k] = tonumber(v)
 			elseif string.match(arg, '^(%a-)=(%a+)') then
 				local k,v = strsplit('=', arg)
+				if possibleNames[string.lower(k)] then
+					k = possibleNames[string.lower(k)]
+				end
 				if k == 'e' then
 					if not tonumber(v) then
-						v = iEET.events.toID[v]
+						v = string.upper(v)
+						if iEET.events.toID[v] then
+							v = iEET.events.toID[v]
+						else
+							for id,names in pairs(iEET.events.fromID) do
+								if names.s == v then
+									v = id
+									break
+								end
+							end
+						end
 					end
 				end
-				table.insert(t, {[k] = v})
+				if k == 'e' and not tonumber(v) then
+						iEET:print('Invalid event: ' .. v)
+				else
+					t[k] = v
+				end
 			elseif tonumber(arg) then
-				table.insert(t, {['sI'] = tonumber(arg)})
+				t['sI'] = tonumber(arg)
 			end
 		end
-		if #t > 0 then
+		local c = 0
+		for _ in pairs(t) do -- count entries
+			c = c + 1
+		end
+		if c > 0 then
 			return t
 		else
 			return
@@ -1073,10 +1073,9 @@ function iEET:ParseFilters()
 	iEET:ClearFilteringArgs()	--Clear old filters
 	for i = 1, iEET.optionsFrameFilterTexts:GetNumMessages() do
 		local line = iEET.optionsFrameFilterTexts:GetMessageInfo(i)
-		--[[
 		if string.find(line, 'FROM') or string.find(line, 'TO') then
 			local fromTo = {}
-			for _,v pairs({strsplit(' AND ', line)}) do	-- NEEDS TESTING
+			for _,v in pairs({strsplit(' AND ', line)}) do	-- NEEDS TESTING
 				if string.find(v,'FROM') then
 					fromTo.from = GetFiltersFromLine(v)
 				else --TO
@@ -1089,21 +1088,6 @@ function iEET:ParseFilters()
 			if t then
 				table.insert(iEETConfig.filtering.req, t)
 			end
-		end
-		--]]
-		if string.match(line, '^(%a-)=(%d+)') then --change to elseif when from/to filtering is done?
-			local k,v = string.match(line, '^(%a-)=(%d+)')
-			table.insert(iEETConfig.filtering.req, {[k] = tonumber(v)})
-		elseif string.match(line, '^(%a-)=(%a+)') then
-			local k,v = strsplit('=', line)
-			if k == 'e' then
-				if not tonumber(v) then
-					v = iEET.events.toID[v]
-				end
-			end
-			table.insert(iEETConfig.filtering.req, {[k] = v})
-		elseif tonumber(line) then
-			table.insert(iEETConfig.filtering.req, {['sI'] = tonumber(line)})
 		end
 	end
 	iEET:loopData()
@@ -1283,8 +1267,9 @@ function iEET:CreateMainFrame()
 	iEET.frame:SetScript('OnShow', function()
 		if not iEET.loopDataCall or (iEET.loopDataCall and (GetTime() - iEET.loopDataCall > 0.5)) then -- avoid infinite loops
 			iEET.loopDataCall = GetTime()
-			if iEET.editbox:GetText() ~= 'Search' then
-				iEET:loopData(iEET.editbox:GetText())
+			local txt = iEET.editbox:GetText()
+			if txt ~= 'Search' and string.len(txt) > 0 then
+				iEET:loopData(txt)
 			else
 				iEET:loopData()
 			end
@@ -1765,8 +1750,7 @@ function iEET:CreateOptionsFrame()
 	iEET.optionsFrameEditbox:SetBackdropColor(0.1,0.1,0.1,0.2)
 	iEET.optionsFrameEditbox:SetBackdropBorderColor(0,0,0,1)
 	iEET.optionsFrameEditbox:SetScript('OnEnterPressed', function()
-		--TO DO: allow ';' splitting
-		local txt = iEET.optionsFrameEditbox:GetText()
+		local txt = (iEET.optionsFrameEditbox:GetText()):gsub('^%s*(.-)%s*$', '%1')
 		if string.match(txt, 'del:(%d+)') then
 			local toDelete = tonumber(string.match(txt, 'del:(%d+)'))
 			local t = {}
@@ -1785,7 +1769,7 @@ function iEET:CreateOptionsFrame()
 			iEET.optionsFrameFilterTexts:Clear()
 			iEET.optionsFrameEditbox:SetText('')
 		elseif string.match(txt, '^(%a-)=(%d+)') or string.match(txt, '^(%a-)=(%a+)') or tonumber(txt) then
-			iEET:AddNewFiltering(iEET.optionsFrameEditbox:GetText())
+			iEET:AddNewFiltering(txt)
 			iEET.optionsFrameEditbox:SetText('')
 		else
 			iEET:print('error, invalid filter')
@@ -1827,7 +1811,7 @@ function iEET:CreateOptionsFrame()
 	iEET.optionsFrameCancelButton.text = iEET.optionsFrameCancelButton:CreateFontString()
 	iEET.optionsFrameCancelButton.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
 	iEET.optionsFrameCancelButton.text:SetPoint('CENTER', iEET.optionsFrameCancelButton, 'CENTER', 0,0)
-	iEET.optionsFrameCancelButton.text:SetText('Close')
+	iEET.optionsFrameCancelButton.text:SetText('Cancel')
 	iEET.optionsFrameCancelButton:SetBackdropBorderColor(0.64,0,0,1)
 	iEET.optionsFrameCancelButton:SetPoint('BOTTOMLEFT', iEET.optionsFrame, 'BOTTOM', 2,4)
 	iEET.optionsFrameCancelButton:Show()
