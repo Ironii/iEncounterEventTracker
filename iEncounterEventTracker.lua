@@ -19,8 +19,9 @@ target tracking
 --]]
 local _, iEET = ...
 iEET.data = {}
+local isAlpha = select(4, GetBuildInfo()) >= 70000 and true or false
 iEET.ignoring = {} -- so ignore list resets on relog, don't want to save it, atleast not yet
-iEET.font = select(4, GetBuildInfo()) >= 70000 and 'Fonts\\ARIALN.TTF' or 'Interface\\AddOns\\iEncounterEventTracker\\Accidental Presidency.ttf'
+iEET.font = isAlpha and 'Fonts\\ARIALN.TTF' or 'Interface\\AddOns\\iEncounterEventTracker\\Accidental Presidency.ttf'
 iEET.fontsize = 12
 iEET.spacing = 2
 iEET.justifyH = 'LEFT'
@@ -35,7 +36,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.419
+iEET.version = 1.420
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -918,8 +919,16 @@ function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink)
 		if hyperlink then
 			value = hyperlink:format(value)
 		end
-	elseif frameID == 5 or frameID == 6 then
-		if value and string.len(value) > 16 then
+	elseif frameID == 5 then
+		if isAlpha and value and string.len(value) > 16 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
+			value = string.sub(value, 1, 16)
+		elseif value and string.len(value) > 18 then
+			value = string.sub(value, 1, 18)
+		end
+	elseif frameID == 6 then
+		if isAlpha and value and string.len(value) > 14 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
+			value = string.sub(value, 1, 14)
+		elseif value and string.len(value) > 16 then
 			value = string.sub(value, 1, 16)
 		end
 	end
@@ -1522,8 +1531,7 @@ function iEET:CreateMainFrame()
 		iEET['content' .. i]:SetMaxLines(5000)
 		iEET['content' .. i]:SetSpacing(iEET.spacing)
 		iEET['content' .. i]:EnableMouseWheel(true)
-
-		iEET['content' .. i]:SetIndentedWordWrap(false)
+		--iEET['content' .. i]:SetIndentedWordWrap(true)
 		iEET['content' .. i]:SetScript("OnMouseWheel", function(self, delta)
 			iEET:ScrollContent(delta)
 		end)
