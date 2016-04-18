@@ -15,7 +15,6 @@ hp	Health		number	USCS only
 --[[TO DO:--
 compare
 better filtering, FROM/TO Left
-reset & exit button
 target tracking
 --]]
 local _, iEET = ...
@@ -36,7 +35,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.417
+iEET.version = 1.418
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -1383,7 +1382,6 @@ function iEET:CreateMainFrame()
 	iEET.encounterAbilities:SetFrameStrata('HIGH')
 	iEET.encounterAbilities:SetFrameLevel(1)
 	iEET.encounterAbilities:EnableMouse(true)
-	-----EXCEL STYLE test -----
 	local lastframe = false
 	local slices = {
 		[1] = 36,
@@ -1604,8 +1602,6 @@ function iEET:CreateMainFrame()
 		iEET.encounterAbilitiesContent:SetFrameStrata('HIGH')
 		iEET.encounterAbilitiesContent:SetFrameLevel(2)
 	end
-	--]]
-	---- END OF EXCEL STYLE TEST ---
 	iEET.detailInfo = iEET.frame:CreateFontString('iEETDetailInfo')
 	iEET.detailInfo:SetFont(iEET.font, iEET.fontsize, "OUTLINE")
 	iEET.detailInfo:SetPoint("CENTER", iEET.detailtop, 'CENTER', 0,0)
@@ -1620,9 +1616,7 @@ function iEET:CreateMainFrame()
 	iEET.frame:SetMovable(true)
 	local scale = (0.63999998569489/iEET.frame:GetEffectiveScale())
 	iEET.frame:SetScale(scale)
-	--iEET.editbox = CreateFrame('EditBox', 'iEETEditBox', iEET.frame,'SearchBoxTemplate')
 	iEET.editbox = CreateFrame('EditBox', 'iEETEditBox', iEET.frame)
-	--local editbox = CreateFrame('EditBox', 'iEETEditBox', f, 'InputBoxTemplate')
 	iEET.editbox:SetBackdrop({
 			bgFile = "Interface\\Buttons\\WHITE8x8",
 			edgeFile = "Interface\\Buttons\\WHITE8x8",
@@ -1736,6 +1730,112 @@ function iEET:CreateOptionsFrame()
 	iEET.optionsFrameTopInfo:SetPoint('CENTER', iEET.optionsFrameTop, 'CENTER', 0,0)
 	iEET.optionsFrameTopInfo:SetText('Filtering options')
 	iEET.optionsFrameTopInfo:Show()
+	--Info frame
+	local function infoFrame(hide)
+		if hide and iEET.infoFrame then
+			iEET.infoFrame:Hide()
+		else
+			if iEET.infoFrame then
+				iEET.infoFrame:Show()
+			else
+				iEET.infoFrame = CreateFrame('Frame', 'iEETOptionsFrame', UIParent)
+				iEET.infoFrame:SetPoint('TOPLEFT', iEET.optionsFrameTop, 'TOPRIGHT', -1,0)
+				iEET.infoFrame:SetBackdrop(iEET.backdrop);
+				iEET.infoFrame:SetBackdropColor(0.1,0.1,0.1,0.9)
+				iEET.infoFrame:SetBackdropBorderColor(0.64,0,0,1)
+				iEET.infoFrame:Show()
+				iEET.infoFrame:SetFrameStrata('DIALOG')
+				iEET.infoFrame:SetFrameLevel(1)
+				local scale = (0.63999998569489/iEET.infoFrame:GetEffectiveScale())
+				iEET.infoFrame:SetScale(scale)
+				iEET.infoFrame.text = iEET.infoFrame:CreateFontString()
+				iEET.infoFrame.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+				iEET.infoFrame.text:SetPoint('TOPLEFT', iEET.infoFrame, 'TOPLEFT', 2,-2)
+				iEET.infoFrame.text:SetJustifyH('LEFT')
+				local infoText = [[
+Usage:
+Key=Value
+
+Split different argument with ';', eg.
+k=v;k=v;k=v
+e=2; si=205231; tn=Tichondrius; cn=Beholder
+shows every event where event is SPELL_CAST_SUCCESS, spellID = 205231, 
+caster name (sourceName) = Beholder and the target is Tichondrius
+
+205231, using only numbers, ieet will assume you want search with spellID and shows every event where spellID = 205231
+
+possible key values (not case sensitive):
+t/time, number (doesn't support >/<, atleast not yet)
+e/event, number or string(long or short event names), numbers & names at the bottom
+sG/sourceGUID, string, UNIT_DIED:destGUID
+cN/sourceName, string, UNIT_DIED:destName
+tN/destName/unitID, string, USCS: source unitID
+sN/spellName, string
+sI/spellID, number
+hp, number, USCS only (doesn't support >/<, atleast not yet)
+
+
+to clear all filters use: clear
+to delete just one use: del:x, eg del:1 will delete the first filter (from bottom)
+
+REMEMBER TO CLICK 'Save' IF YOU WANT TO SAVE YOUR FILTERS, CLICKING 'Cancel' WILL ERASE YOUR EDITS
+
+Event names/values:
+1/SPELL_CAST_START/SC_START
+2/SPELL_CAST_SUCCESS/SC_SUCCESS
+3/SPELL_AURA_APPLIED/+SAURA
+4/SPELL_AURA_REMOVED/-SAURA
+5/SPELL_AURA_APPLIED_DOSE/+SA_DOSE
+6/SPELL_AURA_REMOVED_DOSE/-SA_DOSE
+7/SPELL_AURA_REFRESH/SAURA_R
+8/SPELL_CAST_FAILED/SC_FAILED
+9/SPELL_CREATE
+10/SPELL_SUMMON
+11/SPELL_HEAL
+12/SPELL_DISPEL
+13/SPELL_INTERRUPT/S_INTERRUPT
+14/SPELL_PERIODIC_CAST_START/SPC_START
+15/SPELL_PERIODIC_CAST_SUCCESS/SPC_SUCCESS
+16/SPELL_PERIODIC_AURA_APPLIED/+SPAURA
+17/SPELL_PERIODIC_AURA_REMOVED/-SPAURA
+18/SPELL_PERIODIC_AURA_APPLIED_DOSE/+SPA_DOSE
+19/SPELL_PERIODIC_AURA_REMOVED_DOSE/-SPA_DOSE
+20/SPELL_PERIODIC_AURA_REFRESH/SPAURA_R
+21/SPELL_PERIODIC_CAST_FAILED/SPC_FAILED
+22/SPELL_PERIODIC_CREATE/SP_CREATE
+23/SPELL_PERIODIC_SUMMON/SP_SUMMON
+24/SPELL_PERIODIC_HEAL/SP_HEAL
+25/UNIT_DIED
+26/UNIT_SPELLCAST_SUCCEEDED/USC_SUCCEEDED
+27/ENCOUNTER_START
+28/ENCOUNTER_END
+29/MONSTER_EMOTE
+30/MONSTER_SAY
+31/MONSTER_YELL]]
+				iEET.infoFrame.text:SetText(infoText)
+				iEET.infoFrame.text:Show()
+				iEET.infoFrame:SetSize(iEET.infoFrame.text:GetStringWidth()+4,iEET.infoFrame.text:GetStringHeight()+4)
+			end
+		end
+	end
+	--Info button
+	iEET.infoButton = CreateFrame('FRAME', nil, iEET.optionsFrame)
+	iEET.infoButton:SetSize(21, 21)
+	iEET.infoButton:SetPoint('TOPRIGHT', iEET.optionsFrameTop, 'TOPRIGHT', -2, -2)
+	iEET.infoButton:SetBackdrop(iEET.backdrop);
+	iEET.infoButton:SetBackdropColor(0.1,0.1,0.1,0.9)
+	iEET.infoButton:SetBackdropBorderColor(0.64,0,0,1)
+	iEET.infoButton:SetScript('OnEnter', function()
+		infoFrame()
+	end)
+	iEET.infoButton:SetScript('OnLeave', function()
+		infoFrame(true)
+	end)
+	iEET.infoButton.text = iEET.infoButton:CreateFontString()
+	iEET.infoButton.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+	iEET.infoButton.text:SetPoint('CENTER', iEET.infoButton, 'CENTER', 0,0)
+	iEET.infoButton.text:SetText('I')
+	iEET.infoButton.text:Show()
 	-- Scrolling Message frame for filters
 	iEET.optionsFrameFilterTexts = CreateFrame('ScrollingMessageFrame', nil, iEET.optionsFrame)
 	iEET.optionsFrameFilterTexts:SetSize(620,380)
