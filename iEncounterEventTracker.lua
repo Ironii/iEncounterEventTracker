@@ -35,7 +35,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.418
+iEET.version = 1.419
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -566,32 +566,8 @@ function iEET:ShouldShow(eventData,e_time, msg) -- NEW, TESTING msg is a tempora
 		showTime = true -- show time from nearest 'from' event instead of ENCOUNTER_START
 
 	}
-
-	i = 0.1
-	d = 0.2
 	]]
 	local shouldShow = true
-	--[[
-	if eventData.sI and iEET.ignoring[eventData.sI] then
-		shouldShow = false
-	elseif iEET.interrupts[eventData.sI] and iEET.ignoring[0.1] then --0.1 = interrupts
-		shouldShow = false
-	elseif iEET.dispels[eventData.sI] and iEET.ignoring[0.2] then --0.2 = dispels
-		shouldShow = false
-	elseif not iEETConfig.tracking[iEET.events.fromID[eventData.e].l] then
-		shouldShow = false
-	elseif iEET.ignoring[eventData.cN] then
-		shouldShow = false
-	elseif eventData.e == 26 then -- UNIT_SPELLCAST_SUCCEEDED
-		local targetName = eventData.tN
-		if string.find(eventData.tN, 'nameplate') then
-			targetName = 'nameplate'
-		end
-		if iEET.ignoring[targetName] then
-			shouldShow = false
-		end
-	end
-	--]]
 	if (eventData.sI and iEET.ignoring[eventData.sI]) or
 	(iEET.interrupts[eventData.sI] and iEET.ignoring[0.1]) or --0.1 = interrupts
 	(iEET.dispels[eventData.sI] and iEET.ignoring[0.2]) or --0.2 = dispels
@@ -608,58 +584,125 @@ function iEET:ShouldShow(eventData,e_time, msg) -- NEW, TESTING msg is a tempora
 		end
 	end
 	local timeOK = true
-	if shouldShow then
-		if #iEETConfig.filtering.timeBasedFiltering > 0 then
-			for i = 1, #iEETConfig.filtering.timeBasedFiltering do -- loop trough every from/to combo
-				if iEETConfig.filtering.timeBasedFiltering[i].from then
+	local function checkFrom(i)
+		if iEETConfig.filtering.timeBasedFiltering[i].from then
+			if iEETConfig.filtering.timeBasedFiltering[i].from.t then
+				if eventData.t-e_time < iEETConfig.filtering.timeBasedFiltering[i].from.t then
 					iEETConfig.filtering.timeBasedFiltering[i].from.ok = false
-					if iEETConfig.filtering.timeBasedFiltering[i].from.timestamp then
-						if iEETConfig.filtering.timeBasedFiltering[i].from.timestamp <= eventData.t-e_time then
-							iEETConfig.filtering.timeBasedFiltering[i].from.ok = true
-						end
-					else
-						for k,v in pairs(eventData) do
-							if iEETConfig.filtering.timeBasedFiltering[i].from[k] and string.find(string.lower(v), iEETConfig.filtering.timeBasedFiltering[i].from[k]) then
-								iEETConfig.filtering.timeBasedFiltering[i].from.ok = true
-							end
-						end
-					end
-				end
-				if iEETConfig.filtering.timeBasedFiltering[i].to then
-					iEETConfig.filtering.timeBasedFiltering[i].to.ok = false
-					if iEETConfig.filtering.timeBasedFiltering[i].to.timestamp then
-						if iEETConfig.filtering.timeBasedFiltering[i].to.timestamp >= eventData.t-e_time then
-							iEETConfig.filtering.timeBasedFiltering[i].to.ok = true
-						end
-					else
-						for k,v in pairs(eventData) do
-							if iEETConfig.filtering.timeBasedFiltering[i].to[k] and string.find(string.lower(v), iEETConfig.filtering.timeBasedFiltering[i].to[k]) then
-								iEETConfig.filtering.timeBasedFiltering[i].to.ok = true
-							end
-						end
-					end
+					return false
 				end
 			end
 			local found = 0
-			for i = 1, #iEETConfig.filtering.timeBasedFiltering do
-				local ok = true
-				if iEETConfig.filtering.timeBasedFiltering[i].from and not iEETConfig.filtering.timeBasedFiltering[i].from.ok then
-					ok = false
-				end
-				if iEETConfig.filtering.timeBasedFiltering[i].to and not iEETConfig.filtering.timeBasedFiltering[i].to.ok then
-					ok = false
-				end
-				if ok then
+			local c = 0
+			for requiredKey, requiredValue in pairs(iEETConfig.filtering.timeBasedFiltering[i].from) do -- try to find right values
+				if requiredKey == 't' then	--no need to check time again
+					found = found + 1
+				elseif eventData[requiredKey] and eventData[requiredKey] == requiredValue then
 					found = found + 1
 				end
+				if eventData[requiredKey] then
+					c = c + 1
+				end
 			end
-			if (iEETConfig.filtering.requireAll and found == #iEETConfig.filtering.timeBasedFiltering) or (found > 0 and not iEETConfig.filtering.requireAll) then
-				timeOK = true
+			if found > 0 and found == c then
+				if (c > 1 and iEETConfig.filtering.timeBasedFiltering[i].from.t) or (c > 0 and not iEETConfig.filtering.timeBasedFiltering[i].from.t) then
+					iEETConfig.filtering.timeBasedFiltering[i].to.alreadyFound = false
+				end
+				iEETConfig.filtering.timeBasedFiltering[i].from.ok = true
+				return true
+			end
+		else
+			return true
+		end
+	end
+	local function checkTo(i)
+		if iEETConfig.filtering.timeBasedFiltering[i].to then
+			if iEETConfig.filtering.timeBasedFiltering[i].to.t then
+				if eventData.t-e_time > iEETConfig.filtering.timeBasedFiltering[i].to.t then
+					iEETConfig.filtering.timeBasedFiltering[i].to.ok = false
+					return false
+				end
+			end
+			if iEETConfig.filtering.timeBasedFiltering[i].to then
+				local found = 0
+				local c = 0
+				for requiredKey, requiredValue in pairs(iEETConfig.filtering.timeBasedFiltering[i].to) do -- try to find right values
+					if requiredKey == 't' then	--no need to check time again
+						found = found + 1
+					elseif eventData[requiredKey] and eventData[requiredKey] == requiredValue then
+						found = found + 1
+					end
+					if eventData[requiredKey] then
+						c = c + 1
+					end
+				end
+				if found > 0 and found == c then
+					iEETConfig.filtering.timeBasedFiltering[i].to.ok = false
+					iEETConfig.filtering.timeBasedFiltering[i].to.alreadyFound = true
+					iEETConfig.filtering.timeBasedFiltering[i].lastToShow = true
+					return false
+				else
+					if not iEETConfig.filtering.timeBasedFiltering[i].to.alreadyFound then
+						iEETConfig.filtering.timeBasedFiltering[i].to.ok = true
+						return true
+					end
+				end
+			end
+		else
+			return true
+		end
+	end
+	if shouldShow then
+		local function IsTimeOK()
+			if #iEETConfig.filtering.timeBasedFiltering > 0 then
+				for i = 1, #iEETConfig.filtering.timeBasedFiltering do -- loop trough every from/to combo
+					if iEETConfig.filtering.timeBasedFiltering[i].from and iEETConfig.filtering.timeBasedFiltering[i].to then
+						if not iEETConfig.filtering.timeBasedFiltering[i].from.ok then	--from still missing
+							if checkFrom(i) then
+								iEETConfig.filtering.timeBasedFiltering[i].to.ok = false
+								checkTo(i)
+							end
+						else --from found without to
+							if not checkTo(i) then
+								iEETConfig.filtering.timeBasedFiltering[i].from.ok = false
+								checkFrom(i)
+							end
+						end
+					elseif iEETConfig.filtering.timeBasedFiltering[i].from then
+						checkFrom(i)
+					else
+						checkTo(i)
+					end
+				end
+				local found = 0
+				for i = 1, #iEETConfig.filtering.timeBasedFiltering do
+					local ok = false
+					if iEETConfig.filtering.timeBasedFiltering[i].lastToShow then
+						ok = true
+						iEETConfig.filtering.timeBasedFiltering[i].lastToShow = nil
+					elseif iEETConfig.filtering.timeBasedFiltering[i].from and iEETConfig.filtering.timeBasedFiltering[i].to then
+						if iEETConfig.filtering.timeBasedFiltering[i].from.ok and iEETConfig.filtering.timeBasedFiltering[i].to.ok then
+							ok = true
+						end
+					elseif iEETConfig.filtering.timeBasedFiltering[i].to and iEETConfig.filtering.timeBasedFiltering[i].to.ok then
+						ok = true
+					elseif iEETConfig.filtering.timeBasedFiltering[i].from and iEETConfig.filtering.timeBasedFiltering[i].from.ok then
+						ok = true
+					end
+					if ok then
+						found = found + 1
+					end
+				end
+				if (iEETConfig.filtering.requireAll and found == #iEETConfig.filtering.timeBasedFiltering) or (found > 0 and not iEETConfig.filtering.requireAll) then
+					return true
+				else
+					return false
+				end
 			else
-				timeOK = false
+				return true
 			end
 		end
-		if timeOK then
+		if IsTimeOK() then
 			if #iEETConfig.filtering.req > 0 or msg then
 				for _,t in ipairs(iEETConfig.filtering.req) do
 					local found = 0
@@ -694,6 +737,30 @@ function iEET:ShouldShow(eventData,e_time, msg) -- NEW, TESTING msg is a tempora
 end
 function iEET:FillFilters()
 	iEET.optionsFrameFilterTexts:Clear()
+	--from/to filters:
+	for _,t in pairs(iEETConfig.filtering.timeBasedFiltering) do
+		local s = ''
+		if t.from then
+			s = 'FROM:'
+			for k,v in pairs(t.from) do
+				if k ~= 'ok' and k ~= 'alreadyFound' then
+					s = s .. string.format('%s=%s;',k,v)
+				end
+			end
+		end
+		if t.to then
+			s = s .. (string.len(s) > 0 and ' ' or '') .. 'TO:'
+			for k,v in pairs(t.to) do
+				if k ~= 'ok' and k ~= 'alreadyFound' then
+					s = s.. string.format('%s=%s;',k,v)
+				end
+			end
+		end
+		iEET:AddNewFiltering(s)
+	end
+	if iEETConfig.filtering.requireAll then
+		iEET:AddNewFiltering('requireAll')
+	end
 	for _,t in pairs(iEETConfig.filtering.req) do
 		iEET:AddNewFiltering(t)
 	end
@@ -859,13 +926,23 @@ function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink)
 	frame:AddMessage(value and value or ' ', unpack(color))
 end
 function iEET:loopData(msg)
-	iEET.loopDataCall = GetTime() 
-	iEET.frame:Hide() -- avoid fps spiking from ScrollingMessageFrame adding too many messages
 	if #iEETConfig.filtering.timeBasedFiltering > 0 or #iEETConfig.filtering.req > 0 then
 		iEET.encounterInfo:SetBackdropBorderColor(0.64,0,0,1)
+		--reset
+		for i = 1, #iEETConfig.filtering.timeBasedFiltering do
+			if iEETConfig.filtering.timeBasedFiltering[i].to then
+				iEETConfig.filtering.timeBasedFiltering[i].to.ok = false
+				iEETConfig.filtering.timeBasedFiltering[i].to.alreadyFound = false
+			end
+			if iEETConfig.filtering.timeBasedFiltering[i].from then
+				iEETConfig.filtering.timeBasedFiltering[i].from.ok = false
+			end
+		end
 	else
 		iEET.encounterInfo:SetBackdropBorderColor(0,0,0,1)
 	end
+	iEET.loopDataCall = GetTime() 
+	iEET.frame:Hide() -- avoid fps spiking from ScrollingMessageFrame adding too many messages
 	if iEET.encounterInfoData and iEET.encounterInfoData.eN then
 		iEET.encounterInfo.text:SetText(string.format('%s(%s) %s%s, %s', iEET.encounterInfoData.eN,string.sub(GetDifficultyInfo(iEET.encounterInfoData.d),1,1),(iEET.encounterInfoData.k == 1 and '+' or '-'),iEET.encounterInfoData.fT, iEET.encounterInfoData.pT))
 	end
@@ -1067,16 +1144,31 @@ function iEET:ParseFilters()
 	iEET:ClearFilteringArgs()	--Clear old filters
 	for i = 1, iEET.optionsFrameFilterTexts:GetNumMessages() do
 		local line = iEET.optionsFrameFilterTexts:GetMessageInfo(i)
-		if string.find(line, 'FROM') or string.find(line, 'TO') then
+		if line:gsub('^%s*(.-)%s*$', '%1') == 'requireAll' then
+			iEETConfig.filtering.requireAll = true
+		elseif string.find(line, 'FROM:') or string.find(line, 'TO:') then
 			local fromTo = {}
-			for _,v in pairs({strsplit(' AND ', line)}) do	-- NEEDS TESTING
-				if string.find(v,'FROM') then
-					fromTo.from = GetFiltersFromLine(v)
-				else --TO
-					fromTo.to = GetFiltersFromLine(v)
+			if string.find(line, 'FROM:') and string.find(line, 'TO:') then -- BOTH
+				--line = line:gsub('^%s*(.-)%s*$', '%1')
+				local fromStart = string.find(line, 'FROM:')
+				local toStart = string.find(line, 'TO:')
+				local from = ''
+				local to = ''
+				if fromStart < toStart then --FROM first
+					from = line:sub(fromStart+5, toStart-1)
+					to = line:sub(toStart+3)
+				else -- TO first
+					to = line:sub(toStart+3, fromStart-1)
+					from = line:sub(fromStart+5)
 				end
-			end
-			table.insert(iEETConfig.filtering.timeBasedFiltering)
+				fromTo.from = GetFiltersFromLine(from)
+				fromTo.to = GetFiltersFromLine(to)
+			elseif string.find(line,'FROM:') then
+				fromTo.from = GetFiltersFromLine(line:gsub('FROM:', ''))
+			else --TO
+				fromTo.to = GetFiltersFromLine(line:gsub('TO:', ''))
+			end	
+			table.insert(iEETConfig.filtering.timeBasedFiltering, fromTo)
 		else
 			local t = GetFiltersFromLine(line)
 			if t then
@@ -1084,7 +1176,9 @@ function iEET:ParseFilters()
 			end
 		end
 	end
-	iEET:loopData()
+	if iEET.frame then
+		iEET:loopData()
+	end
 	iEET.optionsFrame:Hide()
 end
 iEET.optionMenu = {}
@@ -1635,17 +1729,21 @@ function iEET:CreateMainFrame()
 		local msg
 		if iEET.editbox:GetText() ~= 'Search' then
 			local txt = iEET.editbox:GetText()
-			iEETConfig.filtering.timeBasedFiltering = {}
 			local from, to
-			if string.match(txt, '^from:(%d-) to:(%d+)') then
+			if string.lower(txt) == 'clear' then
+				iEET:ClearFilteringArgs()
+				iEET.editbox:SetText('')
+			--[[
+			elseif string.match(txt, '^from:(%d-) to:(%d+)') then
 				from, to = string.match(txt, '^from:(%d-) to:(%d+)')
-				table.insert(iEETConfig.filtering.timeBasedFiltering, {['from'] = {['timestamp'] = tonumber(from)}, ['to'] = {['timestamp'] = tonumber(to)}})
+				table.insert(iEETConfig.filtering.timeBasedFiltering, {['from'] = {['t'] = tonumber(from)}, ['to'] = {['t'] = tonumber(to)}})
 			elseif string.match(txt, '^from:(%d+)') then
 				from = string.match(txt, '^from:(%d+)')
-				table.insert(iEETConfig.filtering.timeBasedFiltering, {['from'] = {['timestamp'] = tonumber(from)}})
+				table.insert(iEETConfig.filtering.timeBasedFiltering, {['from'] = {['t'] = tonumber(from)}})
 			elseif string.match(txt, '^to:(%d+)') then
 				to = string.match(txt, '^to:(%d+)')
-				table.insert(iEETConfig.filtering.timeBasedFiltering, {['to'] = {['timestamp'] = tonumber(to)}})
+				table.insert(iEETConfig.filtering.timeBasedFiltering, {['to'] = {['t'] = tonumber(to)}})
+			--]]
 			elseif string.len(txt) > 1 then
 				msg = string.lower(txt)
 			end
@@ -1774,9 +1872,15 @@ sN/spellName, string
 sI/spellID, number
 hp, number, USCS only (doesn't support >/<, atleast not yet)
 
+using FROM/TO filters: (FROM/TO are case sensitive)
+FROM:k=v;k=v TO:k=v;k=v;k=v;
+FROM:k=v
+TO:k=v
+eg. FROM:182263;t=330 TO:185690;t=550
 
 to clear all filters use: clear
 to delete just one use: del:x, eg del:1 will delete the first filter (from bottom)
+to require every from/to combo use: requireAll (not case sensitive)
 
 REMEMBER TO CLICK 'Save' IF YOU WANT TO SAVE YOUR FILTERS, CLICKING 'Cancel' WILL ERASE YOUR EDITS
 
@@ -1883,8 +1987,17 @@ Event names/values:
 	iEET.optionsFrameEditbox:SetBackdropBorderColor(0,0,0,1)
 	iEET.optionsFrameEditbox:SetScript('OnEnterPressed', function()
 		local txt = (iEET.optionsFrameEditbox:GetText()):gsub('^%s*(.-)%s*$', '%1')
-		if string.match(txt, 'del:(%d+)') then
-			local toDelete = tonumber(string.match(txt, 'del:(%d+)'))
+		if txt == '' then
+			iEET.optionsFrameEditbox:ClearFocus()
+		elseif string.find(txt, 'FROM:') or string.find(txt, 'TO:') then
+			iEET.optionsFrameEditbox:SetText('')
+			iEET:AddNewFiltering(txt)
+		elseif string.match(string.lower(txt), 'requireall') then
+			iEET.optionsFrameEditbox:SetText('')
+			iEET:AddNewFiltering('requireAll')
+		elseif string.match(string.lower(txt), 'del:(%d+)') then
+			--local toDelete = tonumber(string.match(string.lower(txt), 'del:(%d+)'))
+			local toDelete = tonumber(string.match(txt, ':(%d+)'))
 			local t = {}
 			for i = 1, iEET.optionsFrameFilterTexts:GetNumMessages() do
 				if not (i == toDelete) then
