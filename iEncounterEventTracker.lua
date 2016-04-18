@@ -14,7 +14,7 @@ hp	Health		number	USCS only
 --]]--------------------------------------------------------------
 --[[TO DO:--
 compare
-better filtering, STARTED
+better filtering, FROM/TO Left
 reset & exit button
 target tracking
 --]]
@@ -36,7 +36,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.416
+iEET.version = 1.417
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -860,13 +860,16 @@ function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink)
 	frame:AddMessage(value and value or ' ', unpack(color))
 end
 function iEET:loopData(msg)
+	iEET.loopDataCall = GetTime() 
+	iEET.frame:Hide() -- avoid fps spiking from ScrollingMessageFrame adding too many messages
 	if #iEETConfig.filtering.timeBasedFiltering > 0 or #iEETConfig.filtering.req > 0 then
-		iEET.top:SetBackdropBorderColor(0.64,0,0,1)
+		iEET.encounterInfo:SetBackdropBorderColor(0.64,0,0,1)
 	else
-		iEET.top:SetBackdropBorderColor(0,0,0,1)
+		iEET.encounterInfo:SetBackdropBorderColor(0,0,0,1)
 	end
-	iEET.loopDataCall = GetTime()
-	iEET.frame:Hide()
+	if iEET.encounterInfoData and iEET.encounterInfoData.eN then
+		iEET.encounterInfo.text:SetText(string.format('%s(%s) %s%s, %s', iEET.encounterInfoData.eN,string.sub(GetDifficultyInfo(iEET.encounterInfoData.d),1,1),(iEET.encounterInfoData.k == 1 and '+' or '-'),iEET.encounterInfoData.fT, iEET.encounterInfoData.pT))
+	end
 	local starttime = 0
 	local intervalls = {}
 	local counts = {}
@@ -1288,6 +1291,43 @@ function iEET:CreateMainFrame()
 	iEET.top:Show()
 	iEET.top:SetFrameStrata('HIGH')
 	iEET.top:SetFrameLevel(1)
+	--Encounter Info background & fontstring
+	iEET.encounterInfo = CreateFrame('FRAME', nil, iEET.frame)
+	iEET.encounterInfo:SetSize(354, 18)
+	iEET.encounterInfo:SetPoint('BOTTOM', iEET.top, 'TOP', 0, -1)
+	iEET.encounterInfo:SetBackdrop(iEET.backdrop);
+	iEET.encounterInfo:SetBackdropColor(0.1,0.1,0.1,0.9)
+	iEET.encounterInfo:SetBackdropBorderColor(0,0,0,1)
+	iEET.encounterInfo:SetScript('OnMouseDown', function(self,button)
+		iEET.frame:ClearAllPoints()
+		iEET.frame:StartMoving()
+	end)
+	iEET.encounterInfo:SetScript('OnMouseUp', function(self, button)
+		iEET.frame:StopMovingOrSizing()
+	end)
+
+	iEET.encounterInfo:EnableMouse(true)
+	iEET.encounterInfo:Show()
+	iEET.encounterInfo:SetFrameStrata('HIGH')
+	iEET.encounterInfo:SetFrameLevel(1)
+	iEET.encounterInfo.text = iEET.frame:CreateFontString()
+	iEET.encounterInfo.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+	iEET.encounterInfo.text:SetPoint('CENTER', iEET.encounterInfo, 'CENTER', 0,1)
+	iEET.encounterInfo.text:SetText("Ironi's Encounter Event Tracker")
+	iEET.encounterInfo.text:Show()
+	--Main window exit button
+	iEET.exitButton = CreateFrame('Button', nil, iEET.frame)
+	iEET.exitButton:SetSize(9, 9)
+	iEET.exitButton.tex = iEET.exitButton:CreateTexture()
+	iEET.exitButton.tex:SetAllPoints(iEET.exitButton)
+	iEET.exitButton.tex:SetTexture(0.64,0,0,1)
+	iEET.exitButton:SetPoint('TOPRIGHT', iEET.top, 'TOPRIGHT', -3,-3)
+	iEET.exitButton:Show()
+	iEET.exitButton:RegisterForClicks('AnyUp')
+	iEET.exitButton:SetScript('OnClick',function()
+		--Parse filters from scrolling message frame
+		iEET.frame:Hide()
+	end)
 	iEET.detailtop = CreateFrame('FRAME', nil, iEET.frame)
 	iEET.detailtop:SetSize(405, 25)
 	iEET.detailtop:SetPoint('RIGHT', iEET.top, 'LEFT', 1, 0)
@@ -1954,7 +1994,6 @@ function iEET:ImportData(dataKey)
 		table.insert(iEET.data, tempTable)
 	end
 	iEET:loopData()
-	local s =
 	iEET:print(string.format('Imported %s on %s (%s), %sman (%s), Time: %s.',iEET.encounterInfoData.eN,GetDifficultyInfo(iEET.encounterInfoData.d),iEET.encounterInfoData.fT, iEET.encounterInfoData.rS, (iEET.encounterInfoData.k == 1 and 'kill' or 'wipe'), iEET.encounterInfoData.pT))
 end
 function iEET:ConvertOldReports()
