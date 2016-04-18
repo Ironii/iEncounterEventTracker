@@ -1365,7 +1365,6 @@ function iEET:CreateMainFrame()
 			end
 		end
 	end)
-	iEET.frame:Show()
 	iEET.frame:SetFrameStrata('HIGH')
 	iEET.frame:SetFrameLevel(1)
 	iEET.top = CreateFrame('FRAME', nil, iEET.frame)
@@ -1420,7 +1419,6 @@ function iEET:CreateMainFrame()
 	iEET.exitButton:Show()
 	iEET.exitButton:RegisterForClicks('AnyUp')
 	iEET.exitButton:SetScript('OnClick',function()
-		--Parse filters from scrolling message frame
 		iEET.frame:Hide()
 	end)
 	iEET.detailtop = CreateFrame('FRAME', nil, iEET.frame)
@@ -1514,7 +1512,6 @@ function iEET:CreateMainFrame()
 		iEET['contentAnchor' .. i]:SetBackdropColor(0.1,0.1,0.1,0.9)
 		iEET['contentAnchor' .. i]:SetBackdropBorderColor(0,0,0,1)
 		---
-
 		iEET['content' .. i] = CreateFrame('ScrollingMessageFrame', nil, iEET['contentAnchor' .. i])
 		iEET['content' .. i]:SetSize(slices[i]-8,828)
 		iEET['content' .. i]:SetPoint('CENTER', iEET['contentAnchor' .. i], 'CENTER', 0, 0)
@@ -1578,7 +1575,6 @@ function iEET:CreateMainFrame()
 		iEET['content' .. i]:SetFrameStrata('HIGH')
 		iEET['content' .. i]:SetFrameLevel(2)
 		iEET['content' .. i]:EnableMouse(true)
-		--smf:SetFrameStrata('HIGH')
 	end
 	lastframe = false
 	for i=7, 1, -1 do ---detail content
@@ -1763,11 +1759,9 @@ function iEET:CreateMainFrame()
 	iEET.editbox:SetFont(iEET.font, iEET.fontsize+2, 'OUTLINE')
 	----Event list:
 	iEET.eventlist = CreateFrame('BUTTON', 'iEETEventListMenuButton', iEET.frame, "UIPanelInfoButton")
-	--f.eventlist:SetFont(font, fontsize, 'OUTLINE')
 	iEET.eventlist:SetSize(20, 20)
 	iEET.eventlist.texture:SetVertexColor(0.5,0.5,0.5,1)
 	iEET.eventlist:SetPoint("LEFT", iEET.top, 'LEFT', 4,-2)
-	--f.eventlist:SetText('Events')
 	iEET.eventlist:Show()
 	iEET.eventlist:RegisterForClicks('AnyUp')
 	iEET.eventlist:SetScript('OnClick',function()
@@ -1788,8 +1782,8 @@ function iEET:CreateMainFrame()
 	end)
 	iEET:updateEncounterListMenu()
 	----end of encounter list button
-	iEET:loopData()
-
+	--iEET:loopData() OnShow already handles this
+	iEET.frame:Show()
 end
 function iEET:CreateOptionsFrame()
 	-- Options main frame
