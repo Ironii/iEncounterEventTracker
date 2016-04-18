@@ -927,7 +927,9 @@ function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink)
 end
 function iEET:loopData(msg)
 	if #iEETConfig.filtering.timeBasedFiltering > 0 or #iEETConfig.filtering.req > 0 then
-		iEET.encounterInfo:SetBackdropBorderColor(0.64,0,0,1)
+		if iEET.encounterInfo then
+			iEET.encounterInfo:SetBackdropBorderColor(0.64,0,0,1)
+		end
 		--reset
 		for i = 1, #iEETConfig.filtering.timeBasedFiltering do
 			if iEETConfig.filtering.timeBasedFiltering[i].to then
@@ -938,7 +940,7 @@ function iEET:loopData(msg)
 				iEETConfig.filtering.timeBasedFiltering[i].from.ok = false
 			end
 		end
-	else
+	elseif iEET.encounterInfo then
 		iEET.encounterInfo:SetBackdropBorderColor(0,0,0,1)
 	end
 	iEET.loopDataCall = GetTime() 
