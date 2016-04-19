@@ -14,7 +14,8 @@ hp	Health		number	USCS only
 --]]--------------------------------------------------------------
 --[[TO DO:--
 compare
-target tracking NEXT IN LINE
+target tracking IN TESTING
++INSTANCE_ENCOUNTER_ENGAGE_UNIT
 --]]
 local _, iEET = ...
 iEET.data = {}
@@ -36,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.420
+iEET.version = 1.500
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -66,25 +67,15 @@ local eventsToTrack = {
 	['SPELL_PERIODIC_HEAL'] = 'SP_HEAL',
 
 	['UNIT_DIED'] = 'UNIT_DIED',
-	--['UNIT_TARGET'] = 'UNIT_TARGET',
+	['UNIT_TARGET'] = 'UNIT_TARGET',
 };
 local addon = CreateFrame('frame')
---[[
-local unitEventHandlers = {
-	['oneTwo'] = CreateFrame('frame'),
-	['threeFour'] = CreateFrame('frame'),
-	['five'] = CreateFrame('frame'),
-}
-	unitEventHandlers.oneTwo:SetScript('OnEvent', iEET:UNIT_TARGET)
-	unitEventHandlers.threeFour:SetScript('OnEvent', iEET:UNIT_TARGET)
-	unitEventHandlers.five:SetScript('OnEvent', iEET:UNIT_TARGET)
-]]
-addon:SetScript('OnEvent', function(self, event, ...)
-	self[event](self, ...)
-end)
 addon:RegisterEvent('ENCOUNTER_START')
 addon:RegisterEvent('ENCOUNTER_END')
 addon:RegisterEvent('ADDON_LOADED')
+addon:SetScript('OnEvent', function(self, event, ...)
+	self[event](self, ...)
+end)
 iEET.events = {
 	['toID'] = {
 		['SPELL_CAST_START'] = 1,
@@ -123,7 +114,8 @@ iEET.events = {
 		['MONSTER_EMOTE'] = 29,
 		['MONSTER_SAY'] = 30,
 		['MONSTER_YELL'] = 31,
-		--['UNIT_TARGET'] = 32,
+		
+		['UNIT_TARGET'] = 32,
 	},
 	['fromID'] = {
 		[1] = {
@@ -250,10 +242,10 @@ iEET.events = {
 			l = 'MONSTER_YELL',
 			s = 'MONSTER_YELL',
 		},
-		--[32] = {
-		--	l = 'UNIT_TARGET',
-		--	s = 'UNIT_TARGET',
-		--},
+		[32] = {
+			l = 'UNIT_TARGET',
+			s = 'UNIT_TARGET',
+		},
 	},
 }
 local function spairs(t, order)
@@ -315,6 +307,8 @@ function iEET:LoadDefaults()
 
 		['ENCOUNTER_START'] = true,
 		['ENCOUNTER_END'] = true,
+		
+		['UNIT_TARGET'] = true,
 	}
 	iEETConfig.version = iEET.version
 	iEETConfig.autoSave = true
@@ -330,7 +324,7 @@ end
 function addon:ADDON_LOADED(addonName)
 	if addonName == 'iEncounterEventTracker' then
 		iEETConfig = iEETConfig or {}
-		if not iEETConfig.version or not iEETConfig.tracking or iEETConfig.version < 1.413 then -- Last version with db changes
+		if not iEETConfig.version or not iEETConfig.tracking or iEETConfig.version < 1.500 then -- Last version with db changes
 			iEET:LoadDefaults()
 		else
 			iEETConfig.version = iEET.version
@@ -351,16 +345,13 @@ function addon:ENCOUNTER_START(encounterID, encounterName)
 		['k'] = 0,
 		['v'] = iEET.version,
 	}
-	iEET.encounterInfo = date('%d.%m.%y %H:%M') .. ' ' .. encounterName
 	table.insert(iEET.data, {['e'] = 27, ['t'] = GetTime(), ['cN'] = encounterName, ['tN'] = encounterID})
 	addon:RegisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
 	addon:RegisterEvent('CHAT_MSG_MONSTER_SAY')
 	addon:RegisterEvent('CHAT_MSG_MONSTER_EMOTE')
 	addon:RegisterEvent('CHAT_MSG_MONSTER_YELL')
 	addon:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
-	--unitEventHandlers.oneTwo:RegisterUnitEvent('UNIT_TARGET', 'boss1', 'boss2')
-	--unitEventHandlers.threeFour:RegisterUnitEvent('UNIT_TARGET', 'boss3', 'boss4')
-	--unitEventHandlers.five:RegisterUnitEvent('UNIT_TARGET', 'boss5')
+	addon:RegisterEvent('UNIT_TARGET')
 end
 function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize, kill)
 	table.insert(iEET.data, {['e'] = 28, ['t'] = GetTime() ,['cN'] = kill == 1 and 'Victory!' or 'Wipe'})
@@ -369,9 +360,7 @@ function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize,
 	addon:UnregisterEvent('CHAT_MSG_MONSTER_EMOTE')
 	addon:UnregisterEvent('CHAT_MSG_MONSTER_YELL')
 	addon:UnregisterEvent('UNIT_SPELLCAST_SUCCEEDED')
-	--unitEventHandlers.oneTwo:UnregisterEvent('UNIT_TARGET')
-	--unitEventHandlers.threeFour:UnregisterEvent('UNIT_TARGET)
-	--unitEventHandlers.five:UnregisterEvent('UNIT_TARGET')
+	addon:UnregisterEvent('UNIT_TARGET')
 	iEET.encounterInfoData.fT = iEET.encounterInfoData.s and date('%M:%S', (GetTime() - iEET.encounterInfoData.s)) or '00:00' -- if we are missing start time for some reason
 	iEET.encounterInfoData.d = difficultyID
 	iEET.encounterInfoData.k = kill
@@ -476,30 +465,30 @@ function addon:COMBAT_LOG_EVENT_UNFILTERED(timestamp,event,hideCaster,sourceGUID
 		end
 	end
 end
-function iEET:UNIT_TARGET(unitID)
-	--[[
-	if UnitExists(unitID) then --didn't just disappear
-		local sourceGUID = UnitGUID(unitID)
-		local sourceName = UnitName(unitID)
-		local chp = UnitHealth(unitID)
-		local maxhp = UnitHealthMax(unitID)
-		local php = nil
-		local targetName = UnitName(unitID .. 'target') or 'Dropped'
-		if chp and maxhp then
-			php = math.floor(chp/maxhp*1000+0.5)/10
+function addon:UNIT_TARGET(unitID)
+	if string.find(unitID, 'boss') then
+		if UnitExists(unitID) then --didn't just disappear
+			local sourceGUID = UnitGUID(unitID)
+			local sourceName = UnitName(unitID)
+			local chp = UnitHealth(unitID)
+			local maxhp = UnitHealthMax(unitID)
+			local php = nil
+			local targetName = UnitName(unitID .. 'target') or 'Dropped'
+			if chp and maxhp then
+				php = math.floor(chp/maxhp*1000+0.5)/10
+			end
+			table.insert(iEET.data, {
+			['e'] = 32,
+			['t'] = GetTime(),
+			['sG'] = unitID,
+			['cN'] = sourceName or unitID,
+			['tN'] = targetName,
+			['sN'] = 'Target Selection',
+			['sI'] = 103528,
+			['hp'] = php,
+			});
 		end
-		table.insert(iEET.data, {
-		['e'] = 32,
-		['t'] = GetTime(),
-		['sG'] = unitID,
-		['cN'] = sourceName or unitID,
-		['tN'] = targetName,
-		['sN'] = 'Target Selection',
-		['sI'] = 103528,
-		['hp'] = php,
-		});
 	end
-	--]]
 end
 function iEET:getColor(event, sourceGUID, spellID)
 	if event and event == 27 then
@@ -843,63 +832,57 @@ function iEET:addSpellDetails(hyperlink, linkData)
 			if found then
 				local intervall = false
 				local timestamp = v.t-starttime or nil
-				local casterName = v.cN or nil
-				local targetName = v.tN or nil
-				local spellID = v.sI or nil
-				local event = v.e or nil
 				local count = nil
-				local sourceGUID = v.sG or nil
-				--local spellID = v.spellID
-				if sourceGUID then
-					if intervalls[sourceGUID] then
-						if intervalls[sourceGUID][event] then
-							if intervalls[sourceGUID][event][spellID] then
-								intervall = timestamp - intervalls[sourceGUID][event][spellID]
-								intervalls[sourceGUID][event][spellID] = timestamp
+				if v.sG then
+					if intervalls[v.sG] then
+						if intervalls[v.sG][v.e] then
+							if intervalls[v.sG][v.e][v.sI] then
+								intervall = timestamp - intervalls[v.sG][v.e][v.sI]
+								intervalls[v.sG][v.e][v.sI] = timestamp
 							else
-								intervalls[sourceGUID][event][spellID] = timestamp
+								intervalls[v.sG][v.e][v.sI] = timestamp
 							end
 						else
-							intervalls[sourceGUID][event] = {
-									[spellID] = timestamp,
+							intervalls[v.sG][v.e] = {
+									[v.sI] = timestamp,
 							};
 						end
 					else
-						intervalls[sourceGUID] = {
-							[event] = {
-								[spellID] = timestamp,
+						intervalls[v.sG] = {
+							[v.e] = {
+								[v.sI] = timestamp,
 							};
 						};
 					end
-					if counts[sourceGUID] then
-						if counts[sourceGUID][event] then
-							if counts[sourceGUID][event][spellID] then
-								counts[sourceGUID][event][spellID] = counts[sourceGUID][event][spellID] + 1
-								count = counts[sourceGUID][event][spellID]
+					if counts[v.sG] then
+						if counts[v.sG][v.e] then
+							if counts[v.sG][v.e][v.sI] then
+								counts[v.sG][v.e][v.sI] = counts[v.sG][v.e][v.sI] + 1
+								count = counts[v.sG][v.e][v.sI]
 							else
-								counts[sourceGUID][event][spellID] = 1
+								counts[v.sG][v.e][v.sI] = 1
 								count = 1
 							end
 						else
-							counts[sourceGUID][event] = {
-								[spellID] = 1,
+							counts[v.sG][v.e] = {
+								[v.sI] = 1,
 							}
 						end
 					else
-						counts[sourceGUID] = {
-							[event] = {
-								[spellID] = 1,
+						counts[v.sG] = {
+							[v.e] = {
+								[v.sI] = 1,
 							};
 						};
 						count = 1
 					end
 				end
-				color = iEET:getColor(event, sourceGUID, spellID)
-				iEET:addMessages(2, 1, timestamp, color)
+				color = iEET:getColor(v.e, v.sG, v.sI)
+				iEET:addMessages(2, 1, timestamp, color, ('\124HiEETtime:' .. timestamp ..'\124h%s\124h'))
 				iEET:addMessages(2, 2, intervall, color, intervall and ('\124HiEETtime:' .. intervall ..'\124h%s\124h') or nil)
-				iEET:addMessages(2, 3, iEET.events.fromID[event].s, color)
-				iEET:addMessages(2, 5, casterName, color)
-				iEET:addMessages(2, 6, targetName, color)
+				iEET:addMessages(2, 3, iEET.events.fromID[v.e].s, color)
+				iEET:addMessages(2, 5, v.cN, color)
+				iEET:addMessages(2, 6, v.tN, color)
 				iEET:addMessages(2, 7, count, color)
 			end
 		end
@@ -908,7 +891,7 @@ function iEET:addSpellDetails(hyperlink, linkData)
 end
 function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID,intervall,count,sourceGUID, hp)
 	local color = iEET:getColor(event, sourceGUID, spellID)
-	iEET:addMessages(1, 1, timestamp, color)
+	iEET:addMessages(1, 1, timestamp, color, '\124HiEETtime:' .. timestamp ..'\124h%s\124h')
 	iEET:addMessages(1, 2, intervall, color, intervall and ('\124HiEETtime:' .. intervall ..'\124h%s\124h') or nil)
 	iEET:addMessages(1, 3, iEET.events.fromID[event].s, color)
 	if event == 29 or event == 30 or event == 31 then -- MONSTER_EMOTE = 29, MOSNTER_SAY = 30, MONSTER_YELL = 31
@@ -950,7 +933,8 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 end
 function iEET:addToEncounterAbilities(spellID, spellName)
 	if spellID and tonumber(spellID) and spellName then
-		iEET.encounterAbilitiesContent:AddMessage('\124Hspell:' .. tonumber(spellID) .. '\124h[' .. spellName .. ']\124h\124r')
+		local color = spellID == 103528 and {0.5,0.5,0.5} or {1,1,1}
+		iEET.encounterAbilitiesContent:AddMessage('\124Hspell:' .. tonumber(spellID) .. '\124h[' .. spellName .. ']\124h\124r', unpack(color))
 	end
 end
 function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink)
@@ -1599,7 +1583,7 @@ function iEET:CreateMainFrame()
 		iEET['content' .. i]:SetScript("OnMouseWheel", function(self, delta)
 			iEET:ScrollContent(delta)
 		end)
-		if i == 4 or i == 2 then --allow hyperlinks for intervall time and spellname only
+		if i == 1 or i == 2 or i == 4 then --allow hyperlinks for intervall time and spellname only
 			iEET['content' .. i]:SetHyperlinksEnabled(true)
 			iEET['content' .. i]:SetScript("OnHyperlinkEnter", function(self, linkData, link)
 				GameTooltip:SetOwner(iEET.frame, "ANCHOR_TOPRIGHT", 0-iEET.frame:GetWidth(), 0-iEET.frame:GetHeight())
@@ -1689,7 +1673,7 @@ function iEET:CreateMainFrame()
 		iEET['detailContent' .. i]:SetScript("OnMouseWheel", function(self, delta)
 			iEET:ScrollDetails(delta)
 		end)
-		if i == 2 then --allow hyperlinks for intervall time only
+		if i == 1 or i == 2 then --allow hyperlinks for intervall time only
 			iEET['detailContent' .. i]:SetHyperlinksEnabled(true)
 			iEET['detailContent' .. i]:SetScript('OnHyperlinkEnter', function(self, linkData, link)
 				GameTooltip:SetOwner(iEET.frame, "ANCHOR_TOPRIGHT", 0-iEET.frame:GetWidth(), 0-iEET.frame:GetHeight())
