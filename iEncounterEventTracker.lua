@@ -1003,7 +1003,7 @@ function iEET:loopData(msg)
 	iEET.loopDataCall = GetTime() 
 	iEET.frame:Hide() -- avoid fps spiking from ScrollingMessageFrame adding too many messages
 	if iEET.encounterInfoData and iEET.encounterInfoData.eN then
-		iEET.encounterInfo.text:SetText(string.format('%s(%s) %s%s, %s', iEET.encounterInfoData.eN,string.sub(GetDifficultyInfo(iEET.encounterInfoData.d),1,1),(iEET.encounterInfoData.k == 1 and '+' or '-'),iEET.encounterInfoData.fT, iEET.encounterInfoData.pT))
+		iEET.encounterInfo.text:SetText(string.format('%s(%s) %s %s, %s', iEET.encounterInfoData.eN,string.sub(GetDifficultyInfo(iEET.encounterInfoData.d),1,1),(iEET.encounterInfoData.k == 1 and '+' or '-'),iEET.encounterInfoData.fT, iEET.encounterInfoData.pT))
 	end
 	local starttime = 0
 	local intervalls = {}
@@ -1387,7 +1387,7 @@ function iEET:updateEncounterListMenu()
 				--for k,v in pairs(encountersTempTable[encounterName][difficultyID]) do
 				for k,v in spairs(encountersTempTable[encounterName][difficultyID], function(t,a,b) return t[b].pT < t[a].pT end) do
 					local fightEntry = {
-						text = (v.kill == 1 and '+' or '-') .. v.fT .. ' (' .. v.pT .. ')',
+						text = (v.kill == 1 and '+ ' or '- ') .. v.fT .. ' (' .. v.pT .. ')',
 						notCheckable = true,
 						hasArrow = true,
 						checked = false,
