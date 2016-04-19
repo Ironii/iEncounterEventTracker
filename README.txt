@@ -77,15 +77,9 @@ sN/spellName		string
 sI/spellID			number
 hp					number	USCS only (doesn't support >/<, atleast not yet)
 
-using FROM/TO filters: (FROM/TO are case sensitive)
-FROM:k=v;k=v TO:k=v;k=v;k=v;
-FROM:k=v
-TO:k=v
-eg. FROM:182263;t=330 TO:185690;t=550
 
 to clear all filters use: clear
 to delete just one use: del:x, eg del:1 will delete the first filter (from bottom)
-to require every from/to combo use: requireAll (not case sensitive)
 
 REMEMBER TO CLICK 'Save' IF YOU WANT TO SAVE YOUR FILTERS, CLICKING 'Cancel' WILL ERASE YOUR EDITS
 
@@ -121,3 +115,5 @@ Event names/values:
 29/MONSTER_EMOTE
 30/MONSTER_SAY
 31/MONSTER_YELL
+32/UNIT_TARGET
+33/INSTANCE_ENCOUNTER_ENGAGE_UNIT/IEEU

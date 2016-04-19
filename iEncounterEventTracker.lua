@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.500
+iEET.version = 1.502
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -68,6 +68,8 @@ local eventsToTrack = {
 
 	['UNIT_DIED'] = 'UNIT_DIED',
 	['UNIT_TARGET'] = 'UNIT_TARGET',
+	
+	['INSTANCE_ENCOUNTER_ENGAGE_UNIT'] = 'IEEU',
 };
 local addon = CreateFrame('frame')
 addon:RegisterEvent('ENCOUNTER_START')
@@ -76,6 +78,7 @@ addon:RegisterEvent('ADDON_LOADED')
 addon:SetScript('OnEvent', function(self, event, ...)
 	self[event](self, ...)
 end)
+iEET.IEEUnits = {}
 iEET.events = {
 	['toID'] = {
 		['SPELL_CAST_START'] = 1,
@@ -116,6 +119,8 @@ iEET.events = {
 		['MONSTER_YELL'] = 31,
 		
 		['UNIT_TARGET'] = 32,
+		
+		['INSTANCE_ENCOUNTER_ENGAGE_UNIT'] = 33,
 	},
 	['fromID'] = {
 		[1] = {
@@ -246,6 +251,10 @@ iEET.events = {
 			l = 'UNIT_TARGET',
 			s = 'UNIT_TARGET',
 		},
+		[33] = {
+			l = 'INSTANCE_ENCOUNTER_ENGAGE_UNIT',
+			s = 'IEEU',
+		},
 	},
 }
 local function spairs(t, order)
@@ -309,6 +318,7 @@ function iEET:LoadDefaults()
 		['ENCOUNTER_END'] = true,
 		
 		['UNIT_TARGET'] = true,
+		['INSTANCE_ENCOUNTER_ENGAGE_UNIT'] = true,
 	}
 	iEETConfig.version = iEET.version
 	iEETConfig.autoSave = true
@@ -324,7 +334,7 @@ end
 function addon:ADDON_LOADED(addonName)
 	if addonName == 'iEncounterEventTracker' then
 		iEETConfig = iEETConfig or {}
-		if not iEETConfig.version or not iEETConfig.tracking or iEETConfig.version < 1.500 then -- Last version with db changes
+		if not iEETConfig.version or not iEETConfig.tracking or iEETConfig.version < 1.502 then -- Last version with db changes
 			iEET:LoadDefaults()
 		else
 			iEETConfig.version = iEET.version
@@ -333,6 +343,8 @@ function addon:ADDON_LOADED(addonName)
 	end
 end
 function addon:ENCOUNTER_START(encounterID, encounterName)
+	iEET.IEEUnits = nil
+	iEET.IEEUnits = {}
 	iEET.data = nil
 	iEET.data = {}
 	iEET.encounterInfoData = { --TODO
@@ -352,6 +364,7 @@ function addon:ENCOUNTER_START(encounterID, encounterName)
 	addon:RegisterEvent('CHAT_MSG_MONSTER_YELL')
 	addon:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
 	addon:RegisterEvent('UNIT_TARGET')
+	addon:RegisterEvent('INSTANCE_ENCOUNTER_ENGAGE_UNIT')
 end
 function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize, kill)
 	table.insert(iEET.data, {['e'] = 28, ['t'] = GetTime() ,['cN'] = kill == 1 and 'Victory!' or 'Wipe'})
@@ -361,6 +374,7 @@ function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize,
 	addon:UnregisterEvent('CHAT_MSG_MONSTER_YELL')
 	addon:UnregisterEvent('UNIT_SPELLCAST_SUCCEEDED')
 	addon:UnregisterEvent('UNIT_TARGET')
+	addon:UnregisterEvent('INSTANCE_ENCOUNTER_ENGAGE_UNIT')
 	iEET.encounterInfoData.fT = iEET.encounterInfoData.s and date('%M:%S', (GetTime() - iEET.encounterInfoData.s)) or '00:00' -- if we are missing start time for some reason
 	iEET.encounterInfoData.d = difficultyID
 	iEET.encounterInfoData.k = kill
@@ -438,15 +452,18 @@ function addon:COMBAT_LOG_EVENT_UNFILTERED(timestamp,event,hideCaster,sourceGUID
 			unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
 		end
 		if event == 'UNIT_DIED' then
+			unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", destGUID)
 			if (unitType == 'Creature') or (unitType == 'Vehicle') or (unitType == 'Player') then
-				table.insert(iEET.data, {
-					['e'] = 25,
-					['t'] = GetTime(),
-					['sG'] = destGUID or 'NONE',
-					['cN'] = destName or 'NONE',
-					['sN'] = 'Death',
-					['sI'] = 'NONE',
-				});
+				if not iEET.npcIgnoreList[tonumber(npcID)] then
+					table.insert(iEET.data, {
+						['e'] = 25,
+						['t'] = GetTime(),
+						['sG'] = destGUID or 'NONE',
+						['cN'] = destName or 'NONE',
+						['sN'] = 'Death',
+						['sI'] = '98391',
+					})
+				end
 			end
 		elseif (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and iEET.approvedSpells[spellID]) or not sourceGUID or hideCaster or event == 'SPELL_INTERRUPT' or event == 'SPELL_DISPEL' then
 			if spellID and not iEET.ignoredSpells[spellID] then
@@ -459,7 +476,7 @@ function addon:COMBAT_LOG_EVENT_UNFILTERED(timestamp,event,hideCaster,sourceGUID
 						['tN'] = destName or nil,
 						['sN'] = spellName or 'NONE',
 						['sI'] = spellID or 'NONE',
-					});
+					})
 				end
 			end
 		end
@@ -489,6 +506,42 @@ function addon:UNIT_TARGET(unitID)
 			});
 		end
 	end
+end
+function addon:INSTANCE_ENCOUNTER_ENGAGE_UNIT()
+	local newUnits = {}
+	local unitNames = {}
+	for i = 1, 5 do
+		if UnitExists('boss' .. i) then
+			local sourceGUID = UnitGUID('boss' .. i)
+			local sourceName = UnitName('boss' .. i)
+			if not iEET.IEEUnits[sourceGUID] then
+				iEET.IEEUnits[sourceGUID] = sourceName
+				table.insert(newUnits, {sourceName, 'boss' .. i})
+			end
+			unitNames[i] = sourceName
+		end
+	end
+	local sourceName,npcNames,unitID
+	if #newUnits == 1 then
+		sourceName = newUnits[1][1]
+		unitID = newUnits[1][2]
+	end
+	for bossID,encounterName in pairs(unitNames) do
+		if npcNames then
+			npcNames = npcNames .. string.format('\n%s (%d)',encounterName, bossID)
+		else
+			npcNames = string.format('%s (%d)',encounterName, bossID)
+		end
+	end
+	table.insert(iEET.data, {
+		['e'] = 33,
+		['t'] = GetTime(),
+		['sG'] = npcNames or 'NONE',
+		['cN'] = sourceName or 'NONE',
+		['tN'] = unitID,
+		['sN'] = 'Spawn NPCs',
+		['sI'] = 133217 or nil,
+	})
 end
 function iEET:getColor(event, sourceGUID, spellID)
 	if event and event == 27 then
@@ -877,7 +930,7 @@ function iEET:addSpellDetails(hyperlink, linkData)
 						count = 1
 					end
 				end
-				color = iEET:getColor(v.e, v.sG, v.sI)
+				local color = iEET:getColor(v.e, v.sG, v.sI)
 				iEET:addMessages(2, 1, timestamp, color, ('\124HiEETtime:' .. timestamp ..'\124h%s\124h'))
 				iEET:addMessages(2, 2, intervall, color, intervall and ('\124HiEETtime:' .. intervall ..'\124h%s\124h') or nil)
 				iEET:addMessages(2, 3, iEET.events.fromID[v.e].s, color)
@@ -909,20 +962,24 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 		iEET.content4:AddMessage('\124HiEETcustomyell:' .. event .. ':' .. msg .. '\124hMessage\124h', unpack(iEET:getColor(event, sourceGUID, spellID))) -- NEEDS CHANGING
 	elseif spellID then
 		local spellnametoShow = ''
-		if isAlpha and string.len(spellName) > 16 then
-			spellnametoShow = string.sub(spellName, 1, 16)
-		elseif string.len(spellName) > 20 then
-			spellnametoShow = string.sub(spellName, 1, 20)
+		if spellID == 133217 then -- INSTANCE_ENCOUNTER_ENGAGE_UNIT
+			iEET.content4:AddMessage('\124HiEETNpcList:' .. sourceGUID .. '\124hSpawn Npcs\124h', unpack(iEET:getColor(event, sourceGUID, spellID)))
 		else
-			spellnametoShow = spellName
+			if isAlpha and string.len(spellName) > 16 then
+				spellnametoShow = string.sub(spellName, 1, 16)
+			elseif string.len(spellName) > 20 then
+				spellnametoShow = string.sub(spellName, 1, 20)
+			else
+				spellnametoShow = spellName
+			end
+			local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
+			if sourceGUID then
+				unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
+			else
+				npcID = 'NONE'
+			end
+			iEET.content4:AddMessage('\124HiEETcustomspell:' .. event .. ':' .. spellID .. ':' .. spellName .. ':' .. (npcID and npcID or 'NONE').. '!' .. (spawnID and spawnID or '') ..'\124h' .. spellnametoShow .. '\124h', unpack(iEET:getColor(event, sourceGUID, spellID))) -- NEEDS CHANGING
 		end
-		local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
-		if sourceGUID then
-			unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
-		else
-			npcID = 'NONE'
-		end
-		iEET.content4:AddMessage('\124HiEETcustomspell:' .. event .. ':' .. spellID .. ':' .. spellName .. ':' .. (npcID and npcID or 'NONE').. '!' .. (spawnID and spawnID or '') ..'\124h' .. spellnametoShow .. '\124h', unpack(iEET:getColor(event, sourceGUID, spellID))) -- NEEDS CHANGING
 	else
 		iEET.content4:AddMessage(' ')
 	end
@@ -933,7 +990,10 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 end
 function iEET:addToEncounterAbilities(spellID, spellName)
 	if spellID and tonumber(spellID) and spellName then
-		local color = spellID == 103528 and {0.5,0.5,0.5} or {1,1,1}
+		local color = {1,1,1}
+		if spellID == 103528 or spellID == 133217 or spellID == 98391 then
+			color = {0.5,0.5,0.5}
+		end
 		iEET.encounterAbilitiesContent:AddMessage('\124Hspell:' .. tonumber(spellID) .. '\124h[' .. spellName .. ']\124h\124r', unpack(color))
 	end
 end
@@ -1605,6 +1665,9 @@ function iEET:CreateMainFrame()
 				elseif linkType == 'iEETtime' then
 					local _, txt = strsplit(':',linkData)
 					GameTooltip:SetText(txt)
+				elseif linkType == 'iEETNpcList' then
+					local _, txt = strsplit(':',linkData)
+					GameTooltip:SetText(txt)
 				else
 					GameTooltip:SetHyperlink(link)
 				end
@@ -1838,7 +1901,7 @@ function iEET:CreateMainFrame()
 	end)
 	iEET:updateEncounterListMenu()
 	----end of encounter list button
-	--iEET:loopData() OnShow already handles this
+	iEET:loopData()
 	iEET.frame:Show()
 end
 function iEET:CreateOptionsFrame()
@@ -1969,7 +2032,9 @@ Event names/values:
 28/ENCOUNTER_END
 29/MONSTER_EMOTE
 30/MONSTER_SAY
-31/MONSTER_YELL]]
+31/MONSTER_YELL
+32/UNIT_TARGET
+33/INSTANCE_ENCOUNTER_ENGAGE_UNIT/IEEU]]
 				iEET.infoFrame.text:SetText(infoText)
 				iEET.infoFrame.text:Show()
 				iEET.infoFrame:SetSize(iEET.infoFrame.text:GetStringWidth()+4,iEET.infoFrame.text:GetStringHeight()+4)
