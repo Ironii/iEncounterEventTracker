@@ -573,6 +573,8 @@ function iEET:ShouldShow(eventData,e_time, msg) -- NEW, TESTING msg is a tempora
 	(iEET.interrupts[eventData.sI] and iEET.ignoring[0.1]) or --0.1 = interrupts
 	(iEET.dispels[eventData.sI] and iEET.ignoring[0.2]) or --0.2 = dispels
 	(not iEETConfig.tracking[iEET.events.fromID[eventData.e].l]) or
+	(iEET.interrupts[eventData.sI] and iEET.ignoring.Interrupters) or --spellid = interrupt and interrupters are ignored
+	(iEET.dispels[eventData.sI] and iEET.ignoring.Dispellers) or --spellid = dispel and dispellers are ignored
 	(iEET.ignoring[eventData.cN]) then
 		shouldShow = false
 	elseif eventData.e == 26 then -- UNIT_SPELLCAST_SUCCEEDED
@@ -983,7 +985,15 @@ function iEET:loopData(msg)
 					iEET.collector.encounterNPCs[v.tN] = true
 				end
 			else
-				iEET.collector.encounterNPCs[v.cN] = true
+				if v.sI and iEET.interrupts[v.sI] then
+					if not iEET.collector.encounterNPCs.Interrupters then
+						iEET.collector.encounterNPCs.Interrupters = true
+					end
+				elseif v.sI and iEET.dispels[v.sI] then
+					iEET.collector.encounterNPCs.Dispellers = true
+				else
+					iEET.collector.encounterNPCs[v.cN] = true
+				end
 			end
 		end
 		if v.sI and v.sN and not iEET.collector.encounterSpells[v.sI] and v.e ~= 27 and v.e ~= 28 then -- Collect spells, 27 = ENCOUNTER_START, 28 = ENCOUNTER_END
@@ -1216,11 +1226,14 @@ function iEET:updateOptionMenu()
 		end
 		table.insert(tempIgnoreNPCs.menuList, { text = 'Save', notCheckable = true, func = function()
 			CloseDropDownMenus()
+			local msg
 			if iEET.editbox:GetText() ~= 'Search' then
-				iEET:loopData(iEET.editbox:GetText())
-			else
-				iEET:loopData()
+				local txt = iEET.editbox:GetText()
+				if string.len(txt) > 1 then
+					msg = string.lower(txt)
+				end
 			end
+			iEET:loopData(msg)
 		end})
 		table.insert(iEET.optionMenu, tempIgnoreNPCs)
 		-- Spells
@@ -1242,11 +1255,14 @@ function iEET:updateOptionMenu()
 		end
 		table.insert(tempIgnoreSpells.menuList, { text = 'Save', notCheckable = true, func = function()
 			CloseDropDownMenus()
+			local msg
 			if iEET.editbox:GetText() ~= 'Search' then
-				iEET:loopData(iEET.editbox:GetText())
-			else
-				iEET:loopData()
+				local txt = iEET.editbox:GetText()
+				if string.len(txt) > 1 then
+					msg = string.lower(txt)
+				end
 			end
+			iEET:loopData(msg)
 		end})
 		table.insert(iEET.optionMenu, tempIgnoreSpells)
 	end
@@ -1256,7 +1272,6 @@ function iEET:updateOptionMenu()
 			text = k,
 			isNotRadio = true,
 			checked = iEETConfig.tracking[k],
-			--checked = false,
 			keepShownOnClick = true,
 			func = function()
 				if iEETConfig.tracking[k] then
@@ -1269,11 +1284,14 @@ function iEET:updateOptionMenu()
 	end
 	table.insert(tempEvents.menuList, { text = 'Save', notCheckable = true, func = function()
 		CloseDropDownMenus()
+		local msg
 		if iEET.editbox:GetText() ~= 'Search' then
-			iEET:loopData(iEET.editbox:GetText())
-		else
-			iEET:loopData()
+			local txt = iEET.editbox:GetText()
+			if string.len(txt) > 1 then
+				msg = string.lower(txt)
+			end
 		end
+		iEET:loopData(msg)
 	end})
 	table.insert(iEET.optionMenu, tempEvents)
 	table.insert(iEET.optionMenu, { text = 'Close', notCheckable = true, func = function () CloseDropDownMenus(); end})
