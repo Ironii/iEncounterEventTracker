@@ -27,7 +27,6 @@ iEET.npcIgnoreList = {
 	[94072] = true,		--Dark Minion
 	[95021] = true, 	--Felboar (hunter 4pc?)
 	[95582] = true,		--Beast
-	[109075] = true,	--Binding Shot Visual	
 
 --Mage
 	[31216] = true, 	--Mirror Image
@@ -48,6 +47,7 @@ iEET.npcIgnoreList = {
 	[69792] = true,		--Earth Spirit
 	[73967] = true,		--Xuen
 	[78065] = true,		--Jade Serpent Statue
+	[99625] = true,		--Wind Spirit
 
 --Priest
 	[19668] = true, 	--Shadowfiend
@@ -77,8 +77,10 @@ iEET.npcIgnoreList = {
 	[95061] = true, 	--Greater Fire Elemental 
 	[97285] = true,		--Wind Rush Totem
 	[100820] = true,	--Spirit Wolf
+	[104818] = true,	--Ancestral Protection Totem
 
 --Warlock
+	[416] = true,		--Imp
 	[11859] = true, 	--Doomguard
 	[17252] = true,		--Felguard
 	[78158] = true,		--Doomguard
