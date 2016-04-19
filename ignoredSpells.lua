@@ -8,6 +8,7 @@ iEET.ignoredSpells = {
 --Hunter
 	[117526] = true, 	--Binding Shot
 	[117553] = true,	--Binding Shot	
+	[109075] = true,	--Binding Shot Visual
 --Priest
 	[81782] = true, 	--Power Word: Barrier
 --General
