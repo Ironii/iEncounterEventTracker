@@ -14,8 +14,7 @@ hp	Health		number	USCS only
 --]]--------------------------------------------------------------
 --[[TO DO:--
 compare
-better filtering, FROM/TO Left
-target tracking
+target tracking NEXT IN LINE
 --]]
 local _, iEET = ...
 iEET.data = {}
@@ -66,9 +65,20 @@ local eventsToTrack = {
 	['SPELL_PERIODIC_HEAL'] = 'SP_HEAL',
 
 	['UNIT_DIED'] = 'UNIT_DIED',
+	--['UNIT_TARGET'] = 'UNIT_TARGET',
 };
-local addon = CreateFrame("Frame")
-addon:SetScript("OnEvent", function(self, event, ...)
+local addon = CreateFrame('frame')
+--[[
+local unitEventHandlers = {
+	['oneTwo'] = CreateFrame('frame'),
+	['threeFour'] = CreateFrame('frame'),
+	['five'] = CreateFrame('frame'),
+}
+	unitEventHandlers.oneTwo:SetScript('OnEvent', iEET:UNIT_TARGET)
+	unitEventHandlers.threeFour:SetScript('OnEvent', iEET:UNIT_TARGET)
+	unitEventHandlers.five:SetScript('OnEvent', iEET:UNIT_TARGET)
+]]
+addon:SetScript('OnEvent', function(self, event, ...)
 	self[event](self, ...)
 end)
 addon:RegisterEvent('ENCOUNTER_START')
@@ -112,6 +122,7 @@ iEET.events = {
 		['MONSTER_EMOTE'] = 29,
 		['MONSTER_SAY'] = 30,
 		['MONSTER_YELL'] = 31,
+		--['UNIT_TARGET'] = 32,
 	},
 	['fromID'] = {
 		[1] = {
@@ -238,6 +249,10 @@ iEET.events = {
 			l = 'MONSTER_YELL',
 			s = 'MONSTER_YELL',
 		},
+		--[32] = {
+		--	l = 'UNIT_TARGET',
+		--	s = 'UNIT_TARGET',
+		--},
 	},
 }
 local function spairs(t, order)
@@ -342,6 +357,9 @@ function addon:ENCOUNTER_START(encounterID, encounterName)
 	addon:RegisterEvent('CHAT_MSG_MONSTER_EMOTE')
 	addon:RegisterEvent('CHAT_MSG_MONSTER_YELL')
 	addon:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
+	--unitEventHandlers.oneTwo:RegisterUnitEvent('UNIT_TARGET', 'boss1', 'boss2')
+	--unitEventHandlers.threeFour:RegisterUnitEvent('UNIT_TARGET', 'boss3', 'boss4')
+	--unitEventHandlers.five:RegisterUnitEvent('UNIT_TARGET', 'boss5')
 end
 function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize, kill)
 	table.insert(iEET.data, {['e'] = 28, ['t'] = GetTime() ,['cN'] = kill == 1 and 'Victory!' or 'Wipe'})
@@ -350,6 +368,9 @@ function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize,
 	addon:UnregisterEvent('CHAT_MSG_MONSTER_EMOTE')
 	addon:UnregisterEvent('CHAT_MSG_MONSTER_YELL')
 	addon:UnregisterEvent('UNIT_SPELLCAST_SUCCEEDED')
+	--unitEventHandlers.oneTwo:UnregisterEvent('UNIT_TARGET')
+	--unitEventHandlers.threeFour:UnregisterEvent('UNIT_TARGET)
+	--unitEventHandlers.five:UnregisterEvent('UNIT_TARGET')
 	iEET.encounterInfoData.fT = iEET.encounterInfoData.s and date('%M:%S', (GetTime() - iEET.encounterInfoData.s)) or '00:00' -- if we are missing start time for some reason
 	iEET.encounterInfoData.d = difficultyID
 	iEET.encounterInfoData.k = kill
@@ -373,7 +394,7 @@ function addon:UNIT_SPELLCAST_SUCCEEDED(unitID, spellName,_,arg4,spellID)
 			php = math.floor(chp/maxhp*1000+0.5)/10
 		end
 		--3-2084-1520-9097-202968-0028916A53
-		if select(4, GetBuildInfo()) >= 70000 then
+		if isAlpha then
 			local id = select(5, strsplit('-', arg4))
 			spellID = tonumber(id)
 		end
@@ -454,8 +475,30 @@ function addon:COMBAT_LOG_EVENT_UNFILTERED(timestamp,event,hideCaster,sourceGUID
 		end
 	end
 end
-function addon:UNIT_TARGET(unitID)
-
+function iEET:UNIT_TARGET(unitID)
+	--[[
+	if UnitExists(unitID) then --didn't just disappear
+		local sourceGUID = UnitGUID(unitID)
+		local sourceName = UnitName(unitID)
+		local chp = UnitHealth(unitID)
+		local maxhp = UnitHealthMax(unitID)
+		local php = nil
+		local targetName = UnitName(unitID .. 'target') or 'Dropped'
+		if chp and maxhp then
+			php = math.floor(chp/maxhp*1000+0.5)/10
+		end
+		table.insert(iEET.data, {
+		['e'] = 32,
+		['t'] = GetTime(),
+		['sG'] = unitID,
+		['cN'] = sourceName or unitID,
+		['tN'] = targetName,
+		['sN'] = 'Target Selection',
+		['sI'] = 103528,
+		['hp'] = php,
+		});
+	end
+	--]]
 end
 function iEET:getColor(event, sourceGUID, spellID)
 	if event and event == 27 then
