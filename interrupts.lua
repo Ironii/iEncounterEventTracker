@@ -1,7 +1,8 @@
 local _, iEET = ...
 iEET.interrupts = {
 	--General
-	[155145] = true, --Arcane Torrent
+	[32747] = true, --Arcane Torrent
+	[155145] = true, --Arcane Torrent might not be in use(?)
 	
 	--Death Knight
 	[47476] = true, --Strangulate
@@ -12,6 +13,7 @@ iEET.interrupts = {
 	
 	--Druid
 	[97547] = true, --Solar Beam
+	[93985] = true, --Skull Bash
 	[106839] = true, --Skull Bash
 	
 	--Hunter
