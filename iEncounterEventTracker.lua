@@ -925,7 +925,9 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 		iEET.content4:AddMessage('\124HiEETcustomyell:' .. event .. ':' .. msg .. '\124hMessage\124h', unpack(iEET:getColor(event, sourceGUID, spellID))) -- NEEDS CHANGING
 	elseif spellID then
 		local spellnametoShow = ''
-		if string.len(spellName) > 20 then
+		if isAlpha and string.len(spellName) > 16 then
+			spellnametoShow = string.sub(spellName, 1, 16)
+		elseif string.len(spellName) > 20 then
 			spellnametoShow = string.sub(spellName, 1, 20)
 		else
 			spellnametoShow = spellName
@@ -971,8 +973,8 @@ function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink)
 			value = string.sub(value, 1, 18)
 		end
 	elseif frameID == 6 then
-		if isAlpha and value and string.len(value) > 14 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
-			value = string.sub(value, 1, 14)
+		if isAlpha and value and string.len(value) > 13 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
+			value = string.sub(value, 1, 13)
 		elseif value and string.len(value) > 16 then
 			value = string.sub(value, 1, 16)
 		end
