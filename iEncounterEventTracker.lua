@@ -22,7 +22,8 @@ local isAlpha = select(4, GetBuildInfo()) >= 70000 and true or false
 iEET.ignoring = {} -- so ignore list resets on relog, don't want to save it, atleast not yet
 iEET.font = isAlpha and 'Fonts\\ARIALN.TTF' or 'Interface\\AddOns\\iEncounterEventTracker\\Accidental Presidency.ttf'
 iEET.fontsize = 12
-iEET.spacing = 2
+iEET.spacing = 1
+iEET.scale = 1
 iEET.justifyH = 'LEFT'
 iEET.backdrop = {
 	bgFile = 'Interface\\Buttons\\WHITE8x8',
@@ -1419,6 +1420,7 @@ function iEET:CreateMainFrame()
 	iEET.frame = CreateFrame("Frame", "iEETFrame", UIParent)
 	iEET.frame:SetSize(554,800)
 	iEET.frame:SetPoint('CENTER', UIParent, 'CENTER', 0,0)
+	iEET.scale = (GetScreenHeight()/GetScreenWidth()/iEET.frame:GetEffectiveScale())
 	iEET.frame:SetScript("OnMouseDown", function(self,button)
 		iEET.frame:ClearAllPoints()
 		iEET.frame:StartMoving()
@@ -1594,7 +1596,6 @@ function iEET:CreateMainFrame()
 		iEET['content' .. i]:SetMaxLines(5000)
 		iEET['content' .. i]:SetSpacing(iEET.spacing)
 		iEET['content' .. i]:EnableMouseWheel(true)
-		--iEET['content' .. i]:SetIndentedWordWrap(true)
 		iEET['content' .. i]:SetScript("OnMouseWheel", function(self, delta)
 			iEET:ScrollContent(delta)
 		end)
@@ -1777,8 +1778,8 @@ function iEET:CreateMainFrame()
 	iEET.encounterAbilitiesText:Show()
 	iEET.frame:EnableMouse(true)
 	iEET.frame:SetMovable(true)
-	local scale = (0.63999998569489/iEET.frame:GetEffectiveScale())
-	iEET.frame:SetScale(scale)
+	--local scale = (0.63999998569489/iEET.frame:GetEffectiveScale())
+	iEET.frame:SetScale(iEET.scale)
 	iEET.editbox = CreateFrame('EditBox', 'iEETEditBox', iEET.frame)
 	iEET.editbox:SetBackdrop({
 			bgFile = "Interface\\Buttons\\WHITE8x8",
@@ -1869,8 +1870,8 @@ function iEET:CreateOptionsFrame()
 	iEET.optionsFrame:SetFrameLevel(1)
 	iEET.optionsFrame:EnableMouse(true)
 	iEET.optionsFrame:SetMovable(true)
-	local scale = (0.63999998569489/iEET.optionsFrame:GetEffectiveScale())
-	iEET.optionsFrame:SetScale(scale)
+	--local scale = (0.63999998569489/iEET.optionsFrame:GetEffectiveScale())
+	iEET.optionsFrame:SetScale(iEET.scale)
 	-- Options title frame
 	iEET.optionsFrameTop = CreateFrame('FRAME', nil, iEET.optionsFrame)
 	iEET.optionsFrameTop:SetSize(650, 25)
@@ -1911,8 +1912,10 @@ function iEET:CreateOptionsFrame()
 				iEET.infoFrame:Show()
 				iEET.infoFrame:SetFrameStrata('DIALOG')
 				iEET.infoFrame:SetFrameLevel(1)
-				local scale = (0.63999998569489/iEET.infoFrame:GetEffectiveScale())
-				iEET.infoFrame:SetScale(scale)
+				if not iEET.frame then
+					iEET.scale = (GetScreenHeight()/GetScreenWidth()/iEET.infoFrame:GetEffectiveScale())
+				end
+				iEET.infoFrame:SetScale(iEET.scale)
 				iEET.infoFrame.text = iEET.infoFrame:CreateFontString()
 				iEET.infoFrame.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
 				iEET.infoFrame.text:SetPoint('TOPLEFT', iEET.infoFrame, 'TOPLEFT', 2,-2)
