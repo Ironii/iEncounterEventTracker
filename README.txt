@@ -19,17 +19,9 @@ shift+mousewheel for fast scrolling
 ---------------------------
 --Main-window-editbox------
 ---------------------------
+
 uses the text to search from all possible table keys and values eg:
 writing: 125261, will search 125261 from every table key and values
-
-time filtering usage:
-
-from:X/to:x
-
-eg:
-from:20 to:60, 	shows only events that happened between 20s from ENCOUNTER_START to 60s from ENCOUNTER_START
-from:20			shows only events from 20s ->
-to:60			shows only events from the first 60seconds of the fight
 
 ---------------------------
 --Slash-cmds---------------
@@ -74,8 +66,8 @@ sG/sourceGUID		string	UNIT_DIED:destGUID
 cN/sourceName		string	UNIT_DIED:destName
 tN/destName/unitID	string	USCS: source unitID
 sN/spellName		string
-sI/spellID			number
-hp					number	USCS only (doesn't support >/<, atleast not yet)
+sI/spellID		number
+hp			number	USCS only (doesn't support >/<, atleast not yet)
 
 
 to clear all filters use: clear
