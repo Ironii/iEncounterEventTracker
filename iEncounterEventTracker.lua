@@ -22,7 +22,7 @@ iEET.data = {}
 local isAlpha = select(4, GetBuildInfo()) >= 70000 and true or false
 iEET.ignoring = {} -- so ignore list resets on relog, don't want to save it, atleast not yet
 iEET.font = isAlpha and 'Fonts\\ARIALN.TTF' or 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
-iEET.fontsize = isAlpha and 10 or 9
+iEET.fontsize = isAlpha and 11 or 9
 iEET.spacing = 1
 iEET.scale = 1
 iEET.justifyH = 'LEFT'
@@ -586,7 +586,10 @@ function iEET:ScrollContent(delta)
 		for i = 1, 8 do
 			--local f = _G['iEET_content' .. i]
 			if IsShiftKeyDown() then
-				iEET['content' .. i]:PageDown()
+				--iEET['content' .. i]:PageDown()
+				for scrollFix=1, 45 do
+					iEET['content' .. i]:ScrollDown()
+				end
 			else
 				iEET['content' .. i]:ScrollDown()
 			end
@@ -594,7 +597,10 @@ function iEET:ScrollContent(delta)
 	else
 		for i = 1, 8 do
 			if IsShiftKeyDown() then
-				iEET['content' .. i]:PageUp()
+				--iEET['content' .. i]:PageUp()
+				for scrollFix=1, 45 do
+					iEET['content' .. i]:ScrollUp()
+				end
 			else
 				iEET['content' .. i]:ScrollUp()
 			end
@@ -607,7 +613,9 @@ function iEET:ScrollDetails(delta)
 			if i == 4 then
 			else
 				if IsShiftKeyDown() then
-					iEET['detailContent' .. i]:PageDown()
+					for scrollFix=1, 15 do
+						iEET['detailContent' .. i]:ScrollDown()
+					end
 				else
 					iEET['detailContent' .. i]:ScrollDown()
 				end
@@ -618,7 +626,9 @@ function iEET:ScrollDetails(delta)
 			if i == 4 then
 			else
 				if IsShiftKeyDown() then
-					iEET['detailContent' .. i]:PageUp()
+					for scrollFix=1, 15 do
+						iEET['detailContent' .. i]:ScrollUp()
+					end
 				else
 					iEET['detailContent' .. i]:ScrollUp()
 				end
@@ -626,7 +636,7 @@ function iEET:ScrollDetails(delta)
 		end
 	end
 end
-function iEET:ShouldShow(eventData,e_time, msg) -- NEW, TESTING msg is a temporary fix
+function iEET:ShouldShow(eventData,e_time, msg) -- TESTING, msg is a temporary fix
 	--[[
 	iEETConfig.filtering = {
 		timeBasedFiltering = {
@@ -959,26 +969,19 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 			msg = string.gsub(msg, "|c........", "") -- Colors
 			msg = string.gsub(msg, "|r", "") -- Colors
 		end
-		iEET.content4:AddMessage('\124HiEETcustomyell:' .. event .. ':' .. msg .. '\124hMessage\124h', unpack(iEET:getColor(event, sourceGUID, spellID))) -- NEEDS CHANGING
+		iEET:addMessages(1, 4, 'Message', color, '\124HiEETcustomyell:' .. event .. ':' .. msg .. '\124h%s\124h') -- NEEDS CHANGING
 	elseif spellID then
-		local spellnametoShow = ''
 		if spellID == 133217 then -- INSTANCE_ENCOUNTER_ENGAGE_UNIT
-			iEET.content4:AddMessage('\124HiEETNpcList:' .. sourceGUID .. '\124hSpawn Npcs\124h', unpack(iEET:getColor(event, sourceGUID, spellID)))
+			iEET:addMessages(1, 4, spellName, color,'\124HiEETNpcList:' .. sourceGUID .. '\124h%s\124h')
 		else
-			--if isAlpha and string.len(spellName) > 16 then
-			--	spellnametoShow = string.sub(spellName, 1, 16)
-			if string.len(spellName) > 20 then
-				spellnametoShow = string.sub(spellName, 1, 20)
-			else
-				spellnametoShow = spellName
-			end
 			local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
 			if sourceGUID then
 				unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
 			else
 				npcID = 'NONE'
 			end
-			iEET.content4:AddMessage('\124HiEETcustomspell:' .. event .. ':' .. spellID .. ':' .. spellName .. ':' .. (npcID and npcID or 'NONE').. '!' .. (spawnID and spawnID or '') ..'\124h' .. spellnametoShow .. '\124h', unpack(iEET:getColor(event, sourceGUID, spellID))) -- NEEDS CHANGING
+			--iEET.content4:AddMessage('\124HiEETcustomspell:' .. event .. ':' .. spellID .. ':' .. spellName .. ':' .. (npcID and npcID or 'NONE').. '!' .. (spawnID and spawnID or '') ..'\124h' .. spellnametoShow .. '\124h', unpack(iEET:getColor(event, sourceGUID, spellID))) -- NEEDS CHANGING
+			iEET:addMessages(1, 4, spellName, color, '\124HiEETcustomspell:' .. event .. ':' .. spellID .. ':' .. spellName .. ':' .. (npcID and npcID or 'NONE') .. '!' .. (spawnID and spawnID or '') .. '\124h%s\124h')
 		end
 	else
 		iEET.content4:AddMessage(' ')
@@ -1004,23 +1007,36 @@ function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink)
 	elseif placeToAdd == 2 then
 		frame = iEET['detailContent' .. frameID]
 	end
-	if frameID == 1 or frameID == 2 then
+	if frameID == 1 or frameID == 2 then -- time from encounter_start, intervall
 		if value then
 			value = string.format("%.1f",value)
 		end
 		if hyperlink then
 			value = hyperlink:format(value)
 		end
-	elseif frameID == 5 then
-		--if isAlpha and value and string.len(value) > 16 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
-		--	value = string.sub(value, 1, 16)
-		if value and string.len(value) > 18 then
+	elseif isAlpha and frameID == 3 then -- event, ps. im getting tired of alpha using different font...
+		if value and value == 'ENCOUNTER_START' then
+			value = 'ENCOUNTER_STA'
+		end
+	elseif frameID == 4 then -- spellName
+		if isAlpha and string.len(value) > 18 then
+			value =  string.sub(value, 1, 18)
+		elseif string.len(value) > 20 then
+			value = string.sub(value, 1, 20)
+		end
+		if hyperlink then
+			value = hyperlink:format(value)
+		end
+	elseif frameID == 5 then -- sourceName
+		if isAlpha and value and string.len(value) > 17 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
+			value = string.sub(value, 1, 17)
+		elseif value and string.len(value) > 18 then
 			value = string.sub(value, 1, 18)
 		end
-	elseif frameID == 6 then
-		--if isAlpha and value and string.len(value) > 13 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
-		--	value = string.sub(value, 1, 13)
-		if value and string.len(value) > 14 then
+	elseif frameID == 6 then -- targetName
+		if isAlpha and value and string.len(value) > 13 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
+			value = string.sub(value, 1, 13)
+		elseif value and string.len(value) > 14 then
 			value = string.sub(value, 1, 14)
 		end
 	end
