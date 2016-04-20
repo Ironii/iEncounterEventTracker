@@ -22,7 +22,7 @@ iEET.data = {}
 local isAlpha = select(4, GetBuildInfo()) >= 70000 and true or false
 iEET.ignoring = {} -- so ignore list resets on relog, don't want to save it, atleast not yet
 iEET.font = isAlpha and 'Fonts\\ARIALN.TTF' or 'Interface\\AddOns\\iEncounterEventTracker\\Accidental Presidency.ttf'
-iEET.fontsize = 12
+iEET.fontsize = isAlpha and 10 or 12
 iEET.spacing = 1
 iEET.scale = 1
 iEET.justifyH = 'LEFT'
@@ -965,9 +965,9 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 		if spellID == 133217 then -- INSTANCE_ENCOUNTER_ENGAGE_UNIT
 			iEET.content4:AddMessage('\124HiEETNpcList:' .. sourceGUID .. '\124hSpawn Npcs\124h', unpack(iEET:getColor(event, sourceGUID, spellID)))
 		else
-			if isAlpha and string.len(spellName) > 16 then
-				spellnametoShow = string.sub(spellName, 1, 16)
-			elseif string.len(spellName) > 20 then
+			--if isAlpha and string.len(spellName) > 16 then
+			--	spellnametoShow = string.sub(spellName, 1, 16)
+			if string.len(spellName) > 20 then
 				spellnametoShow = string.sub(spellName, 1, 20)
 			else
 				spellnametoShow = spellName
@@ -1012,15 +1012,15 @@ function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink)
 			value = hyperlink:format(value)
 		end
 	elseif frameID == 5 then
-		if isAlpha and value and string.len(value) > 16 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
-			value = string.sub(value, 1, 16)
-		elseif value and string.len(value) > 18 then
+		--if isAlpha and value and string.len(value) > 16 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
+		--	value = string.sub(value, 1, 16)
+		if value and string.len(value) > 18 then
 			value = string.sub(value, 1, 18)
 		end
 	elseif frameID == 6 then
-		if isAlpha and value and string.len(value) > 13 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
-			value = string.sub(value, 1, 13)
-		elseif value and string.len(value) > 16 then
+		--if isAlpha and value and string.len(value) > 13 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
+		--	value = string.sub(value, 1, 13)
+		if value and string.len(value) > 16 then
 			value = string.sub(value, 1, 16)
 		end
 	end
