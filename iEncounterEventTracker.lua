@@ -21,8 +21,8 @@ local _, iEET = ...
 iEET.data = {}
 local isAlpha = select(4, GetBuildInfo()) >= 70000 and true or false
 iEET.ignoring = {} -- so ignore list resets on relog, don't want to save it, atleast not yet
-iEET.font = isAlpha and 'Fonts\\ARIALN.TTF' or 'Interface\\AddOns\\iEncounterEventTracker\\Accidental Presidency.ttf'
-iEET.fontsize = isAlpha and 10 or 12
+iEET.font = isAlpha and 'Fonts\\ARIALN.TTF' or 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
+iEET.fontsize = isAlpha and 10 or 9
 iEET.spacing = 1
 iEET.scale = 1
 iEET.justifyH = 'LEFT'
@@ -1020,8 +1020,8 @@ function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink)
 	elseif frameID == 6 then
 		--if isAlpha and value and string.len(value) > 13 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
 		--	value = string.sub(value, 1, 13)
-		if value and string.len(value) > 16 then
-			value = string.sub(value, 1, 16)
+		if value and string.len(value) > 14 then
+			value = string.sub(value, 1, 14)
 		end
 	end
 	frame:AddMessage(value and value or ' ', unpack(color))
@@ -1461,7 +1461,7 @@ end
 iEET.encounterListMenuFrame = CreateFrame("Frame", "iEETEncounterListMenu", UIParent, "UIDropDownMenuTemplate")
 function iEET:CreateMainFrame()
 	iEET.frame = CreateFrame("Frame", "iEETFrame", UIParent)
-	iEET.frame:SetSize(554,800)
+	iEET.frame:SetSize(598,800)
 	iEET.frame:SetPoint('CENTER', UIParent, 'CENTER', 0,0)
 	iEET.scale = (GetScreenHeight()/GetScreenWidth()/iEET.frame:GetEffectiveScale())
 	iEET.frame:SetScript("OnMouseDown", function(self,button)
@@ -1485,7 +1485,7 @@ function iEET:CreateMainFrame()
 	iEET.frame:SetFrameStrata('HIGH')
 	iEET.frame:SetFrameLevel(1)
 	iEET.top = CreateFrame('FRAME', nil, iEET.frame)
-	iEET.top:SetSize(554, 25)
+	iEET.top:SetSize(598, 25)
 	iEET.top:SetPoint('BOTTOMRIGHT', iEET.frame, 'TOPRIGHT', 0, -1)
 	iEET.top:SetBackdrop(iEET.backdrop);
 	iEET.top:SetBackdropColor(0.1,0.1,0.1,0.9)
@@ -1497,14 +1497,13 @@ function iEET:CreateMainFrame()
 	iEET.top:SetScript('OnMouseUp', function(self, button)
 		iEET.frame:StopMovingOrSizing()
 	end)
-
 	iEET.top:EnableMouse(true)
 	iEET.top:Show()
 	iEET.top:SetFrameStrata('HIGH')
 	iEET.top:SetFrameLevel(1)
 	--Encounter Info background & fontstring
 	iEET.encounterInfo = CreateFrame('FRAME', nil, iEET.frame)
-	iEET.encounterInfo:SetSize(354, 18)
+	iEET.encounterInfo:SetSize(370, 18)
 	iEET.encounterInfo:SetPoint('BOTTOM', iEET.top, 'TOP', 0, -1)
 	iEET.encounterInfo:SetBackdrop(iEET.backdrop);
 	iEET.encounterInfo:SetBackdropColor(0.1,0.1,0.1,0.9)
@@ -1516,7 +1515,6 @@ function iEET:CreateMainFrame()
 	iEET.encounterInfo:SetScript('OnMouseUp', function(self, button)
 		iEET.frame:StopMovingOrSizing()
 	end)
-
 	iEET.encounterInfo:EnableMouse(true)
 	iEET.encounterInfo:Show()
 	iEET.encounterInfo:SetFrameStrata('HIGH')
@@ -1539,7 +1537,7 @@ function iEET:CreateMainFrame()
 		iEET.frame:Hide()
 	end)
 	iEET.detailtop = CreateFrame('FRAME', nil, iEET.frame)
-	iEET.detailtop:SetSize(405, 25)
+	iEET.detailtop:SetSize(433, 25)
 	iEET.detailtop:SetPoint('RIGHT', iEET.top, 'LEFT', 1, 0)
 	iEET.detailtop:SetBackdrop({
 		bgFile = "Interface\\Buttons\\WHITE8x8",
@@ -1595,14 +1593,14 @@ function iEET:CreateMainFrame()
 	iEET.encounterAbilities:EnableMouse(true)
 	local lastframe = false
 	local slices = {
-		[1] = 36,
-		[2] = 36,
-		[3] = 110,
-		[4] = 121,
-		[5] = 110,
-		[6] = 87,
-		[7] = 31,
-		[8] = 30,
+		[1] = 40,
+		[2] = 40,
+		[3] = 105,
+		[4] = 131,
+		[5] = 120,
+		[6] = 97,
+		[7] = 36,
+		[8] = 36,
 	};
 	for i=1, 8 do ---bigcontent
 		---anhorframe
