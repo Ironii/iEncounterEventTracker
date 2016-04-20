@@ -1966,30 +1966,42 @@ function iEET:CreateOptionsFrame()
 	iEET.optionsFrameTopInfo:SetText('Filtering options')
 	iEET.optionsFrameTopInfo:Show()
 	--Info frame
-	local function infoFrame(hide)
-		if hide and iEET.infoFrame then
-			iEET.infoFrame:Hide()
-		else
-			if iEET.infoFrame then
+	iEET.lastShownOnClick = false
+	local function infoFrame(forceHide,clicked)
+		if iEET.infoFrame then
+			if forceHide and clicked then -- OnClick with shown OnClick -> Hide
+				iEET.infoFrame:Hide()
+				iEET.lastShownOnClick = false
+				return
+			elseif not forceHide and clicked then -- OnClick -> force Show
 				iEET.infoFrame:Show()
-			else
-				iEET.infoFrame = CreateFrame('Frame', 'iEETOptionsFrame', UIParent)
-				iEET.infoFrame:SetPoint('TOPLEFT', iEET.optionsFrameTop, 'TOPRIGHT', -1,0)
-				iEET.infoFrame:SetBackdrop(iEET.backdrop);
-				iEET.infoFrame:SetBackdropColor(0.1,0.1,0.1,0.9)
-				iEET.infoFrame:SetBackdropBorderColor(0.64,0,0,1)
-				iEET.infoFrame:Show()
-				iEET.infoFrame:SetFrameStrata('DIALOG')
-				iEET.infoFrame:SetFrameLevel(1)
-				if not iEET.frame then
-					iEET.scale = (GetScreenHeight()/GetScreenWidth()/iEET.infoFrame:GetEffectiveScale())
+				iEET.lastShownOnClick = true
+				return
+			elseif not iEET.lastShownOnClick then -- Ignore OnEvent & OnLeave events
+				if iEET.infoFrame:IsShown() or forceHide then
+					iEET.infoFrame:Hide()
+				else
+					iEET.infoFrame:Show()
 				end
-				iEET.infoFrame:SetScale(iEET.scale)
-				iEET.infoFrame.text = iEET.infoFrame:CreateFontString()
-				iEET.infoFrame.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
-				iEET.infoFrame.text:SetPoint('TOPLEFT', iEET.infoFrame, 'TOPLEFT', 2,-2)
-				iEET.infoFrame.text:SetJustifyH('LEFT')
-				local infoText = [[
+			end
+		else
+			iEET.infoFrame = CreateFrame('Frame', 'iEETOptionsFrame', UIParent)
+			iEET.infoFrame:SetPoint('TOPLEFT', iEET.optionsFrameTop, 'TOPRIGHT', -1,0)
+			iEET.infoFrame:SetBackdrop(iEET.backdrop);
+			iEET.infoFrame:SetBackdropColor(0.1,0.1,0.1,0.9)
+			iEET.infoFrame:SetBackdropBorderColor(0.64,0,0,1)
+			iEET.infoFrame:Show()
+			iEET.infoFrame:SetFrameStrata('DIALOG')
+			iEET.infoFrame:SetFrameLevel(1)
+			if not iEET.frame then
+				iEET.scale = (GetScreenHeight()/GetScreenWidth()/iEET.infoFrame:GetEffectiveScale())
+			end
+			iEET.infoFrame:SetScale(iEET.scale)
+			iEET.infoFrame.text = iEET.infoFrame:CreateFontString()
+			iEET.infoFrame.text:SetFont(iEET.font, 11)
+			iEET.infoFrame.text:SetPoint('TOPLEFT', iEET.infoFrame, 'TOPLEFT', 2,-2)
+			iEET.infoFrame.text:SetJustifyH('LEFT')
+			local infoText = [[
 Usage:
 Key=Value
 
@@ -2057,10 +2069,9 @@ Event names/values:
 31/MONSTER_YELL
 32/UNIT_TARGET
 33/INSTANCE_ENCOUNTER_ENGAGE_UNIT/IEEU]]
-				iEET.infoFrame.text:SetText(infoText)
-				iEET.infoFrame.text:Show()
-				iEET.infoFrame:SetSize(iEET.infoFrame.text:GetStringWidth()+4,iEET.infoFrame.text:GetStringHeight()+4)
-			end
+			iEET.infoFrame.text:SetText(infoText)
+			iEET.infoFrame.text:Show()
+			iEET.infoFrame:SetSize(iEET.infoFrame.text:GetStringWidth()+4,iEET.infoFrame.text:GetStringHeight()+4)
 		end
 	end
 	--Info button
@@ -2075,6 +2086,13 @@ Event names/values:
 	end)
 	iEET.infoButton:SetScript('OnLeave', function()
 		infoFrame(true)
+	end)
+	iEET.infoButton:SetScript('OnMouseDown', function()
+		if iEET.lastShownOnClick then
+			infoFrame(true,true)
+		else
+			infoFrame(false,true)
+		end
 	end)
 	iEET.infoButton.text = iEET.infoButton:CreateFontString()
 	iEET.infoButton.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
@@ -2206,6 +2224,9 @@ Event names/values:
 	iEET.optionsFrameSaveButton:SetScript('OnClick',function()
 		--Parse filters from scrolling message frame
 		iEET:ParseFilters()
+		if iEET.infoFrame then
+			iEET.infoFrame:Hide()
+		end
 		iEET.optionsFrame:Hide()
 	end)
 	-- Cancel button
@@ -2225,6 +2246,9 @@ Event names/values:
 		-- clear unsaved args & close
 		iEET.optionsFrameEditbox:SetText('')
 		iEET.optionsFrame:Hide()
+		if iEET.infoFrame then
+			iEET.infoFrame:Hide()
+		end
 	end)
 	iEET:FillFilters()
 end
@@ -2232,8 +2256,14 @@ function iEET:Options()
 	if iEET.optionsFrame then
 		if iEET.optionsFrame:IsShown() then
 			iEET.optionsFrame:Hide()
+			if iEET.infoFrame then
+				iEET.infoFrame:Hide()
+			end
 		else
 			iEET.optionsFrame:Show()
+			if iEET.infoFrame and iEET.lastShownOnClick then
+				iEET.infoFrame:Show()
+			end
 			iEET:FillFilters()
 		end
 	else
