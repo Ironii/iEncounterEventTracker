@@ -26,7 +26,9 @@ iEET.interrupts = {
 	[116705] = true, --Spear Hand Strike
 	
 	--Paladin
+	[31935] = true, --Avenger's Shield
 	[96231] = true, --Rebuke
+	
 	
 	--Priest
 	[15487] = true, --Silence
