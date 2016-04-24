@@ -15,7 +15,6 @@ hp	Health		number	USCS only
 --[[TO DO:--
 compare
 target tracking IN TESTING
-+INSTANCE_ENCOUNTER_ENGAGE_UNIT
 --]]
 local _, iEET = ...
 iEET.data = {}
@@ -37,7 +36,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.502
+iEET.version = 1.503
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -70,6 +69,8 @@ local eventsToTrack = {
 	['UNIT_TARGET'] = 'UNIT_TARGET',
 	
 	['INSTANCE_ENCOUNTER_ENGAGE_UNIT'] = 'IEEU',
+	
+	['UNIT_POWER'] = 'UNIT_POWER',
 };
 local addon = CreateFrame('frame')
 addon:RegisterEvent('ENCOUNTER_START')
@@ -79,6 +80,7 @@ addon:SetScript('OnEvent', function(self, event, ...)
 	self[event](self, ...)
 end)
 iEET.IEEUnits = {}
+iEET.unitPowerUnits = {}
 iEET.events = {
 	['toID'] = {
 		['SPELL_CAST_START'] = 1,
@@ -121,6 +123,8 @@ iEET.events = {
 		['UNIT_TARGET'] = 32,
 		
 		['INSTANCE_ENCOUNTER_ENGAGE_UNIT'] = 33,
+		
+		['UNIT_POWER'] = 34,
 	},
 	['fromID'] = {
 		[1] = {
@@ -255,6 +259,10 @@ iEET.events = {
 			l = 'INSTANCE_ENCOUNTER_ENGAGE_UNIT',
 			s = 'IEEU',
 		},
+		[34] = {
+			l = 'UNIT_POWER',
+			s = 'UNIT_POWER',
+		},
 	},
 }
 local function spairs(t, order)
@@ -319,6 +327,8 @@ function iEET:LoadDefaults()
 		
 		['UNIT_TARGET'] = true,
 		['INSTANCE_ENCOUNTER_ENGAGE_UNIT'] = true,
+		
+		['UNIT_POWER'] = true,
 	}
 	iEETConfig.version = iEET.version
 	iEETConfig.autoSave = true
@@ -334,7 +344,7 @@ end
 function addon:ADDON_LOADED(addonName)
 	if addonName == 'iEncounterEventTracker' then
 		iEETConfig = iEETConfig or {}
-		if not iEETConfig.version or not iEETConfig.tracking or iEETConfig.version < 1.502 then -- Last version with db changes
+		if not iEETConfig.version or not iEETConfig.tracking or iEETConfig.version < 1.503 then -- Last version with db changes
 			iEET:LoadDefaults()
 		else
 			iEETConfig.version = iEET.version
@@ -345,6 +355,8 @@ end
 function addon:ENCOUNTER_START(encounterID, encounterName)
 	iEET.IEEUnits = nil
 	iEET.IEEUnits = {}
+	iEET.unitPowerUnits = nil
+	iEET.unitPowerUnits = {}
 	iEET.data = nil
 	iEET.data = {}
 	iEET.encounterInfoData = { --TODO
@@ -365,6 +377,7 @@ function addon:ENCOUNTER_START(encounterID, encounterName)
 	addon:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
 	addon:RegisterEvent('UNIT_TARGET')
 	addon:RegisterEvent('INSTANCE_ENCOUNTER_ENGAGE_UNIT')
+	addon:RegisterEvent('UNIT_POWER')
 end
 function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize, kill)
 	table.insert(iEET.data, {['e'] = 28, ['t'] = GetTime() ,['cN'] = kill == 1 and 'Victory!' or 'Wipe'})
@@ -375,6 +388,7 @@ function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize,
 	addon:UnregisterEvent('UNIT_SPELLCAST_SUCCEEDED')
 	addon:UnregisterEvent('UNIT_TARGET')
 	addon:UnregisterEvent('INSTANCE_ENCOUNTER_ENGAGE_UNIT')
+	addon:UnregisterEvent('UNIT_POWER')
 	iEET.encounterInfoData.fT = iEET.encounterInfoData.s and date('%M:%S', (GetTime() - iEET.encounterInfoData.s)) or '00:00' -- if we are missing start time for some reason
 	iEET.encounterInfoData.d = difficultyID
 	iEET.encounterInfoData.k = kill
@@ -418,32 +432,75 @@ function addon:UNIT_SPELLCAST_SUCCEEDED(unitID, spellName,_,arg4,spellID)
 		end
 	end
 end
-function addon:CHAT_MSG_MONSTER_EMOTE(msg, sourceName)
-	table.insert(iEET.data, {
-		['e'] = 29,
-		['t'] = GetTime(),
-		['sI'] = msg,
-		['cN'] = sourceName,
-		['sG'] = sourceName,
-	});
+function addon:UNIT_TARGET(unitID)
+	if string.find(unitID, 'boss') then
+		if UnitExists(unitID) then --didn't just disappear
+			local sourceGUID = UnitGUID(unitID)
+			local sourceName = UnitName(unitID)
+			local chp = UnitHealth(unitID)
+			local maxhp = UnitHealthMax(unitID)
+			local php = nil
+			local targetName = UnitName(unitID .. 'target') or 'Dropped'
+			if chp and maxhp then
+				php = math.floor(chp/maxhp*1000+0.5)/10
+			end
+			table.insert(iEET.data, {
+			['e'] = 32,
+			['t'] = GetTime(),
+			['sG'] = unitID,
+			['cN'] = sourceName or unitID,
+			['tN'] = targetName,
+			['sN'] = 'Target Selection',
+			['sI'] = 103528,
+			['hp'] = php,
+			});
+		end
+	end
 end
-function addon:CHAT_MSG_MONSTER_SAY(msg, sourceName)
-	table.insert(iEET.data, {
-		['e'] = 30,
-		['t'] = GetTime(),
-		['sI'] = msg,
-		['cN'] = sourceName,
-		['sG'] = sourceName,
-	});
-end
-function addon:CHAT_MSG_MONSTER_YELL(msg, sourceName)
-	table.insert(iEET.data, {
-		['e'] = 31,
-		['t'] = GetTime(),
-		['sI'] = msg,
-		['cN'] = sourceName,
-		['sG'] = sourceName,
-	});
+function addon:UNIT_POWER(unitID, powerType)
+	if string.find(unitID, 'boss') then
+		if UnitExists(unitID) then --didn't just disappear
+			local sourceGUID = UnitGUID(unitID)
+			local currentPower = UnitPower(powerType)
+			local change = 0
+			if iEET.unitPowerUnits[sourceGUID] then -- unit exists, update or add new powerType
+				local prev = iEET.unitPowerUnits[sourceGUID][powerType] or 0
+				change =  currentPower - prev
+				iEET.unitPowerUnits[sourceGUID][powerType] = currentPower --update prev
+			end
+			if not iEET.unitPowerUnits[sourceGUID] then -- add new sourceguid & powerType
+				iEET.unitPowerUnits[sourceGUID] = {
+					[powerType] = currentPower
+				}
+			end
+			local sourceName = UnitName(unitID)
+			local chp = UnitHealth(unitID)
+			local maxhp = UnitHealthMax(unitID)
+			local php = nil
+			if chp and maxhp then
+				php = math.floor(chp/maxhp*1000+0.5)/10
+			end
+			if change > 0 then
+				change = '+' .. change
+			end
+			local maxPower = UnitPowerMax(unitID)
+			local pUP = math.floor(currentPower/maxPower*1000+0.5)/10
+			local powerName = getglobal(powerType) or powerType
+			local tooltipText = string.format('%s %s%%;%s/%s;%s',powerName, pUP, currentPower, maxPower, change) --PowerName 50%;50/100;+20
+			--/dump string.format('%s %s%%;%s/%s;%s','Rage', 50, 50,100, 20)
+			table.insert(iEET.data, {
+			['e'] = 34,
+			['t'] = GetTime(),
+			['sG'] = unitID,
+			['cN'] = sourceName or unitID,
+			['tN'] = pUP,
+			['sN'] = powerName .. ' Update',
+			['sI'] = 143409, -- Power Regen
+			['hp'] = php,
+			['eD'] = tooltipText, --eD = extraDAta
+			});
+		end
+	end
 end
 function addon:COMBAT_LOG_EVENT_UNFILTERED(timestamp,event,hideCaster,sourceGUID,sourceName,sourceFlags,sourceRaidFlags,destGUID,destName,destFlags,destRaidFlags,spellID, spellName,...)
 	if eventsToTrack[event] then
@@ -482,31 +539,6 @@ function addon:COMBAT_LOG_EVENT_UNFILTERED(timestamp,event,hideCaster,sourceGUID
 		end
 	end
 end
-function addon:UNIT_TARGET(unitID)
-	if string.find(unitID, 'boss') then
-		if UnitExists(unitID) then --didn't just disappear
-			local sourceGUID = UnitGUID(unitID)
-			local sourceName = UnitName(unitID)
-			local chp = UnitHealth(unitID)
-			local maxhp = UnitHealthMax(unitID)
-			local php = nil
-			local targetName = UnitName(unitID .. 'target') or 'Dropped'
-			if chp and maxhp then
-				php = math.floor(chp/maxhp*1000+0.5)/10
-			end
-			table.insert(iEET.data, {
-			['e'] = 32,
-			['t'] = GetTime(),
-			['sG'] = unitID,
-			['cN'] = sourceName or unitID,
-			['tN'] = targetName,
-			['sN'] = 'Target Selection',
-			['sI'] = 103528,
-			['hp'] = php,
-			});
-		end
-	end
-end
 function addon:INSTANCE_ENCOUNTER_ENGAGE_UNIT()
 	local newUnits = {}
 	local unitNames = {}
@@ -542,6 +574,33 @@ function addon:INSTANCE_ENCOUNTER_ENGAGE_UNIT()
 		['sN'] = 'Spawn NPCs',
 		['sI'] = 133217 or nil,
 	})
+end
+function addon:CHAT_MSG_MONSTER_EMOTE(msg, sourceName)
+	table.insert(iEET.data, {
+		['e'] = 29,
+		['t'] = GetTime(),
+		['sI'] = msg,
+		['cN'] = sourceName,
+		['sG'] = sourceName,
+	});
+end
+function addon:CHAT_MSG_MONSTER_SAY(msg, sourceName)
+	table.insert(iEET.data, {
+		['e'] = 30,
+		['t'] = GetTime(),
+		['sI'] = msg,
+		['cN'] = sourceName,
+		['sG'] = sourceName,
+	});
+end
+function addon:CHAT_MSG_MONSTER_YELL(msg, sourceName)
+	table.insert(iEET.data, {
+		['e'] = 31,
+		['t'] = GetTime(),
+		['sI'] = msg,
+		['cN'] = sourceName,
+		['sG'] = sourceName,
+	});
 end
 function iEET:getColor(event, sourceGUID, spellID)
 	if event and event == 27 then
@@ -952,7 +1011,7 @@ function iEET:addSpellDetails(hyperlink, linkData)
 	end
 	iEETDetailInfo:SetText(hyperlink)
 end
-function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID,intervall,count,sourceGUID, hp)
+function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID,intervall,count,sourceGUID, hp, extraData)
 	local color = iEET:getColor(event, sourceGUID, spellID)
 	iEET:addMessages(1, 1, timestamp, color, '\124HiEETtime:' .. timestamp ..'\124h%s\124h')
 	iEET:addMessages(1, 2, intervall, color, intervall and ('\124HiEETtime:' .. intervall ..'\124h%s\124h') or nil)
@@ -973,6 +1032,8 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 	elseif spellID then
 		if spellID == 133217 then -- INSTANCE_ENCOUNTER_ENGAGE_UNIT
 			iEET:addMessages(1, 4, spellName, color,'\124HiEETNpcList:' .. sourceGUID .. '\124h%s\124h')
+		elseif event and event == 34 then -- UNIT_POWER
+			iEET:addMessages(1, 4, spellName, color,'\124HiEETList:' .. extraData or 'Empty;List;Contact Ironi' .. '\124h%s\124h')
 		else
 			local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
 			if sourceGUID then
@@ -1165,7 +1226,7 @@ function iEET:loopData(msg)
 				end
 			end
 			if iEETConfig.tracking[iEET.events.fromID[v.e].l] or v.e == 27 or v.e == 28 then -- ENCOUNTER_START & ENCOUNTER_END
-					iEET:addToContent(timestamp,v.e,v.cN,v.tN,v.sN,v.sI, intervall,count, v.sG,v.hp)
+					iEET:addToContent(timestamp,v.e,v.cN,v.tN,v.sN,v.sI, intervall,count, v.sG,v.hp, v.eD)
 			end
 		end
 	end
@@ -1307,6 +1368,37 @@ function iEET:ParseFilters()
 		iEET:loopData()
 	end
 end
+function iEET:Hyperlinks(linkData, link)
+	GameTooltip:ClearLines()
+	local linkType = strsplit(':', linkData)
+	if linkType == 'iEETcustomyell' then
+		local _, event, spellID, spellName = strsplit(':',linkData)
+		GameTooltip:SetText(spellID)
+		--iEET_content4:AddMessage('\124HiEETcustomspell:' .. event .. ':' .. spellID .. ':' .. spellname ..'\124h' .. spellName .. '\124h', unpack(getColor(event, sourceGUID, spellID)))
+	elseif linkType == 'iEETcustomspell' then
+		local _, event, spellID, spellName, npcID = strsplit(':',linkData)
+		if spellID == 'NONE' then
+			return
+		end
+		local hyperlink = '\124Hspell:' .. tonumber(spellID)
+		GameTooltip:SetHyperlink('spell:' .. tonumber(spellID))
+		GameTooltip:AddLine('spellID:' .. spellID)
+		GameTooltip:AddLine('npcID:' .. npcID)
+	elseif linkType == 'iEETtime' then
+		local _, txt = strsplit(':',linkData)
+		GameTooltip:SetText(txt)
+	elseif linkType == 'iEETNpcList' then
+		local _, txt = strsplit(':',linkData)
+		GameTooltip:SetText(txt)
+	elseif linkType == 'iEETList' then
+		for _,v in pairs({strsplit(';',linkData)}) do
+			GameTooltip:AddLine(v)
+		end
+	else
+		GameTooltip:SetHyperlink(link)
+	end
+	GameTooltip:Show()
+end
 iEET.optionMenu = {}
 function iEET:updateOptionMenu()
 	iEET.optionMenu = nil
@@ -1446,7 +1538,7 @@ function iEET:updateEncounterListMenu()
 				--for k,v in pairs(encountersTempTable[encounterName][difficultyID]) do
 				for k,v in spairs(encountersTempTable[encounterName][difficultyID], function(t,a,b) return t[b].pT < t[a].pT end) do
 					local fightEntry = {
-						text = (v.kill == 1 and '+ ' or '- ') .. v.fT .. ' (' .. v.pT .. ')',
+						text = (v.k == 1 and '+ ' or '- ') .. v.fT .. ' (' .. v.pT .. ')',
 						notCheckable = true,
 						hasArrow = true,
 						checked = false,
@@ -1660,6 +1752,8 @@ function iEET:CreateMainFrame()
 			iEET['content' .. i]:SetHyperlinksEnabled(true)
 			iEET['content' .. i]:SetScript("OnHyperlinkEnter", function(self, linkData, link)
 				GameTooltip:SetOwner(iEET.frame, "ANCHOR_TOPRIGHT", 0-iEET.frame:GetWidth(), 0-iEET.frame:GetHeight())
+				iEET:Hyperlinks(linkData, link)
+				--[[
 				GameTooltip:ClearLines()
 				local linkType = strsplit(':', linkData)
 				if linkType == 'iEETcustomyell' then
@@ -1685,6 +1779,7 @@ function iEET:CreateMainFrame()
 					GameTooltip:SetHyperlink(link)
 				end
 				GameTooltip:Show()
+				--]]
 			end)
 			iEET['content' .. i]:SetScript("OnHyperlinkLeave", function()
 				GameTooltip:Hide()
@@ -1756,10 +1851,13 @@ function iEET:CreateMainFrame()
 			iEET['detailContent' .. i]:SetHyperlinksEnabled(true)
 			iEET['detailContent' .. i]:SetScript('OnHyperlinkEnter', function(self, linkData, link)
 				GameTooltip:SetOwner(iEET.frame, "ANCHOR_TOPRIGHT", 0-iEET.frame:GetWidth(), 0-iEET.frame:GetHeight())
+				iEET:Hyperlinks(linkData)
+				--[[
 				GameTooltip:ClearLines()
 				local _, txt = strsplit(':',linkData)
 				GameTooltip:SetText(txt)
 				GameTooltip:Show()
+				--]]
 			end)
 			iEET['detailContent' .. i]:SetScript("OnHyperlinkLeave", function()
 				GameTooltip:Hide()
