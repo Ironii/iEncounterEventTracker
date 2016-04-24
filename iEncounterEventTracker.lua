@@ -14,7 +14,6 @@ hp	Health		number	USCS only
 --]]--------------------------------------------------------------
 --[[TO DO:--
 compare
-target tracking IN TESTING
 --]]
 local _, iEET = ...
 iEET.data = {}
@@ -942,11 +941,25 @@ function iEET:addSpellDetails(hyperlink, linkData)
 			iEET['detailContent' .. i]:Clear()
 		end
 	end
+	if linkType == 'iEETList' then 
+		spellNametoFind = hyperlink:match('\124h(.-)\124h$')
+	end
 	for k,v in ipairs(iEET.data) do
 		if v.e == 27 then starttime = v.t end -- ENCOUNTER_START
-		if linkType == 'iEETcustomspell' or linkType == 'iEETcustomyell' then
+		if linkType == 'iEETcustomspell' or linkType == 'iEETcustomyell' or linkType == 'iEETList' or linkType == 'iEETNpcList' then
 			local found = false
-			if v.sI then
+			local hyperlinkToShow
+			if linkType == 'iEETList' then
+				if v.sN == spellNametoFind then
+					hyperlinkToShow = '\124HiEETList:' .. (v.eD and string.gsub(v.eD, '%%', '%%%%') or 'Empty List;Contact Ironi') .. '\124h%s\124h'
+					found = true
+				end
+			elseif linkType == 'iEETNpcList' then
+				if v.sI and v.sI == 133217 then -- Spawn NPCs
+					hyperlinkToShow = '\124HiEETNpcList:' .. v.sG .. '\124h%s\124h'
+					found = true
+				end
+			elseif v.sI then
 				if v.sI == spellIDToFind and v.e == eventToFind then
 					found = true
 				end
@@ -1003,7 +1016,7 @@ function iEET:addSpellDetails(hyperlink, linkData)
 				iEET:addMessages(2, 1, timestamp, color, ('\124HiEETtime:' .. timestamp ..'\124h%s\124h'))
 				iEET:addMessages(2, 2, intervall, color, intervall and ('\124HiEETtime:' .. intervall ..'\124h%s\124h') or nil)
 				iEET:addMessages(2, 3, iEET.events.fromID[v.e].s, color)
-				iEET:addMessages(2, 5, v.cN, color)
+				iEET:addMessages(2, 5, v.cN, color, hyperlinkToShow)
 				iEET:addMessages(2, 6, v.tN, color)
 				iEET:addMessages(2, 7, count, color)
 			end
@@ -1097,6 +1110,9 @@ function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink)
 		elseif value and string.len(value) > 18 then
 			value = string.sub(value, 1, 18)
 		end
+		if hyperlink then -- Spell details, for IEEU and UNIT_POWER
+			value = hyperlink:format(value)
+		end
 	elseif frameID == 6 then -- targetName
 		if isAlpha and value and string.len(value) > 13 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
 			value = string.sub(value, 1, 13)
@@ -1176,8 +1192,13 @@ function iEET:loopData(msg)
 					iEET.collector.encounterSpells[0.2] = 'Dispels'
 				end
 			else
-				iEET.collector.encounterSpells[v.sI] = v.sN
-				iEET:addToEncounterAbilities(v.sI, v.sN)
+				if v.sI == 143409 then -- Power Regen
+					iEET.collector.encounterSpells[v.sI] = 'Power Update'
+					iEET:addToEncounterAbilities(v.sI, 'Power Update')
+				else
+					iEET.collector.encounterSpells[v.sI] = v.sN
+					iEET:addToEncounterAbilities(v.sI, v.sN)
+				end
 			end
 		end
 		if iEET:ShouldShow(v,starttime, msg) then
@@ -1791,8 +1812,7 @@ function iEET:CreateMainFrame()
 			iEET['content' .. i]:SetScript("OnHyperlinkClick", function(self, linkData, link, button)
 				if string.find(linkData, 'iEETtime') then
 					return
-				end
-				if IsShiftKeyDown() and IsInRaid() then
+				elseif IsShiftKeyDown() and IsInRaid() then
 					local linkType = strsplit(':', linkData)
 					if linkType == 'iEETcustomyell' then
 						local _, event, spellID, spellName = strsplit(':',linkData)
@@ -1851,7 +1871,7 @@ function iEET:CreateMainFrame()
 		iEET['detailContent' .. i]:SetScript("OnMouseWheel", function(self, delta)
 			iEET:ScrollDetails(delta)
 		end)
-		if i == 1 or i == 2 then --allow hyperlinks for intervall time only
+		if i == 1 or i == 2 or i == 5 then --allow hyperlinks for time,intervall and targetName (IEEU, UNIT_POWER)
 			iEET['detailContent' .. i]:SetHyperlinksEnabled(true)
 			iEET['detailContent' .. i]:SetScript('OnHyperlinkEnter', function(self, linkData, link)
 				GameTooltip:SetOwner(iEET.frame, "ANCHOR_TOPRIGHT", 0-iEET.frame:GetWidth(), 0-iEET.frame:GetHeight())
