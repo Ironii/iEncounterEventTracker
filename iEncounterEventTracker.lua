@@ -461,7 +461,7 @@ function addon:UNIT_POWER(unitID, powerType)
 	if string.find(unitID, 'boss') then
 		if UnitExists(unitID) then --didn't just disappear
 			local sourceGUID = UnitGUID(unitID)
-			local currentPower = UnitPower(powerType)
+			local currentPower = UnitPower(unitID, powerType)
 			local change = 0
 			if iEET.unitPowerUnits[sourceGUID] then -- unit exists, update or add new powerType
 				local prev = iEET.unitPowerUnits[sourceGUID][powerType] or 0
@@ -493,11 +493,11 @@ function addon:UNIT_POWER(unitID, powerType)
 			['t'] = GetTime(),
 			['sG'] = unitID,
 			['cN'] = sourceName or unitID,
-			['tN'] = pUP,
+			['tN'] = pUP .. '%',
 			['sN'] = powerName .. ' Update',
 			['sI'] = 143409, -- Power Regen
 			['hp'] = php,
-			['eD'] = tooltipText, --eD = extraDAta
+			['eD'] = tooltipText, --eD = extraData
 			});
 		end
 	end
@@ -1033,7 +1033,7 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 		if spellID == 133217 then -- INSTANCE_ENCOUNTER_ENGAGE_UNIT
 			iEET:addMessages(1, 4, spellName, color,'\124HiEETNpcList:' .. sourceGUID .. '\124h%s\124h')
 		elseif event and event == 34 then -- UNIT_POWER
-			iEET:addMessages(1, 4, spellName, color,'\124HiEETList:' .. extraData or 'Empty;List;Contact Ironi' .. '\124h%s\124h')
+			iEET:addMessages(1, 4, spellName, color,'\124HiEETList:' .. (extraData and string.gsub(extraData, '%%', '%%%%') or 'Empty List;Contact Ironi') .. '\124h%s\124h')
 		else
 			local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
 			if sourceGUID then
@@ -1053,12 +1053,15 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 	iEET:addMessages(1, 8, hp, color)
 end
 function iEET:addToEncounterAbilities(spellID, spellName)
+	
 	if spellID and tonumber(spellID) and spellName then
+		spellID = tonumber(spellID)
 		local color = {1,1,1}
-		if spellID == 103528 or spellID == 133217 or spellID == 98391 then
+		
+		if spellID == 103528 or spellID == 133217 or spellID == 98391 or spellID == 143409 then -- Target Selection, Spawn Boss Emote(Spawn NPCs), Death, Power Regen
 			color = {0.5,0.5,0.5}
 		end
-		iEET.encounterAbilitiesContent:AddMessage('\124Hspell:' .. tonumber(spellID) .. '\124h[' .. spellName .. ']\124h\124r', unpack(color))
+		iEET.encounterAbilitiesContent:AddMessage('\124Hspell:' .. spellID .. '\124h[' .. spellName .. ']\124h\124r', unpack(color))
 	end
 end
 function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink)
@@ -1226,7 +1229,7 @@ function iEET:loopData(msg)
 				end
 			end
 			if iEETConfig.tracking[iEET.events.fromID[v.e].l] or v.e == 27 or v.e == 28 then -- ENCOUNTER_START & ENCOUNTER_END
-					iEET:addToContent(timestamp,v.e,v.cN,v.tN,v.sN,v.sI, intervall,count, v.sG,v.hp, v.eD)
+				iEET:addToContent(timestamp,v.e,v.cN,v.tN,v.sN,v.sI,intervall,count,v.sG,v.hp,v.eD)
 			end
 		end
 	end
@@ -1391,6 +1394,7 @@ function iEET:Hyperlinks(linkData, link)
 		local _, txt = strsplit(':',linkData)
 		GameTooltip:SetText(txt)
 	elseif linkType == 'iEETList' then
+		linkData = linkData:gsub('iEETList:', '')
 		for _,v in pairs({strsplit(';',linkData)}) do
 			GameTooltip:AddLine(v)
 		end
