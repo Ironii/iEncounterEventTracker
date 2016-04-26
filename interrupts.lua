@@ -32,9 +32,13 @@ iEET.interrupts = {
 	
 	--Priest
 	[15487] = true, --Silence
+	[220543] = true, --Silence
 	
 	--Rogue
 	[1766] = true, --Kick
+	
+	--Shaman
+	[57994] = true, --Wind Shear
 	
 	--Warlock
 	[19647] = true, --Spell Lock (Felhunter)
