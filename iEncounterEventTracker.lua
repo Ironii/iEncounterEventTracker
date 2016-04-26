@@ -264,6 +264,12 @@ iEET.events = {
 		},
 	},
 }
+iEET.ignoreList = {  -- Ignore list for 'Ignore Spell's menu, use event ignore to hide these if you want (they are fake spells)
+	[98391] = true, -- Death
+	[103528] = true, -- Target Selection
+	[133217] = true, -- Spawn NPCs
+	[143409] = true, -- Power Update
+}
 local function spairs(t, order)
     -- collect the keys
     local keys = {}
@@ -1170,14 +1176,14 @@ function iEET:loopData(msg)
 				elseif v.tN and not iEET.collector.encounterNPCs[v.tN] then
 					iEET.collector.encounterNPCs[v.tN] = true
 				end
-			else
-				if v.sI and iEET.interrupts[v.sI] then
+			elseif v.sI then
+				if iEET.interrupts[v.sI] then
 					if not iEET.collector.encounterNPCs.Interrupters then
 						iEET.collector.encounterNPCs.Interrupters = true
 					end
-				elseif v.sI and iEET.dispels[v.sI] then
+				elseif iEET.dispels[v.sI] then
 					iEET.collector.encounterNPCs.Dispellers = true
-				else
+				elseif not iEET.ignoreList[v.sI] then --ignore fake spells
 					iEET.collector.encounterNPCs[v.cN] = true
 				end
 			end
@@ -1192,10 +1198,10 @@ function iEET:loopData(msg)
 					iEET.collector.encounterSpells[0.2] = 'Dispels'
 				end
 			else
-				if v.sI == 143409 then -- Power Regen
+				if v.sI == 143409 then -- Power Update
 					iEET.collector.encounterSpells[v.sI] = 'Power Update'
 					iEET:addToEncounterAbilities(v.sI, 'Power Update')
-				else
+				else -- ignore fake spells
 					iEET.collector.encounterSpells[v.sI] = v.sN
 					iEET:addToEncounterAbilities(v.sI, v.sN)
 				end
@@ -1461,19 +1467,21 @@ function iEET:updateOptionMenu()
 		-- Spells
 		local tempIgnoreSpells = {text = "Ignore Spells", hasArrow = true, notCheckable = true, menuList = {}}
 		for k,v in spairs(iEET.collector.encounterSpells) do
-			table.insert(tempIgnoreSpells.menuList, {
-			text = k .. ' - ' .. v,
-			isNotRadio = true,
-			checked = iEET.ignoring[k],
-			keepShownOnClick = true,
-			func = function()
-				if iEET.ignoring[k] then
-					iEET.ignoring[k] = nil
-				else
-					iEET.ignoring[k] = true
-				end
-			end,
-			})
+			if not iEET.ignoreList[k] then -- Filter fake spells out
+				table.insert(tempIgnoreSpells.menuList, {
+				text = k .. ' - ' .. v,
+				isNotRadio = true,
+				checked = iEET.ignoring[k],
+				keepShownOnClick = true,
+				func = function()
+					if iEET.ignoring[k] then
+						iEET.ignoring[k] = nil
+					else
+						iEET.ignoring[k] = true
+					end
+				end,
+				})
+			end
 		end
 		table.insert(tempIgnoreSpells.menuList, { text = 'Save', notCheckable = true, func = function()
 			CloseDropDownMenus()
