@@ -69,15 +69,22 @@ iEET.npcIgnoreList = {
 	[29264] = true, 	--Spirit wolf
 	[53006] = true,		--Spirit Link Totem
 	[59712]	= true, 	--Stone Bulwark Totem
+	[59764] = true,		--Healing Tide Totem
 	[61029] = true,		--Primal Fire Elemental
 	[61056] = true,		--Primal Earth Elemental
 	[61245] = true,		--Capacitor Totem
 	[77936] = true,		--Greater Storm Elemental
 	[77942] = true,		--Primal Storm Elemental
 	[95061] = true, 	--Greater Fire Elemental 
+	[95072] = true, 	--Greater Earth Elemental
+	[95255] = true,		--Earthquake Totem
+	[97022] = true,		--Greater Lightning Elemental
 	[97285] = true,		--Wind Rush Totem
+	[100099] = true,	--Voodoo Totem
 	[100820] = true,	--Spirit Wolf
+	[100943] = true, 	--Earthen Shield Totem
 	[104818] = true,	--Ancestral Protection Totem
+	[105422] = true,	--Tidal Totem
 
 --Warlock
 	[416] = true,		--Imp
