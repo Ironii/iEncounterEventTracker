@@ -489,7 +489,10 @@ function addon:UNIT_POWER(unitID, powerType)
 				change = '+' .. change
 			end
 			local maxPower = UnitPowerMax(unitID)
-			local pUP = math.floor(currentPower/maxPower*1000+0.5)/10
+			local pUP = 0
+			if currentPower and maxPower then
+				pUP = math.floor(currentPower/maxPower*1000+0.5)/10
+			end
 			local powerName = getglobal(powerType) or powerType
 			local tooltipText = string.format('%s %s%%;%s/%s;%s',powerName, pUP, currentPower, maxPower, change) --PowerName 50%;50/100;+20
 			--/dump string.format('%s %s%%;%s/%s;%s','Rage', 50, 50,100, 20)
