@@ -517,7 +517,7 @@ function addon:COMBAT_LOG_EVENT_UNFILTERED(timestamp,event,hideCaster,sourceGUID
 						['sG'] = destGUID or 'NONE',
 						['cN'] = destName or 'NONE',
 						['sN'] = 'Death',
-						['sI'] = '98391',
+						['sI'] = 98391,
 					})
 				end
 			end
