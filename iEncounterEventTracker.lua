@@ -445,7 +445,7 @@ function addon:UNIT_TARGET(unitID)
 			local chp = UnitHealth(unitID)
 			local maxhp = UnitHealthMax(unitID)
 			local php = nil
-			local targetName = UnitName(unitID .. 'target') or 'Dropped'
+			local targetName = UnitName(unitID .. 'target') or 'No target'
 			if chp and maxhp then
 				php = math.floor(chp/maxhp*1000+0.5)/10
 			end
