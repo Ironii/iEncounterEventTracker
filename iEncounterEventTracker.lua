@@ -2463,7 +2463,22 @@ function iEET:copyCurrent()
 	for line = 1, iEET.content1:GetNumMessages() do
 		local lineData = ''
 		for i = 1, 8 do
-			lineData = lineData .. iEET['content' .. i]:GetMessageInfo(line) .. '\t'
+			if i == 4 then
+				local lineInfo = iEET['content' .. i]:GetMessageInfo(line)
+				local spellID = lineInfo:match('^.*:%d-:(%d-):.-:')
+				if tonumber(spellID) then
+					local spellName = lineInfo:match('\124h(.*)\124h$')
+					if spellName then
+						lineData = lineData .. string.format('=HYPERLINK("http://legion.wowhead.com/spell=%s", "%s")', spellID, spellName) .. '\t'
+					else
+						lineData = lineData .. lineInfo .. '\t'
+					end
+				else
+					lineData = lineData .. lineInfo .. '\t'
+				end
+			else
+				lineData = lineData .. iEET['content' .. i]:GetMessageInfo(line) .. '\t'
+			end
 		end
 		totalData = totalData .. '\r' .. string.gsub(lineData, '+', '') --+SAURA etc messes excel so remove +, should be enough for excel
 	end
