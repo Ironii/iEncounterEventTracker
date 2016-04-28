@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.503
+iEET.version = 1.504
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -295,67 +295,90 @@ local function spairs(t, order)
     end
 end
 function iEET:LoadDefaults()
-	iEETConfig.tracking = {
-		['SPELL_CAST_START'] = true,
-		['SPELL_CAST_SUCCESS'] = true,
-		['SPELL_AURA_APPLIED'] = true,
-		['SPELL_AURA_REMOVED'] = true,
-		['SPELL_AURA_APPLIED_DOSE'] = true,
-		['SPELL_AURA_REMOVED_DOSE'] = true,
-		['SPELL_AURA_REFRESH'] = true,
-		['SPELL_CAST_FAILED'] = true,
-		['SPELL_CREATE'] = true,
-		['SPELL_SUMMON'] = true,
-		['SPELL_HEAL'] = true,
-		['SPELL_DISPEL'] = true,
-		['SPELL_INTERRUPT'] = true,
+	local defaults = {
+		['tracking'] = {
+			['SPELL_CAST_START'] = true,
+			['SPELL_CAST_SUCCESS'] = true,
+			['SPELL_AURA_APPLIED'] = true,
+			['SPELL_AURA_REMOVED'] = true,
+			['SPELL_AURA_APPLIED_DOSE'] = true,
+			['SPELL_AURA_REMOVED_DOSE'] = true,
+			['SPELL_AURA_REFRESH'] = true,
+			['SPELL_CAST_FAILED'] = true,
+			['SPELL_CREATE'] = true,
+			['SPELL_SUMMON'] = true,
+			['SPELL_HEAL'] = true,
+			['SPELL_DISPEL'] = true,
+			['SPELL_INTERRUPT'] = true,
 
-		['SPELL_PERIODIC_CAST_START'] = true,
-		['SPELL_PERIODIC_CAST_SUCCESS'] = true,
-		['SPELL_PERIODIC_AURA_APPLIED'] = true,
-		['SPELL_PERIODIC_AURA_REMOVED'] = true,
-		['SPELL_PERIODIC_AURA_APPLIED_DOSE'] = true,
-		['SPELL_PERIODIC_AURA_REMOVED_DOSE'] = true,
-		['SPELL_PERIODIC_AURA_REFRESH'] = true,
-		['SPELL_PERIODIC_CAST_FAILED'] = true,
-		['SPELL_PERIODIC_CREATE'] = true,
-		['SPELL_PERIODIC_SUMMON'] = true,
-		['SPELL_PERIODIC_HEAL'] = true,
+			['SPELL_PERIODIC_CAST_START'] = true,
+			['SPELL_PERIODIC_CAST_SUCCESS'] = true,
+			['SPELL_PERIODIC_AURA_APPLIED'] = true,
+			['SPELL_PERIODIC_AURA_REMOVED'] = true,
+			['SPELL_PERIODIC_AURA_APPLIED_DOSE'] = true,
+			['SPELL_PERIODIC_AURA_REMOVED_DOSE'] = true,
+			['SPELL_PERIODIC_AURA_REFRESH'] = true,
+			['SPELL_PERIODIC_CAST_FAILED'] = true,
+			['SPELL_PERIODIC_CREATE'] = true,
+			['SPELL_PERIODIC_SUMMON'] = true,
+			['SPELL_PERIODIC_HEAL'] = true,
 
-		['UNIT_DIED'] = true,
+			['UNIT_DIED'] = true,
 
-		['UNIT_SPELLCAST_SUCCEEDED'] = true,
-		['MONSTER_EMOTE'] = true,
-		['MONSTER_SAY'] = true,
-		['MONSTER_YELL'] = true,
+			['UNIT_SPELLCAST_SUCCEEDED'] = true,
+			['MONSTER_EMOTE'] = true,
+			['MONSTER_SAY'] = true,
+			['MONSTER_YELL'] = true,
 
-		['ENCOUNTER_START'] = true,
-		['ENCOUNTER_END'] = true,
-		
-		['UNIT_TARGET'] = true,
-		['INSTANCE_ENCOUNTER_ENGAGE_UNIT'] = true,
-		
-		['UNIT_POWER'] = true,
+			['ENCOUNTER_START'] = true,
+			['ENCOUNTER_END'] = true,
+			
+			['UNIT_TARGET'] = true,
+			['INSTANCE_ENCOUNTER_ENGAGE_UNIT'] = true,
+			
+			['UNIT_POWER'] = true,
+		},
+		['version'] = iEET.version,
+		['autoSave'] = true,
+		['autoDiscard'] = 30,
+		['filtering'] = {
+			['timeBasedFiltering'] = {},
+			['req'] = {},
+			['requireAll'] = false,
+			['showTime'] = false, -- show time from nearest 'from' event instead of ENCOUNTER_START
+		},
+		['colors'] = {
+			['main'] = {
+				['bg'] = {['r'] = 0.1, ['g'] = 0.1, ['b'] = 0.1, ['a'] = 0.9},
+				['border'] = {['r'] = 0, ['g'] = 0, ['b'] = 0, ['a'] = 1},
+			},
+			['options'] = {
+				['bg'] = {['r'] = 0.1, ['g'] = 0.1, ['b'] = 0.1, ['a'] = 0.9},
+				['border'] = {['r'] = 0.64, ['g'] = 0, ['b'] = 0, ['a'] = 1},
+			},
+		},
 	}
-	iEETConfig.version = iEET.version
-	iEETConfig.autoSave = true
-	iEETConfig.autoDiscard = 30
-	iEETConfig.filtering = {
-		timeBasedFiltering = {},
-		req = {},
-		requireAll = false,
-		showTime = false, -- show time from nearest 'from' event instead of ENCOUNTER_START
-	}
+	for k,v in pairs(defaults) do
+		if iEETConfig[k] == nil then
+			iEETConfig[k] = v
+		elseif type(v) == 'table' then -- mainly for new events and filtering stuff, no need to go deeper
+			for deeperKey, deeperValue in pairs(v) do
+				if iEETConfig[k][deeperKey] == nil then
+					iEETConfig[k][deeperKey] = deeperValue
+				end
+			end
+		end
+	end
 	print('iEET: loaded default settings.')
 end
 function addon:ADDON_LOADED(addonName)
 	if addonName == 'iEncounterEventTracker' then
 		iEETConfig = iEETConfig or {}
-		if not iEETConfig.version or not iEETConfig.tracking or iEETConfig.version < 1.503 then -- Last version with db changes
-			iEET:LoadDefaults()
-		else
-			iEETConfig.version = iEET.version
-		end
+		--if not iEETConfig.version or not iEETConfig.tracking or iEETConfig.version < 1.503 then -- Last version with db changes
+		iEET:LoadDefaults()
+		--else
+		iEETConfig.version = iEET.version
+		--end
 		addon:UnregisterEvent('ADDON_LOADED')
 	end
 end
@@ -624,6 +647,63 @@ function addon:CHAT_MSG_MONSTER_YELL(msg, sourceName)
 		['cN'] = sourceName,
 		['sG'] = sourceName,
 	});
+end
+function iEET:ShowColorPicker(frame)
+--function iEET:ShowColorPicker(r,g,b,a,callback)
+	iEET.colorToChange = frame
+	local r,g,b,a
+	if frame == 'mainBG' then
+		r,g,b,a = iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a
+	elseif frame == 'mainBorder' then
+		r,g,b,a = iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a
+	elseif frame == 'optionsBG' then
+		r,g,b,a = iEETConfig.colors.options.border.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a
+	else
+		r,g,b,a = iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a
+	end
+	ColorPickerFrame:SetColorRGB(r,g,b)
+	ColorPickerFrame.hasOpacity = true 
+	ColorPickerFrame.opacity = a
+	ColorPickerFrame.previousValues = {r,g,b,a}
+	ColorPickerFrame.func = function() iEET:UpdateColors(frame) end
+	ColorPickerFrame.opacityFunc = function() iEET:UpdateColors(frame) end
+	ColorPickerFrame.cancelFunc = function() iEET:UpdateColors(frame, {['r'] = r, ['g'] = g, ['b'] = b, ['a'] = a}) end
+	ColorPickerFrame:Hide() -- Need to run the OnShow handler.
+	ColorPickerFrame:Show()
+end
+function iEET:UpdateColors(frame, prevColors, force)
+	local a,r,g,b
+	if not force then
+		if not prevColors then
+			a = OpacitySliderFrame:GetValue()
+			r,g,b = ColorPickerFrame:GetColorRGB()
+		else
+			r,g,b,a = prevColors.r, prevColors.g, prevColors.b, prevColors.a
+		end
+		if iEET.colorToChange == 'mainBG' then
+			frame = 'main'
+			iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a = r,g,b,a
+		elseif iEET.colorToChange == 'mainBorder' then
+			iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a = r,g,b,a
+			frame = 'main'
+		elseif iEET.colorToChange == 'optionsBG' then
+			iEETConfig.colors.options.border.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a = r,g,b,a
+			frame = 'options'
+		else
+			iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a = r,g,b,a
+			frame = 'options'
+		end
+	end
+	local frames = {
+		['main'] = {'top','encounterInfo','detailtop','encounterAbilities','contentAnchor1','contentAnchor2','contentAnchor3','contentAnchor4','contentAnchor5','contentAnchor6','contentAnchor7','contentAnchor8','detailAnchor1','detailAnchor2','detailAnchor3','detailAnchor5','detailAnchor6','detailAnchor7','encounterAbilitiesAnchor', 'editbox'},
+		['options'] = {'optionsFrame','optionsFrameTop','infoFrame','optionsFrameSaveButton','optionsFrameSaveAndCloseButton','optionsFrameCancelButton', 'infoButton', 'optionsFrameEditbox'},
+	}
+	for _,frameName in pairs(frames[frame]) do
+		if iEET[frameName] then
+			iEET[frameName]:SetBackdropColor(iEETConfig.colors[frame].bg.r,iEETConfig.colors[frame].bg.g,iEETConfig.colors[frame].bg.b,iEETConfig.colors[frame].bg.a)
+			iEET[frameName]:SetBackdropBorderColor(iEETConfig.colors[frame].border.r,iEETConfig.colors[frame].border.g,iEETConfig.colors[frame].border.b,iEETConfig.colors[frame].border.a)
+		end
+	end
 end
 function iEET:getColor(event, sourceGUID, spellID)
 	if event and event == 27 then
@@ -1179,7 +1259,7 @@ function iEET:loopData(msg)
 			end
 		end
 	elseif iEET.encounterInfo then
-		iEET.encounterInfo:SetBackdropBorderColor(0,0,0,1)
+		iEET.encounterInfo:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
 	end
 	iEET.loopDataCall = GetTime() 
 	iEET.frame:Hide() -- avoid fps spiking from ScrollingMessageFrame adding too many messages
@@ -1471,7 +1551,7 @@ function iEET:updateOptionMenu()
 	iEET.optionMenu = {}
 	if iEET.collector then
 		-- NPCs
-		local tempIgnoreNPCs = {text = "Ignore NPCs", hasArrow = true, notCheckable = true, menuList = {}}
+		local tempIgnoreNPCs = {text = 'Ignore NPCs', hasArrow = true, notCheckable = true, menuList = {}}
 		for k in spairs(iEET.collector.encounterNPCs) do
 			table.insert(tempIgnoreNPCs.menuList, {
 			text = k,
@@ -1500,7 +1580,7 @@ function iEET:updateOptionMenu()
 		end})
 		table.insert(iEET.optionMenu, tempIgnoreNPCs)
 		-- Spells
-		local tempIgnoreSpells = {text = "Ignore Spells", hasArrow = true, notCheckable = true, menuList = {}}
+		local tempIgnoreSpells = {text = 'Ignore Spells', hasArrow = true, notCheckable = true, menuList = {}}
 		for k,v in spairs(iEET.collector.encounterSpells) do
 			if not iEET.ignoreList[k] then -- Filter fake spells out
 				table.insert(tempIgnoreSpells.menuList, {
@@ -1531,7 +1611,7 @@ function iEET:updateOptionMenu()
 		end})
 		table.insert(iEET.optionMenu, tempIgnoreSpells)
 	end
-	local tempEvents = {text = "Events", hasArrow = true, notCheckable = true, menuList = {}}
+	local tempEvents = {text = 'Events', hasArrow = true, notCheckable = true, menuList = {}}
 	for k,_ in spairs(iEETConfig.tracking) do
 		table.insert(tempEvents.menuList, {
 			text = k,
@@ -1559,6 +1639,96 @@ function iEET:updateOptionMenu()
 		iEET:loopData(msg)
 	end})
 	table.insert(iEET.optionMenu, tempEvents)
+	local settings = {
+		text = 'Settings',
+		hasArrow = true,
+		notCheckable = true,
+		keepShownOnClick = true,
+		menuList = {
+			{text = 'Color',
+			notCheckable = true,
+			keepShownOnClick = true,
+			hasArrow = true,
+			menuList = {
+				{text = 'Main Frame',
+				notCheckable = true,
+				hasArrow = true,
+				keepShownOnClick = true,
+				menuList = {
+					{text = 'Background',
+					notCheckable = true,
+					hasArrow = false,
+					keepShownOnClick = false,
+					func = function()
+						iEET:ShowColorPicker('mainBG')
+					end},
+					{text = 'Border',
+					notCheckable = true,
+					hasArrow = false,
+					keepShownOnClick = false,
+					func = function()
+						iEET:ShowColorPicker('mainBorder')
+					end},
+					{text = 'Reset',
+					notCheckable = true,
+					hasArrow = false,
+					keepShownOnClick = false,
+					func = function()
+						iEETConfig.colors.main = {
+							['bg'] = {['r'] = 0.1, ['g'] = 0.1, ['b'] = 0.1, ['a'] = 0.9},
+							['border'] = {['r'] = 0, ['g'] = 0, ['b'] = 0, ['a'] = 1},
+						}
+						iEET:UpdateColors('main',nil,true) --force update after reset
+					end},
+				},},
+				{text = 'Filtering Frame',
+				notCheckable = true,
+				hasArrow = true,
+				keepShownOnClick = true,
+				menuList = {
+					{text = 'Background',
+					notCheckable = true,
+					hasArrow = false,
+					keepShownOnClick = false,
+					func = function()
+						iEET:ShowColorPicker('optionsBG')
+					end},
+					{text = 'Border',
+					notCheckable = true,
+					hasArrow = false,
+					keepShownOnClick = false,
+					func = function()
+					iEET:ShowColorPicker('optionsBorder')
+					end},
+					{text = 'Reset',
+					notCheckable = true,
+					hasArrow = false,
+					keepShownOnClick = false,
+					func = function()
+						iEETConfig.colors.options = {
+							['bg'] = {['r'] = 0.1, ['g'] = 0.1, ['b'] = 0.1, ['a'] = 0.9},
+							['border'] = {['r'] = 0.64, ['g'] = 0, ['b'] = 0, ['a'] = 1},
+						}
+						iEET:UpdateColors('options',nil,true) --force update after reset
+					end},
+				},},
+			},},
+			{text = 'Auto save',
+			isNotRadio = true,
+			checked = iEETConfig.autoSave,
+			keepShownOnClick = false,
+			func = function()
+				if iEETConfig.autoSave then
+					iEETConfig.autoSave = false
+					iEET:print('Automatic saving is now off.')
+				else
+					iEETConfig.autoSave = true
+					iEET:print('Automatic saving is now on.')
+				end
+			end},
+		},
+	}
+	table.insert(iEET.optionMenu, settings)
 	table.insert(iEET.optionMenu, { text = 'Close', notCheckable = true, func = function () CloseDropDownMenus(); end})
 end
 iEET.optionMenuFrame = CreateFrame("Frame", "iEETEventListMenu", UIParent, "UIDropDownMenuTemplate")
@@ -1664,8 +1834,8 @@ function iEET:CreateMainFrame()
 	iEET.top:SetSize(598, 25)
 	iEET.top:SetPoint('BOTTOMRIGHT', iEET.frame, 'TOPRIGHT', 0, -1)
 	iEET.top:SetBackdrop(iEET.backdrop);
-	iEET.top:SetBackdropColor(0.1,0.1,0.1,0.9)
-	iEET.top:SetBackdropBorderColor(0,0,0,1)
+	iEET.top:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
+	iEET.top:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
 	iEET.top:SetScript('OnMouseDown', function(self,button)
 		iEET.frame:ClearAllPoints()
 		iEET.frame:StartMoving()
@@ -1682,8 +1852,8 @@ function iEET:CreateMainFrame()
 	iEET.encounterInfo:SetSize(370, 18)
 	iEET.encounterInfo:SetPoint('BOTTOM', iEET.top, 'TOP', 0, -1)
 	iEET.encounterInfo:SetBackdrop(iEET.backdrop);
-	iEET.encounterInfo:SetBackdropColor(0.1,0.1,0.1,0.9)
-	iEET.encounterInfo:SetBackdropBorderColor(0,0,0,1)
+	iEET.encounterInfo:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
+	iEET.encounterInfo:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
 	iEET.encounterInfo:SetScript('OnMouseDown', function(self,button)
 		iEET.frame:ClearAllPoints()
 		iEET.frame:StartMoving()
@@ -1726,8 +1896,8 @@ function iEET:CreateMainFrame()
 			bottom = -1,
 		},
 	});
-	iEET.detailtop:SetBackdropColor(0.1,0.1,0.1,0.9)
-	iEET.detailtop:SetBackdropBorderColor(0,0,0,1)
+	iEET.detailtop:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
+	iEET.detailtop:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
 	iEET.detailtop:Show()
 	iEET.detailtop:SetScript("OnMouseDown", function(self,button)
 		iEET.frame:ClearAllPoints()
@@ -1754,8 +1924,8 @@ function iEET:CreateMainFrame()
 			bottom = -1,
 		},
 	});
-	iEET.encounterAbilities:SetBackdropColor(0.1,0.1,0.1,0.9)
-	iEET.encounterAbilities:SetBackdropBorderColor(0,0,0,1)
+	iEET.encounterAbilities:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
+	iEET.encounterAbilities:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
 	iEET.encounterAbilities:Show()
 	iEET.encounterAbilities:SetScript("OnMouseDown", function(self,button)
 		iEET.frame:ClearAllPoints()
@@ -1800,8 +1970,8 @@ function iEET:CreateMainFrame()
 				bottom = -1,
 			},
 		});
-		iEET['contentAnchor' .. i]:SetBackdropColor(0.1,0.1,0.1,0.9)
-		iEET['contentAnchor' .. i]:SetBackdropBorderColor(0,0,0,1)
+		iEET['contentAnchor' .. i]:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
+		iEET['contentAnchor' .. i]:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
 		---
 		iEET['content' .. i] = CreateFrame('ScrollingMessageFrame', nil, iEET['contentAnchor' .. i])
 		iEET['content' .. i]:SetSize(slices[i]-8,828)
@@ -1898,8 +2068,8 @@ function iEET:CreateMainFrame()
 				bottom = -1,
 			},
 		});
-		iEET['detailAnchor' .. i]:SetBackdropColor(0.1,0.1,0.1,0.9)
-		iEET['detailAnchor' .. i]:SetBackdropBorderColor(0,0,0,1)
+		iEET['detailAnchor' .. i]:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
+		iEET['detailAnchor' .. i]:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
 		---
 		iEET['detailContent' .. i] = CreateFrame('ScrollingMessageFrame', nil, iEET['detailAnchor' .. i])
 		iEET['detailContent' .. i]:SetSize(slices[i]-8,392)
@@ -1952,8 +2122,8 @@ function iEET:CreateMainFrame()
 				bottom = -1,
 			},
 		});
-		iEET.encounterAbilitiesAnchor:SetBackdropColor(0.1,0.1,0.1,0.9)
-		iEET.encounterAbilitiesAnchor:SetBackdropBorderColor(0,0,0,1)
+		iEET.encounterAbilitiesAnchor:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
+		iEET.encounterAbilitiesAnchor:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
 		---
 		iEET.encounterAbilitiesContent = CreateFrame('ScrollingMessageFrame', nil, iEET.encounterAbilitiesAnchor)
 		iEET.encounterAbilitiesContent:SetSize(192,392)
@@ -2026,8 +2196,8 @@ function iEET:CreateMainFrame()
 				bottom = -1,
 			},
 		});
-	iEET.editbox:SetBackdropColor(0.1,0.1,0.1,0.2)
-	iEET.editbox:SetBackdropBorderColor(0,0,0,1)
+	iEET.editbox:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,0.2)
+	iEET.editbox:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
 	iEET.editbox:SetScript('OnEnterPressed', function()
 		iEET.editbox:ClearFocus()
 		local msg
@@ -2097,8 +2267,8 @@ function iEET:CreateOptionsFrame()
 	iEET.optionsFrame:SetSize(650,500)
 	iEET.optionsFrame:SetPoint('CENTER', UIParent, 'CENTER', 0,0)
 	iEET.optionsFrame:SetBackdrop(iEET.backdrop);
-	iEET.optionsFrame:SetBackdropColor(0.1,0.1,0.1,0.9)
-	iEET.optionsFrame:SetBackdropBorderColor(0.64,0,0,1)
+	iEET.optionsFrame:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
+	iEET.optionsFrame:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
 	iEET.optionsFrame:Show()
 	iEET.optionsFrame:SetFrameStrata('DIALOG')
 	iEET.optionsFrame:SetFrameLevel(1)
@@ -2111,8 +2281,8 @@ function iEET:CreateOptionsFrame()
 	iEET.optionsFrameTop:SetSize(650, 25)
 	iEET.optionsFrameTop:SetPoint('BOTTOMRIGHT', iEET.optionsFrame, 'TOPRIGHT', 0, -1)
 	iEET.optionsFrameTop:SetBackdrop(iEET.backdrop);
-	iEET.optionsFrameTop:SetBackdropColor(0.1,0.1,0.1,0.9)
-	iEET.optionsFrameTop:SetBackdropBorderColor(0.64,0,0,1)
+	iEET.optionsFrameTop:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
+	iEET.optionsFrameTop:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
 	iEET.optionsFrameTop:SetScript('OnMouseDown', function(self,button)
 		iEET.optionsFrame:ClearAllPoints()
 		iEET.optionsFrame:StartMoving()
@@ -2153,8 +2323,8 @@ function iEET:CreateOptionsFrame()
 			iEET.infoFrame = CreateFrame('Frame', 'iEETOptionsFrame', UIParent)
 			iEET.infoFrame:SetPoint('TOPLEFT', iEET.optionsFrameTop, 'TOPRIGHT', -1,0)
 			iEET.infoFrame:SetBackdrop(iEET.backdrop);
-			iEET.infoFrame:SetBackdropColor(0.1,0.1,0.1,0.9)
-			iEET.infoFrame:SetBackdropBorderColor(0.64,0,0,1)
+			iEET.infoFrame:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
+			iEET.infoFrame:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
 			iEET.infoFrame:Show()
 			iEET.infoFrame:SetFrameStrata('DIALOG')
 			iEET.infoFrame:SetFrameLevel(1)
@@ -2244,8 +2414,8 @@ Event names/values:
 	iEET.infoButton:SetSize(21, 21)
 	iEET.infoButton:SetPoint('TOPRIGHT', iEET.optionsFrameTop, 'TOPRIGHT', -2, -2)
 	iEET.infoButton:SetBackdrop(iEET.backdrop);
-	iEET.infoButton:SetBackdropColor(0.1,0.1,0.1,0.9)
-	iEET.infoButton:SetBackdropBorderColor(0.64,0,0,1)
+	iEET.infoButton:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
+	iEET.infoButton:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
 	iEET.infoButton:SetScript('OnEnter', function()
 		infoFrame()
 	end)
@@ -2307,8 +2477,8 @@ Event names/values:
 				bottom = -1,
 			},
 		});
-	iEET.optionsFrameEditbox:SetBackdropColor(0.1,0.1,0.1,0.2)
-	iEET.optionsFrameEditbox:SetBackdropBorderColor(0,0,0,1)
+	iEET.optionsFrameEditbox:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,0.2)
+	iEET.optionsFrameEditbox:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
 	iEET.optionsFrameEditbox:SetScript('OnEnterPressed', function()
 		local txt = (iEET.optionsFrameEditbox:GetText()):gsub('^%s*(.-)%s*$', '%1')
 		if txt == '' then
@@ -2359,12 +2529,12 @@ Event names/values:
 	iEET.optionsFrameSaveButton = CreateFrame('BUTTON', nil, iEET.optionsFrame)
 	iEET.optionsFrameSaveButton:SetSize(100, 20)
 	iEET.optionsFrameSaveButton:SetBackdrop(iEET.backdrop);
-	iEET.optionsFrameSaveButton:SetBackdropColor(0.1,0.1,0.1,0.9)
+	iEET.optionsFrameSaveButton:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
 	iEET.optionsFrameSaveButton.text = iEET.optionsFrameSaveButton:CreateFontString()
 	iEET.optionsFrameSaveButton.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
 	iEET.optionsFrameSaveButton.text:SetPoint('CENTER', iEET.optionsFrameSaveButton, 'CENTER', 0,0)
 	iEET.optionsFrameSaveButton.text:SetText('Save')
-	iEET.optionsFrameSaveButton:SetBackdropBorderColor(0.64,0,0,1)
+	iEET.optionsFrameSaveButton:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
 	iEET.optionsFrameSaveButton:SetPoint('BOTTOMRIGHT', iEET.optionsFrame, 'BOTTOM', -54,4)
 	iEET.optionsFrameSaveButton:Show()
 	iEET.optionsFrameSaveButton:RegisterForClicks('AnyUp')
@@ -2374,19 +2544,19 @@ Event names/values:
 		iEET:FillFilters()
 	end)
 	-- Save & Close
-	iEET.optionsFrameSaveButton = CreateFrame('BUTTON', nil, iEET.optionsFrame)
-	iEET.optionsFrameSaveButton:SetSize(100, 20)
-	iEET.optionsFrameSaveButton:SetBackdrop(iEET.backdrop);
-	iEET.optionsFrameSaveButton:SetBackdropColor(0.1,0.1,0.1,0.9)
-	iEET.optionsFrameSaveButton.text = iEET.optionsFrameSaveButton:CreateFontString()
-	iEET.optionsFrameSaveButton.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
-	iEET.optionsFrameSaveButton.text:SetPoint('CENTER', iEET.optionsFrameSaveButton, 'CENTER', 0,0)
-	iEET.optionsFrameSaveButton.text:SetText('Save & Close')
-	iEET.optionsFrameSaveButton:SetBackdropBorderColor(0.64,0,0,1)
-	iEET.optionsFrameSaveButton:SetPoint('BOTTOM', iEET.optionsFrame, 'BOTTOM', 0,4)
-	iEET.optionsFrameSaveButton:Show()
-	iEET.optionsFrameSaveButton:RegisterForClicks('AnyUp')
-	iEET.optionsFrameSaveButton:SetScript('OnClick',function()
+	iEET.optionsFrameSaveAndCloseButton = CreateFrame('BUTTON', nil, iEET.optionsFrame)
+	iEET.optionsFrameSaveAndCloseButton:SetSize(100, 20)
+	iEET.optionsFrameSaveAndCloseButton:SetBackdrop(iEET.backdrop);
+	iEET.optionsFrameSaveAndCloseButton:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
+	iEET.optionsFrameSaveAndCloseButton.text = iEET.optionsFrameSaveAndCloseButton:CreateFontString()
+	iEET.optionsFrameSaveAndCloseButton.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+	iEET.optionsFrameSaveAndCloseButton.text:SetPoint('CENTER', iEET.optionsFrameSaveAndCloseButton, 'CENTER', 0,0)
+	iEET.optionsFrameSaveAndCloseButton.text:SetText('Save & Close')
+	iEET.optionsFrameSaveAndCloseButton:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
+	iEET.optionsFrameSaveAndCloseButton:SetPoint('BOTTOM', iEET.optionsFrame, 'BOTTOM', 0,4)
+	iEET.optionsFrameSaveAndCloseButton:Show()
+	iEET.optionsFrameSaveAndCloseButton:RegisterForClicks('AnyUp')
+	iEET.optionsFrameSaveAndCloseButton:SetScript('OnClick',function()
 		--Parse filters from scrolling message frame
 		iEET:ParseFilters()
 		if iEET.infoFrame then
@@ -2398,12 +2568,12 @@ Event names/values:
 	iEET.optionsFrameCancelButton = CreateFrame('BUTTON', nil, iEET.optionsFrame)
 	iEET.optionsFrameCancelButton:SetSize(100, 20)
 	iEET.optionsFrameCancelButton:SetBackdrop(iEET.backdrop);
-	iEET.optionsFrameCancelButton:SetBackdropColor(0.1,0.1,0.1,0.9)
+	iEET.optionsFrameCancelButton:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
 	iEET.optionsFrameCancelButton.text = iEET.optionsFrameCancelButton:CreateFontString()
 	iEET.optionsFrameCancelButton.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
 	iEET.optionsFrameCancelButton.text:SetPoint('CENTER', iEET.optionsFrameCancelButton, 'CENTER', 0,0)
 	iEET.optionsFrameCancelButton.text:SetText('Cancel')
-	iEET.optionsFrameCancelButton:SetBackdropBorderColor(0.64,0,0,1)
+	iEET.optionsFrameCancelButton:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
 	iEET.optionsFrameCancelButton:SetPoint('BOTTOMLEFT', iEET.optionsFrame, 'BOTTOM', 54,4)
 	iEET.optionsFrameCancelButton:Show()
 	iEET.optionsFrameCancelButton:RegisterForClicks('AnyUp')
@@ -2464,8 +2634,8 @@ function iEET:toggleCopyFrame(forceShow)
 					bottom = -1,
 				},
 			});
-		iEET.copyFrame:SetBackdropColor(0.1,0.1,0.1,0.2)
-		iEET.copyFrame:SetBackdropBorderColor(0.5,0,0,1)
+		iEET.copyFrame:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,0.2)
+		iEET.copyFrame:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
 		iEET.copyFrame:SetScript('OnEnterPressed', function()
 			iEET.copyFrame:ClearFocus()
 			iEET.copyFrame:SetText('')
@@ -2632,7 +2802,10 @@ function iEET:ConvertOldReports()
 end
 SLASH_IEET1 = "/ieet"
 SlashCmdList["IEET"] = function(msg)
-	if string.match(msg, 'copy') then
+	if msg then msg = string.lower(msg) end
+	if msg:len() <= 1 then
+		iEET:Toggle()
+	elseif string.match(msg, 'copy') then
 		iEET:copyCurrent()
 	elseif string.match(msg, 'filters') then
 		iEET:Options()
@@ -2672,8 +2845,21 @@ SlashCmdList["IEET"] = function(msg)
 		iEET:print('/ieet autosave to toggle autosaving\r/ieet autodiscard X to change auto discard timer\r/ieet clear to delete every fight entry')
 	elseif string.match(msg, 'convert') then
 		iEET:ConvertOldReports()
+	elseif string.match(msg, 'colorreset') then
+		iEETConfig.colors = {
+			['main'] = {
+				['bg'] = {['r'] = 0.1, ['g'] = 0.1, ['b'] = 0.1, ['a'] = 0.9},
+				['border'] = {['r'] = 0, ['g'] = 0, ['b'] = 0, ['a'] = 1},
+			},
+			['options'] = {
+				['bg'] = {['r'] = 0.1, ['g'] = 0.1, ['b'] = 0.1, ['a'] = 0.9},
+				['border'] = {['r'] = 0.64, ['g'] = 0, ['b'] = 0, ['a'] = 1},
+			},
+		}
+		iEET:UpdateColors('main',nil,true) --force update after reset
+		iEET:UpdateColors('options',nil,true) --force update after reset
 	else
-		iEET:Toggle()
+		iEET:print(string.format('Command "%s" not found, read the readme.txt.', msg))
 	end
 end
 BINDING_HEADER_IEET = 'iEncounterEventTracker'
