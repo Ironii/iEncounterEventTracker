@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.505
+iEET.version = 1.506
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -389,6 +389,22 @@ function addon:ENCOUNTER_START(encounterID, encounterName)
 	iEET.unitPowerUnits = {}
 	iEET.data = nil
 	iEET.data = {}
+	--[[
+	iEET.raidComp = nil
+	iEET.raidComp = {}
+	--Collecting raid comp info for destName class coloring + class info
+	if IsInRaid() then -- ignore solo play etc, don't care about old raids
+		for i = 1, GetNumGroupMembers() do
+			local unitID = 'raid' .. i
+			if UnitExists(unitID) then
+				iEET.raidComp[UnitGUID(unitID)] = {
+					['class'] = class = select(3,UnitClass(unitID)), -- Class number
+					['role'] = select(12, GetRaidRosterInfo(unitID)), -- Combat Role, DAMAGER/HEALER/TANK
+				}
+			end
+		end
+	end
+	--]]
 	iEET.encounterInfoData = { --TODO
 		['s'] = GetTime(),
 		['eN'] = encounterName,
@@ -571,6 +587,22 @@ function addon:COMBAT_LOG_EVENT_UNFILTERED(timestamp,event,hideCaster,sourceGUID
 		elseif (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and iEET.approvedSpells[spellID]) or not sourceGUID or hideCaster or event == 'SPELL_INTERRUPT' or event == 'SPELL_DISPEL' then
 			if spellID and not iEET.ignoredSpells[spellID] then
 				if not iEET.npcIgnoreList[tonumber(npcID)] then
+					--[[
+					local eD
+					if iEET.raidComp then 
+						if iEET.raidComp[destGUID] or iEET.raidComp[sourceGUID] then --player and is in raid
+							local toColor = 1
+							if iEET.raidComp[destGUID] and iEET.raidComp[sourceGUID] then
+								toColor = 3 -- both
+							elseif iEET.raidComp[destGUID] then
+								toColor = 2 -- target
+							else
+								toColor = 1 -- dest
+							end
+							eD = toColor..'\n'..iEET.raidComp[destGUID].class..'\n'..iEET.raidComp[destGUID].role 
+						end
+					end
+					--]]
 					table.insert(iEET.data, {
 						['e'] = iEET.events.toID[event],
 						['t'] = GetTime(),
@@ -579,6 +611,7 @@ function addon:COMBAT_LOG_EVENT_UNFILTERED(timestamp,event,hideCaster,sourceGUID
 						['tN'] = destName or nil,
 						['sN'] = spellName or 'NONE',
 						['sI'] = spellID or 'NONE',
+						--['eD']= eD,
 					})
 				end
 			end
@@ -1164,8 +1197,15 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 	else
 		iEET.content4:AddMessage(' ')
 	end
-	iEET:addMessages(1, 5, casterName, color)
-	iEET:addMessages(1, 6, targetName, color)
+	local target, classColor, hyperlink
+	if extraData and  extraData:match('^%d-\n%d-\n%-*') then -- 1-3\n1-12\nrole -- Class Coloring
+		local target, classIndex, role = strsplit('\n',extraData)
+		local localizedClass, class = select(2, GetClassInfo(tonumber(classIndex)))
+		classColor = RAID_CLASS_COLORS[class]
+		hyperlink = '\124HiEETList:' .. localizedClass .. '\n' .. role .. '\124h%s\124h' 
+	end
+	iEET:addMessages(1, 5, casterName, (target == 1 and classColor) or (target == 3 and classColor) or color,hyperlink)
+	iEET:addMessages(1, 6, targetName, (target == 2 and classColor) or (target == 3 and classColor) or color,hyperlink)
 	iEET:addMessages(1, 7, count, color)
 	iEET:addMessages(1, 8, hp, color)
 end
@@ -1238,6 +1278,9 @@ function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink)
 			value = string.sub(value, 1, 14)
 		end
 		--]]
+		if hyperlink then -- Spell details, for IEEU and UNIT_POWER
+			value = hyperlink:format(value)
+		end
 	end
 	frame:AddMessage(value and value or ' ', unpack(color))
 end
@@ -1984,7 +2027,7 @@ function iEET:CreateMainFrame()
 		iEET['content' .. i]:SetScript("OnMouseWheel", function(self, delta)
 			iEET:ScrollContent(delta)
 		end)
-		if i == 1 or i == 2 or i == 4 then --allow hyperlinks for intervall time and spellname only
+		if i == 1 or i == 2 or i == 4 or i == 5 or i == 6 then --allow hyperlinks for encounter time, intervall time, spellName, sourceName, destName
 			iEET['content' .. i]:SetHyperlinksEnabled(true)
 			iEET['content' .. i]:SetScript("OnHyperlinkEnter", function(self, linkData, link)
 				GameTooltip:SetOwner(iEET.frame, "ANCHOR_TOPRIGHT", 0-iEET.frame:GetWidth(), 0-iEET.frame:GetHeight())
@@ -2082,7 +2125,7 @@ function iEET:CreateMainFrame()
 		iEET['detailContent' .. i]:SetScript("OnMouseWheel", function(self, delta)
 			iEET:ScrollDetails(delta)
 		end)
-		if i == 1 or i == 2 or i == 5 then --allow hyperlinks for time,intervall and targetName (IEEU, UNIT_POWER)
+		if i == 1 or i == 2 or i == 5 or i == 6 then --allow hyperlinks for time,intervall,sourceName, targetName (IEEU, UNIT_POWER)
 			iEET['detailContent' .. i]:SetHyperlinksEnabled(true)
 			iEET['detailContent' .. i]:SetScript('OnHyperlinkEnter', function(self, linkData, link)
 				GameTooltip:SetOwner(iEET.frame, "ANCHOR_TOPRIGHT", 0-iEET.frame:GetWidth(), 0-iEET.frame:GetHeight())
@@ -2657,8 +2700,6 @@ function iEET:toggleCopyFrame(forceShow)
 	end
 end
 function iEET:copyCurrent()
-
-	--iEET['content' .. i]GetCurrentLine()
 	local totalData = ''
 	for line = 1, iEET.content1:GetNumMessages() do
 		local lineData = ''
@@ -2700,7 +2741,6 @@ function iEET:ExportData(auto)
 	if iEET.encounterInfoData then -- nil check
 		if auto then
 			local m,s = string.match(iEET.encounterInfoData.fT, '(%d):(%d)')
-			--print(iEET.encounterInfoData.fightTime)
 			if m*60+s < iEETConfig.autoDiscard then
 				iEET:print('discarded', m*60+s)
 				return
