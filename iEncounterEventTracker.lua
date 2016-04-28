@@ -19,10 +19,10 @@ local _, iEET = ...
 iEET.data = {}
 local isAlpha = select(4, GetBuildInfo()) >= 70000 and true or false
 iEET.ignoring = {} -- so ignore list resets on relog, don't want to save it, atleast not yet
---iEET.font = isAlpha and 'Fonts\\ARIALN.TTF' or 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
-iEET.font = 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
---iEET.fontsize = isAlpha and 11 or 9
-iEET.fontsize = 9
+iEET.font = isAlpha and 'Fonts\\ARIALN.TTF' or 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
+--iEET.font = 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
+iEET.fontsize = isAlpha and 11 or 9
+--iEET.fontsize = 9
 iEET.spacing = 1
 iEET.scale = 1
 iEET.justifyH = 'LEFT'
@@ -1195,51 +1195,49 @@ function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink)
 		if hyperlink then
 			value = hyperlink:format(value)
 		end
-	--[[
 	elseif isAlpha and frameID == 3 then -- event, ps. im getting tired of alpha using different font...
 		if value and value == 'ENCOUNTER_START' then
 			value = 'ENCOUNTER_STA'
 		end
-	--]]
 	elseif frameID == 4 then -- spellName
-		--[[
 		if isAlpha and string.len(value) > 18 then
 			value =  string.sub(value, 1, 18)
 		elseif string.len(value) > 20 then
 			value = string.sub(value, 1, 20)
 		end
-		--]]
+		--[[
 		if string.len(value) > 20 then
 			value = string.sub(value, 1, 20)
 		end
+		--]]
 		if hyperlink then
 			value = hyperlink:format(value)
 		end
 	elseif frameID == 5 then -- sourceName
-		--[[
 		if isAlpha and value and string.len(value) > 17 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
 			value = string.sub(value, 1, 17)
 		elseif value and string.len(value) > 18 then
 			value = string.sub(value, 1, 18)
 		end
-		--]]
+		--[[
 		if value and string.len(value) > 18 then
 			value = string.sub(value, 1, 18)
 		end
+		--]]
 		if hyperlink then -- Spell details, for IEEU and UNIT_POWER
 			value = hyperlink:format(value)
 		end
 	elseif frameID == 6 then -- targetName
-		--[[
 		if isAlpha and value and string.len(value) > 13 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
 			value = string.sub(value, 1, 13)
 		elseif value and string.len(value) > 14 then
 			value = string.sub(value, 1, 14)
 		end
-		--]]
+		--[[
 		if value and string.len(value) > 14 then
 			value = string.sub(value, 1, 14)
 		end
+		--]]
 	end
 	frame:AddMessage(value and value or ' ', unpack(color))
 end
@@ -1713,7 +1711,7 @@ function iEET:updateOptionMenu()
 					end},
 				},},
 			},},
-			{text = 'Auto save',
+			{text = 'Automatic saving',
 			isNotRadio = true,
 			checked = iEETConfig.autoSave,
 			keepShownOnClick = false,
