@@ -19,8 +19,10 @@ local _, iEET = ...
 iEET.data = {}
 local isAlpha = select(4, GetBuildInfo()) >= 70000 and true or false
 iEET.ignoring = {} -- so ignore list resets on relog, don't want to save it, atleast not yet
-iEET.font = isAlpha and 'Fonts\\ARIALN.TTF' or 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
-iEET.fontsize = isAlpha and 11 or 9
+--iEET.font = isAlpha and 'Fonts\\ARIALN.TTF' or 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
+iEET.font = 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
+--iEET.fontsize = isAlpha and 11 or 9
+iEET.fontsize = 9
 iEET.spacing = 1
 iEET.scale = 1
 iEET.justifyH = 'LEFT'
@@ -394,10 +396,23 @@ function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize,
 	addon:UnregisterEvent('UNIT_TARGET')
 	addon:UnregisterEvent('INSTANCE_ENCOUNTER_ENGAGE_UNIT')
 	addon:UnregisterEvent('UNIT_POWER')
-	iEET.encounterInfoData.fT = iEET.encounterInfoData.s and date('%M:%S', (GetTime() - iEET.encounterInfoData.s)) or '00:00' -- if we are missing start time for some reason
-	iEET.encounterInfoData.d = difficultyID
-	iEET.encounterInfoData.k = kill
-	iEET.encounterInfoData.rS = raidSize
+	if iEET.encounterInfoData then
+		iEET.encounterInfoData.fT = iEET.encounterInfoData.s and date('%M:%S', (GetTime() - iEET.encounterInfoData.s)) or '00:00' -- if we are missing start time for some reason
+		iEET.encounterInfoData.d = difficultyID
+		iEET.encounterInfoData.k = kill
+		iEET.encounterInfoData.rS = raidSize
+	else
+			iEET.encounterInfoData = { --TODO
+			['s'] = GetTime(),
+			['eN'] = encounterName,
+			['pT'] = date('%y.%m.%d %H:%M'), -- y.m.d instead of d.m.y for easier sorting
+			['fT'] = '00:00',
+			['d']= difficultyID,
+			['rS'] = raidSize,
+			['k'] = kill,
+			['v'] = iEET.version,
+		}
+	end
 	if iEETConfig.autoSave then
 		iEET:ExportData(true)
 	end
@@ -1100,32 +1115,49 @@ function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink)
 		if hyperlink then
 			value = hyperlink:format(value)
 		end
+	--[[
 	elseif isAlpha and frameID == 3 then -- event, ps. im getting tired of alpha using different font...
 		if value and value == 'ENCOUNTER_START' then
 			value = 'ENCOUNTER_STA'
 		end
+	--]]
 	elseif frameID == 4 then -- spellName
+		--[[
 		if isAlpha and string.len(value) > 18 then
 			value =  string.sub(value, 1, 18)
 		elseif string.len(value) > 20 then
+			value = string.sub(value, 1, 20)
+		end
+		--]]
+		if string.len(value) > 20 then
 			value = string.sub(value, 1, 20)
 		end
 		if hyperlink then
 			value = hyperlink:format(value)
 		end
 	elseif frameID == 5 then -- sourceName
+		--[[
 		if isAlpha and value and string.len(value) > 17 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
 			value = string.sub(value, 1, 17)
 		elseif value and string.len(value) > 18 then
+			value = string.sub(value, 1, 18)
+		end
+		--]]
+		if value and string.len(value) > 18 then
 			value = string.sub(value, 1, 18)
 		end
 		if hyperlink then -- Spell details, for IEEU and UNIT_POWER
 			value = hyperlink:format(value)
 		end
 	elseif frameID == 6 then -- targetName
+		--[[
 		if isAlpha and value and string.len(value) > 13 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
 			value = string.sub(value, 1, 13)
 		elseif value and string.len(value) > 14 then
+			value = string.sub(value, 1, 14)
+		end
+		--]]
+		if value and string.len(value) > 14 then
 			value = string.sub(value, 1, 14)
 		end
 	end
@@ -2469,6 +2501,17 @@ function iEET:copyCurrent()
 				if tonumber(spellID) then
 					local spellName = lineInfo:match('\124h(.*)\124h$')
 					if spellName then
+						--[[
+						local s = ''
+						if formatStyle == 1 then -- Google Spreadsheet
+							s = '=HYPERLINK("http://legion.wowhead.com/spell=%s", "%s")'
+						elseif formatStyle == 2 then -- Openoffice Math
+							s = '=HYPERLINK("http://legion.wowhead.com/spell=%s"; "%s")'
+						elseif formatStyle == 3 then -- Excel
+							s = '=HYPERLINK("http://legion.wowhead.com/spell=%s", "%s")'
+						end
+						--add ExtraData to 9th column
+						--]]
 						lineData = lineData .. string.format('=HYPERLINK("http://legion.wowhead.com/spell=%s", "%s")', spellID, spellName) .. '\t'
 					else
 						lineData = lineData .. lineInfo .. '\t'
