@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.504
+iEET.version = 1.505
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',

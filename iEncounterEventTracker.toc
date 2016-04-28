@@ -1,8 +1,8 @@
-## Interface: 60000
+## Interface: 60200
 ## Title: iEET
 ## Notes: Ironi's Encounter Event Tracker
 ## Author: Ironi
-## Version: 1.503
+## Version: 1.505
 ## DefaultState: enabled
 ## SavedVariables: iEETConfig, iEET_Data
 
