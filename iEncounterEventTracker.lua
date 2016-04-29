@@ -1916,18 +1916,6 @@ function iEET:CreateMainFrame()
 	iEET.encounterInfo.text:SetPoint('CENTER', iEET.encounterInfo, 'CENTER', 0,1)
 	iEET.encounterInfo.text:SetText("Ironi's Encounter Event Tracker")
 	iEET.encounterInfo.text:Show()
-	--Main window exit button
-	iEET.exitButton = CreateFrame('Button', nil, iEET.frame)
-	iEET.exitButton:SetSize(9, 9)
-	iEET.exitButton.tex = iEET.exitButton:CreateTexture()
-	iEET.exitButton.tex:SetAllPoints(iEET.exitButton)
-	iEET.exitButton.tex:SetTexture(0.64,0,0,1)
-	iEET.exitButton:SetPoint('TOPRIGHT', iEET.top, 'TOPRIGHT', -3,-3)
-	iEET.exitButton:Show()
-	iEET.exitButton:RegisterForClicks('AnyUp')
-	iEET.exitButton:SetScript('OnClick',function()
-		iEET.frame:Hide()
-	end)
 	iEET.detailtop = CreateFrame('FRAME', nil, iEET.frame)
 	iEET.detailtop:SetSize(433, 25)
 	iEET.detailtop:SetPoint('RIGHT', iEET.top, 'LEFT', 1, 0)
@@ -2280,30 +2268,71 @@ function iEET:CreateMainFrame()
 	iEET.editbox:Show()
 	iEET.editbox:SetFont(iEET.font, iEET.fontsize+2, 'OUTLINE')
 	----Event list:
-	iEET.eventlist = CreateFrame('BUTTON', 'iEETEventListMenuButton', iEET.frame, "UIPanelInfoButton")
-	iEET.eventlist:SetSize(20, 20)
-	iEET.eventlist.texture:SetVertexColor(0.5,0.5,0.5,1)
-	iEET.eventlist:SetPoint("LEFT", iEET.top, 'LEFT', 4,-2)
+	iEET.eventlist = CreateFrame('BUTTON', 'iEETEventListMenuButton', iEET.frame)
+	iEET.eventlist:SetSize(21, 21)
+	iEET.eventlist:SetBackdrop(iEET.backdrop);
+	iEET.eventlist:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
+	iEET.eventlist.text = iEET.eventlist:CreateFontString()
+	iEET.eventlist.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+	iEET.eventlist.text:SetPoint('CENTER', iEET.eventlist, 'CENTER', 0,0)
+	iEET.eventlist.text:SetText('I')
+	iEET.eventlist:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
+	iEET.eventlist:SetPoint('LEFT', iEET.top, 'LEFT', 2,0)
+	iEET.eventlist:SetFrameStrata('HIGH')
+	iEET.eventlist:SetFrameLevel(3)
 	iEET.eventlist:Show()
 	iEET.eventlist:RegisterForClicks('AnyUp')
 	iEET.eventlist:SetScript('OnClick',function()
 		iEET:updateOptionMenu()
 		EasyMenu(iEET.optionMenu, iEET.optionMenuFrame, "cursor", 0 , 0, "MENU");
 	end)
+	iEET.eventlist:SetScript('OnEnter', function()
+		GameTooltip:SetOwner(iEET.frame, 'ANCHOR_CURSOR', 0, 0)
+		GameTooltip:ClearLines()
+		GameTooltip:SetText('Open ignore list')
+		GameTooltip:Show()
+	end)
+	iEET.eventlist:SetScript('OnLeave', function()
+		GameTooltip:Hide()
+	end)
 	iEET:updateOptionMenu()
 	----end of event list
 	----Encounter list button:
-	iEET.encounterListButton = CreateFrame('BUTTON', 'iEETEncounterListMenuButton', iEET.frame, "UIPanelInfoButton")
-	iEET.encounterListButton:SetSize(20, 20)
-	iEET.encounterListButton.texture:SetVertexColor(1,0.25,0.25,1)
-	iEET.encounterListButton:SetPoint('LEFT', iEET.eventlist, 'RIGHT', 3,0)
+	iEET.encounterListButton = CreateFrame('BUTTON', 'iEETEncounterListMenuButton', iEET.frame)
+	iEET.encounterListButton:SetSize(21, 21)
+	iEET.encounterListButton:SetBackdrop(iEET.backdrop);
+	iEET.encounterListButton:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
+	iEET.encounterListButton.text = iEET.encounterListButton:CreateFontString()
+	iEET.encounterListButton.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+	iEET.encounterListButton.text:SetPoint('CENTER', iEET.encounterListButton, 'CENTER', 0,0)
+	iEET.encounterListButton.text:SetText('E')
+	iEET.encounterListButton:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
+	iEET.encounterListButton:SetPoint('LEFT', iEET.eventlist, 'RIGHT', 1,0)
+	iEET.encounterListButton:SetFrameStrata('HIGH')
+	iEET.encounterListButton:SetFrameLevel(3)
 	iEET.encounterListButton:Show()
 	iEET.encounterListButton:RegisterForClicks('AnyUp')
 	iEET.encounterListButton:SetScript('OnClick',function()
 		EasyMenu(iEET.encounterListMenu, iEET.encounterListMenuFrame, "cursor", 0 , 0, "MENU");
 	end)
+	iEET.encounterListButton:SetScript('OnEnter', function()
+		GameTooltip:SetOwner(iEET.frame, 'ANCHOR_CURSOR', 0, 0)
+		GameTooltip:ClearLines()
+		GameTooltip:SetText('Open encounter list')
+		GameTooltip:Show()
+	end)
+	iEET.encounterListButton:SetScript('OnLeave', function()
+		GameTooltip:Hide()
+	end)
 	iEET:updateEncounterListMenu()
 	----Spreadsheet export button:
+	iEET.spreadsheetCopyMenu = {
+		{ text = 'Excel', notCheckable = true, func = function() iEET:copyCurrent(3) end},
+		{ text = 'Google', notCheckable = true, func = function() iEET:copyCurrent(1) end},
+		{ text = 'OpenOffice', notCheckable = true, func = function() iEET:copyCurrent(2) end},
+		{ text = 'Cancel', notCheckable = true, func = function() CloseDropDownMenus() end},
+	}
+	iEET.spreadsheetListMenuFrame = CreateFrame("Frame", "iEETspreadsheetListMenu", UIParent, "UIDropDownMenuTemplate")
 	iEET.spreadsheetCopyButton = CreateFrame('BUTTON', nil, iEET.frame)
 	iEET.spreadsheetCopyButton:SetSize(21, 21)
 	iEET.spreadsheetCopyButton:SetBackdrop(iEET.backdrop);
@@ -2313,13 +2342,13 @@ function iEET:CreateMainFrame()
 	iEET.spreadsheetCopyButton.text:SetPoint('CENTER', iEET.spreadsheetCopyButton, 'CENTER', 0,0)
 	iEET.spreadsheetCopyButton.text:SetText('S')
 	iEET.spreadsheetCopyButton:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
-	iEET.spreadsheetCopyButton:SetPoint('RIGHT', iEET.editbox, 'LEFT', -1,0)
+	iEET.spreadsheetCopyButton:SetPoint('LEFT', iEET.encounterListButton, 'RIGHT', 1,0)
 	iEET.spreadsheetCopyButton:SetFrameStrata('HIGH')
 	iEET.spreadsheetCopyButton:SetFrameLevel(3)
 	iEET.spreadsheetCopyButton:Show()
 	iEET.spreadsheetCopyButton:RegisterForClicks('AnyUp')
 	iEET.spreadsheetCopyButton:SetScript('OnClick',function()
-		iEET:copyCurrent()
+		EasyMenu(iEET.spreadsheetCopyMenu, iEET.spreadsheetListMenuFrame, "cursor", 0 , 0, "MENU");
 	end)
 	iEET.spreadsheetCopyButton:SetScript('OnEnter', function()
 		GameTooltip:SetOwner(iEET.frame, 'ANCHOR_CURSOR', 0, 0)
@@ -2330,7 +2359,6 @@ function iEET:CreateMainFrame()
 	iEET.spreadsheetCopyButton:SetScript('OnLeave', function()
 		GameTooltip:Hide()
 	end)
-	
 	----Filtering window button:
 	iEET.filteringButton = CreateFrame('BUTTON', nil, iEET.frame)
 	iEET.filteringButton:SetSize(21, 21)
@@ -2341,7 +2369,7 @@ function iEET:CreateMainFrame()
 	iEET.filteringButton.text:SetPoint('CENTER', iEET.filteringButton, 'CENTER', 0,0)
 	iEET.filteringButton.text:SetText('F')
 	iEET.filteringButton:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
-	iEET.filteringButton:SetPoint('RIGHT', iEET.spreadsheetCopyButton, 'LEFT', -1,0)
+	iEET.filteringButton:SetPoint('LEFT', iEET.spreadsheetCopyButton, 'RIGHT', 1,0)
 	iEET.filteringButton:SetFrameStrata('HIGH')
 	iEET.filteringButton:SetFrameLevel(3)
 	iEET.filteringButton:Show()
@@ -2358,7 +2386,33 @@ function iEET:CreateMainFrame()
 	iEET.filteringButton:SetScript('OnLeave', function()
 		GameTooltip:Hide()
 	end)
-	
+	--Main window exit button
+	iEET.exitButton = CreateFrame('BUTTON', nil, iEET.frame)
+	iEET.exitButton:SetSize(21, 21)
+	iEET.exitButton:SetBackdrop(iEET.backdrop);
+	iEET.exitButton:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
+	iEET.exitButton.text = iEET.exitButton:CreateFontString()
+	iEET.exitButton.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+	iEET.exitButton.text:SetPoint('CENTER', iEET.exitButton, 'CENTER', 0,0)
+	iEET.exitButton.text:SetText('X')
+	iEET.exitButton:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
+	iEET.exitButton:SetPoint('LEFT', iEET.editbox, 'RIGHT', 1,0)
+	iEET.exitButton:SetFrameStrata('HIGH')
+	iEET.exitButton:SetFrameLevel(3)
+	iEET.exitButton:Show()
+	iEET.exitButton:RegisterForClicks('AnyUp')
+	iEET.exitButton:SetScript('OnClick',function()
+		iEET.frame:Hide()
+	end)
+	iEET.exitButton:SetScript('OnEnter', function()
+		GameTooltip:SetOwner(iEET.frame, 'ANCHOR_CURSOR', 0, 0)
+		GameTooltip:ClearLines()
+		GameTooltip:AddLine('Exit')
+		GameTooltip:Show()
+	end)
+	iEET.exitButton:SetScript('OnLeave', function()
+		GameTooltip:Hide()
+	end)
 	--fill window
 	iEET:loopData()
 	iEET.frame:Show()
@@ -2761,7 +2815,7 @@ function iEET:toggleCopyFrame(forceShow)
 		end
 	end
 end
-function iEET:copyCurrent()
+function iEET:copyCurrent(formatStyle)
 	local totalData = ''
 	for line = 1, iEET.content1:GetNumMessages() do
 		local lineData = ''
@@ -2772,7 +2826,6 @@ function iEET:copyCurrent()
 				if tonumber(spellID) then
 					local spellName = lineInfo:match('\124h(.*)\124h$')
 					if spellName then
-						--[[
 						local s = ''
 						if formatStyle == 1 then -- Google Spreadsheet
 							s = '=HYPERLINK("http://legion.wowhead.com/spell=%s", "%s")'
@@ -2782,8 +2835,8 @@ function iEET:copyCurrent()
 							s = '=HYPERLINK("http://legion.wowhead.com/spell=%s", "%s")'
 						end
 						--add ExtraData to 9th column
-						--]]
-						lineData = lineData .. string.format('=HYPERLINK("http://legion.wowhead.com/spell=%s", "%s")', spellID, spellName) .. '\t'
+						--lineData = lineData .. string.format('=HYPERLINK("http://legion.wowhead.com/spell=%s", "%s")', spellID, spellName) .. '\t'
+						lineData = lineData .. string.format(s, spellID, spellName) .. '\t'
 					else
 						lineData = lineData .. lineInfo .. '\t'
 					end
