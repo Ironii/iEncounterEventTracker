@@ -2566,6 +2566,7 @@ Event names/values:
 	iEET.optionsFrameEditbox:SetMultiLine(true)
 	iEET.optionsFrameEditbox:Show()
 	iEET.optionsFrameEditbox:SetFont(iEET.font, iEET.fontsize+2, 'OUTLINE')
+	iEET:FillFilters()
 	-- Save button
 	iEET.optionsFrameSaveButton = CreateFrame('BUTTON', nil, iEET.optionsFrame)
 	iEET.optionsFrameSaveButton:SetSize(100, 20)
