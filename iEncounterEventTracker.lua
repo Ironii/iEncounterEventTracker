@@ -1435,7 +1435,11 @@ function iEET:AddNewFiltering(msg)
 	elseif tonumber(msg) then
 		msg = 'sI=' .. msg 
 	end
-	iEET.optionsFrameFilterTexts:AddMessage(msg)
+	if msg:match('^%d-%) ') then
+		msg = msg:gsub('^%d-%) ', '')
+	end
+	local lineID = iEET.optionsFrameFilterTexts:GetCurrentLine()+2
+	iEET.optionsFrameFilterTexts:AddMessage(lineID .. ') ' .. msg)
 end
 function iEET:ClearFilteringArgs()
 	iEETConfig.filtering = {
@@ -1518,6 +1522,7 @@ function iEET:ParseFilters()
 	iEET:ClearFilteringArgs()	--Clear old filters
 	for i = 1, iEET.optionsFrameFilterTexts:GetNumMessages() do
 		local line = iEET.optionsFrameFilterTexts:GetMessageInfo(i)
+		line = line:gsub('^%d-%) ', '') -- strip lineID
 		if line:gsub('^%s*(.-)%s*$', '%1') == 'requireAll' then
 			iEETConfig.filtering.requireAll = true
 		elseif string.find(line, 'FROM:') or string.find(line, 'TO:') then
@@ -2487,7 +2492,7 @@ Event names/values:
 	iEET.optionsFrameFilterTexts:SetSpacing(iEET.spacing)
 	iEET.optionsFrameFilterTexts:EnableMouseWheel(true)
 	iEET.optionsFrameFilterTexts:SetHyperlinksEnabled(true)
-	iEET.optionsFrameFilterTexts:SetScript("OnMouseWheel", function(self, delta)
+	iEET.optionsFrameFilterTexts:SetScript('OnMouseWheel', function(self, delta)
 		if delta == -1 then
 			if IsShiftKeyDown() then
 				iEET.optionsFrameFilterTexts:PageDown()
