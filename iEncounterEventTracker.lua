@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.507
+iEET.version = 1.508
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -357,7 +357,7 @@ function iEET:LoadDefaults()
 				['border'] = {['r'] = 0.64, ['g'] = 0, ['b'] = 0, ['a'] = 1},
 			},
 		},
-		['classColors'] = true,
+		['classColors'] = false,
 	}
 	for k,v in pairs(defaults) do
 		if iEETConfig[k] == nil then
@@ -499,7 +499,7 @@ function addon:UNIT_TARGET(unitID)
 			local maxhp = UnitHealthMax(unitID)
 			local php = nil
 			local targetName = UnitName(unitID .. 'target') or 'No target'
-			local destGUID == UnitGUID(unitID .. 'target')
+			--local destGUID = UnitGUID(unitID .. 'target')
 			if chp and maxhp then
 				php = math.floor(chp/maxhp*1000+0.5)/10
 			end
@@ -1213,7 +1213,6 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 	end
 	local targetColor,sourceColor, classColor, sourceHyperlink, targetHyperlink
 	if iEETConfig.classColors then
-		if extraData then print(extraData) end -- debug
 		if extraData and  extraData:match('^%d-\n%d-\n%-*') then
 			local toColor = string.match(extraData,'^(%d-)\n')
 			if toColor == '3' then
@@ -1234,12 +1233,8 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 					sourceColor = {RAID_CLASS_COLORS[class].r,RAID_CLASS_COLORS[class].g,RAID_CLASS_COLORS[class].b}
 					--sourceColor = RAID_CLASS_COLORS[class]
 					sourceHyperlink = '\124HiEETList:' .. localizedClass .. '\n' .. role .. '\124h%s\124h'
-				elseif toColor == '2' then
-					print(class)
-					
+				elseif toColor == '2' then					
 					targetColor = {RAID_CLASS_COLORS[class].r,RAID_CLASS_COLORS[class].g,RAID_CLASS_COLORS[class].b}
-					ironiColorTest1 = targetColor
-					ironiColorTest2 = color
 					--targetColor = RAID_CLASS_COLORS[class]
 					targetHyperlink = '\124HiEETList:' .. localizedClass .. '\n' .. role .. '\124h%s\124h'
 				end
@@ -1821,6 +1816,20 @@ function iEET:updateOptionMenu()
 					iEETConfig.autoSave = true
 					iEET:print('Automatic saving is now on.')
 				end
+			end},
+			{text = 'Class coloring',
+			isNotRadio = true,
+			checked = iEETConfig.classColors,
+			keepShownOnClick = false,
+			func = function()
+				if iEETConfig.classColors then
+					iEETConfig.classColors = false
+					iEET:print('Class coloring is now off.')
+				else
+					iEETConfig.classColors = true
+					iEET:print('Class coloring is now on.')
+				end
+				iEET:loopData()
 			end},
 		},
 	}

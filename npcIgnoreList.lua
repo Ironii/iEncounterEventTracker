@@ -64,6 +64,7 @@ iEET.npcIgnoreList = {
 	[2523] = true, 		--Searing Totem
 	[2630] = true, 		--Earthbinding Totem
 	[3527] = true, 		--Healing Stream Totem
+	[5925] = true,		--Grounding Totem
 	[15352] = true,		--Greater Earth Elemental
 	[15438] = true, 	--Greater Fire Elemental
 	[29264] = true, 	--Spirit wolf
