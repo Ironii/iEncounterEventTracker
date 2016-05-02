@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.506
+iEET.version = 1.507
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -357,6 +357,7 @@ function iEET:LoadDefaults()
 				['border'] = {['r'] = 0.64, ['g'] = 0, ['b'] = 0, ['a'] = 1},
 			},
 		},
+		['classColors'] = true,
 	}
 	for k,v in pairs(defaults) do
 		if iEETConfig[k] == nil then
@@ -389,7 +390,6 @@ function addon:ENCOUNTER_START(encounterID, encounterName)
 	iEET.unitPowerUnits = {}
 	iEET.data = nil
 	iEET.data = {}
-	--[[
 	iEET.raidComp = nil
 	iEET.raidComp = {}
 	--Collecting raid comp info for destName class coloring + class info
@@ -398,13 +398,12 @@ function addon:ENCOUNTER_START(encounterID, encounterName)
 			local unitID = 'raid' .. i
 			if UnitExists(unitID) then
 				iEET.raidComp[UnitGUID(unitID)] = {
-					['class'] = class = select(3,UnitClass(unitID)), -- Class number
-					['role'] = select(12, GetRaidRosterInfo(unitID)), -- Combat Role, DAMAGER/HEALER/TANK
+					['class'] = select(3,UnitClass(unitID)), -- Class number
+					['role'] = select(12,GetRaidRosterInfo(i)), -- Combat Role, DAMAGER/HEALER/TANK
 				}
 			end
 		end
 	end
-	--]]
 	iEET.encounterInfoData = { --TODO
 		['s'] = GetTime(),
 		['eN'] = encounterName,
@@ -500,9 +499,17 @@ function addon:UNIT_TARGET(unitID)
 			local maxhp = UnitHealthMax(unitID)
 			local php = nil
 			local targetName = UnitName(unitID .. 'target') or 'No target'
+			local destGUID == UnitGUID(unitID .. 'target')
 			if chp and maxhp then
 				php = math.floor(chp/maxhp*1000+0.5)/10
 			end
+			--[[ -- NOT TESTED
+			if iEET.raidComp then 
+				if destGUID and iEET.raidComp[destGUID]then --player and is in raid
+					eD = '1'..'\n'..iEET.raidComp[destGUID].class..'\n'..iEET.raidComp[destGUID].role
+				end
+			end
+			--]]
 			table.insert(iEET.data, {
 			['e'] = 32,
 			['t'] = GetTime(),
@@ -587,22 +594,29 @@ function addon:COMBAT_LOG_EVENT_UNFILTERED(timestamp,event,hideCaster,sourceGUID
 		elseif (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and iEET.approvedSpells[spellID]) or not sourceGUID or hideCaster or event == 'SPELL_INTERRUPT' or event == 'SPELL_DISPEL' then
 			if spellID and not iEET.ignoredSpells[spellID] then
 				if not iEET.npcIgnoreList[tonumber(npcID)] then
-					--[[
 					local eD
 					if iEET.raidComp then 
 						if iEET.raidComp[destGUID] or iEET.raidComp[sourceGUID] then --player and is in raid
 							local toColor = 1
+							local guidToColor = destGUID
 							if iEET.raidComp[destGUID] and iEET.raidComp[sourceGUID] then
 								toColor = 3 -- both
+								guidToColor = {sourceGUID,destGUID}
 							elseif iEET.raidComp[destGUID] then
 								toColor = 2 -- target
+								guidToColor = destGUID
 							else
-								toColor = 1 -- dest
+								toColor = 1 -- source
+								guidToColor = sourceGUID
 							end
-							eD = toColor..'\n'..iEET.raidComp[destGUID].class..'\n'..iEET.raidComp[destGUID].role 
+							--eD = toColor..'\n'..iEET.raidComp[destGUID].class..'\n'..iEET.raidComp[destGUID].role 
+							if toColor < 3 then -- source or target
+								eD = toColor..'\n'..iEET.raidComp[guidToColor].class..'\n'..iEET.raidComp[guidToColor].role
+							else -- both
+								eD = toColor..'\n'..iEET.raidComp[guidToColor[1]].class..'\n'..iEET.raidComp[guidToColor[1]].role .. ';' .. '\n'..iEET.raidComp[guidToColor[2]].class..'\n'..iEET.raidComp[guidToColor[2]].role
+							end
 						end
 					end
-					--]]
 					table.insert(iEET.data, {
 						['e'] = iEET.events.toID[event],
 						['t'] = GetTime(),
@@ -611,7 +625,7 @@ function addon:COMBAT_LOG_EVENT_UNFILTERED(timestamp,event,hideCaster,sourceGUID
 						['tN'] = destName or nil,
 						['sN'] = spellName or 'NONE',
 						['sI'] = spellID or 'NONE',
-						--['eD']= eD,
+						['eD']= eD,
 					})
 				end
 			end
@@ -1197,15 +1211,51 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 	else
 		iEET.content4:AddMessage(' ')
 	end
-	local target, classColor, hyperlink
-	if extraData and  extraData:match('^%d-\n%d-\n%-*') then -- 1-3\n1-12\nrole -- Class Coloring
-		local target, classIndex, role = strsplit('\n',extraData)
-		local localizedClass, class = select(2, GetClassInfo(tonumber(classIndex)))
-		classColor = RAID_CLASS_COLORS[class]
-		hyperlink = '\124HiEETList:' .. localizedClass .. '\n' .. role .. '\124h%s\124h' 
+	local targetColor,sourceColor, classColor, sourceHyperlink, targetHyperlink
+	if iEETConfig.classColors then
+		if extraData then print(extraData) end -- debug
+		if extraData and  extraData:match('^%d-\n%d-\n%-*') then
+			local toColor = string.match(extraData,'^(%d-)\n')
+			if toColor == '3' then
+				local sourceString, targetString = strsplit(';',string.gsub(extraData,'^(%d-)\n', ''))
+				local _,classIndex, role = strsplit('\n',sourceString)
+				local localizedClass, class = GetClassInfo(tonumber(classIndex))
+				sourceColor = RAID_CLASS_COLORS[class]
+				sourceHyperlink = '\124HiEETList:' .. localizedClass .. '\n' .. role .. '\124h%s\124h'
+				
+				classIndex, role = strsplit('\n',targetString)
+				localizedClass, class = select(2, GetClassInfo(tonumber(classIndex)))
+				targetColor = RAID_CLASS_COLORS[class]
+				targetHyperlink = '\124HiEETList:' .. localizedClass .. '\n' .. role .. '\124h%s\124h'
+			else
+				local _,classIndex, role = strsplit('\n',extraData)
+				local localizedClass, class = GetClassInfo(tonumber(classIndex))
+				if toColor == '1' then
+					sourceColor = {RAID_CLASS_COLORS[class].r,RAID_CLASS_COLORS[class].g,RAID_CLASS_COLORS[class].b}
+					--sourceColor = RAID_CLASS_COLORS[class]
+					sourceHyperlink = '\124HiEETList:' .. localizedClass .. '\n' .. role .. '\124h%s\124h'
+				elseif toColor == '2' then
+					print(class)
+					
+					targetColor = {RAID_CLASS_COLORS[class].r,RAID_CLASS_COLORS[class].g,RAID_CLASS_COLORS[class].b}
+					ironiColorTest1 = targetColor
+					ironiColorTest2 = color
+					--targetColor = RAID_CLASS_COLORS[class]
+					targetHyperlink = '\124HiEETList:' .. localizedClass .. '\n' .. role .. '\124h%s\124h'
+				end
+			end
+		end
+		--[[
+		if extraData and  extraData:match('^%d-\n%d-\n%-*') then -- 1-3\n1-12\nrole -- Class Coloring [1] = sourceName, [2] = targetName
+			local target, classIndex, role = strsplit('\n',extraData)
+			local localizedClass, class = select(2, GetClassInfo(tonumber(classIndex)))
+			classColor = RAID_CLASS_COLORS[class]
+			hyperlink = '\124HiEETList:' .. localizedClass .. '\n' .. role .. '\124h%s\124h'
+		end
+		--]]
 	end
-	iEET:addMessages(1, 5, casterName, (target == 1 and classColor) or (target == 3 and classColor) or color,hyperlink)
-	iEET:addMessages(1, 6, targetName, (target == 2 and classColor) or (target == 3 and classColor) or color,hyperlink)
+	iEET:addMessages(1, 5, casterName, (sourceColor or color),sourceHyperlink)
+	iEET:addMessages(1, 6, targetName, (targetColor or color),targetHyperlink)
 	iEET:addMessages(1, 7, count, color)
 	iEET:addMessages(1, 8, hp, color)
 end
