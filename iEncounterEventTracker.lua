@@ -2951,6 +2951,7 @@ function iEET:ConvertOldReports()
 	iEET:print('Converted ' .. count .. ' old reports to new format.')
 end
 SLASH_IEET1 = "/ieet"
+SLASH_IEET2 = '/iencountereventtracker'
 SlashCmdList["IEET"] = function(msg)
 	if msg then msg = string.lower(msg) end
 	if msg:len() <= 1 then
