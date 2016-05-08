@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.509
+iEET.version = 1.511
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -1636,15 +1636,158 @@ function iEET:Hyperlinks(linkData, link)
 	end
 	GameTooltip:Show()
 end
-iEET.optionMenu = {}
-function iEET:updateOptionMenu()
-	iEET.optionMenu = nil
-	iEET.optionMenu = {}
+iEET.optionsMenu = {}
+iEET.optionsMenuFrame = CreateFrame('Frame', 'iEETOptionsListMenu', UIParent, 'UIDropDownMenuTemplate')
+function iEET:updateOptionsMenu()
+	iEET.optionsMenu = nil
+	iEET.optionsMenu = {}
+	table.insert(iEET.optionsMenu, {text = 'Options', isTitle = true, notCheckable = true})
+	table.insert(iEET.optionsMenu, {text = 'Color', notCheckable = true, keepShownOnClick = true, hasArrow = true, menuList = {
+			{text = 'Main Frame',
+			notCheckable = true,
+			hasArrow = true,
+			keepShownOnClick = true,
+			menuList = {
+				{text = 'Background',
+				notCheckable = true,
+				hasArrow = false,
+				keepShownOnClick = false,
+				func = function()
+					iEET:ShowColorPicker('mainBG')
+				end},
+				{text = 'Border',
+				notCheckable = true,
+				hasArrow = false,
+				keepShownOnClick = false,
+				func = function()
+					iEET:ShowColorPicker('mainBorder')
+				end},
+				{text = 'Reset',
+				notCheckable = true,
+				hasArrow = false,
+				keepShownOnClick = false,
+				func = function()
+					iEETConfig.colors.main = {
+						['bg'] = {['r'] = 0.1, ['g'] = 0.1, ['b'] = 0.1, ['a'] = 0.9},
+						['border'] = {['r'] = 0, ['g'] = 0, ['b'] = 0, ['a'] = 1},
+					}
+					iEET:UpdateColors('main',nil,true) --force update after reset
+				end},
+			},},
+			{text = 'Filtering Frame',
+			notCheckable = true,
+			hasArrow = true,
+			keepShownOnClick = true,
+			menuList = {
+				{text = 'Background',
+				notCheckable = true,
+				hasArrow = false,
+				keepShownOnClick = false,
+				func = function()
+					iEET:ShowColorPicker('optionsBG')
+				end},
+				{text = 'Border',
+				notCheckable = true,
+				hasArrow = false,
+				keepShownOnClick = false,
+				func = function()
+				iEET:ShowColorPicker('optionsBorder')
+				end},
+				{text = 'Reset',
+				notCheckable = true,
+				hasArrow = false,
+				keepShownOnClick = false,
+				func = function()
+					iEETConfig.colors.options = {
+						['bg'] = {['r'] = 0.1, ['g'] = 0.1, ['b'] = 0.1, ['a'] = 0.9},
+						['border'] = {['r'] = 0.64, ['g'] = 0, ['b'] = 0, ['a'] = 1},
+					}
+					iEET:UpdateColors('options',nil,true) --force update after reset
+				end},
+			},},
+		},})
+	table.insert(iEET.optionsMenu, {text = 'Automatic saving', isNotRadio = true, checked = iEETConfig.autoSave, keepShownOnClick = false, func = function()
+			if iEETConfig.autoSave then
+				iEETConfig.autoSave = false
+				iEET:print('Automatic saving is now off.')
+			else
+				iEETConfig.autoSave = true
+				iEET:print('Automatic saving is now on.')
+			end
+			iEET:updateOptionsMenu()
+			EasyMenu(iEET.optionsMenu, iEET.optionsMenuFrame, iEET.optionsList, 0 , 0, 'MENU');
+		end})
+	table.insert(iEET.optionsMenu, {text = 'Class coloring', isNotRadio = true,	checked = iEETConfig.classColors, keepShownOnClick = true, func = function()
+			if iEETConfig.classColors then
+				iEETConfig.classColors = false
+				iEET:print('Class coloring is now off.')
+			else
+				iEETConfig.classColors = true
+				iEET:print('Class coloring is now on.')
+			end
+			iEET:updateOptionsMenu()
+			EasyMenu(iEET.optionsMenu, iEET.optionsMenuFrame, iEET.optionsList, 0 , 0, 'MENU');
+			iEET:loopData()
+		end})
+	table.insert(iEET.optionsMenu, { text = 'Close', notCheckable = true, func = function () CloseDropDownMenus(); end})
+end
+iEET.eventListMenu = {}
+iEET.eventListMenuFrame = CreateFrame('Frame', 'iEETEventListMenu', UIParent, 'UIDropDownMenuTemplate')
+function iEET:updateEventMenu()
+	iEET.eventListMenu = nil
+	iEET.eventListMenu = {}
+	table.insert(iEET.eventListMenu, {text = 'Show Events', isTitle = true, notCheckable = true})
+	for k,_ in spairs(iEETConfig.tracking) do
+		table.insert(iEET.eventListMenu, {
+			text = k,
+			isNotRadio = true,
+			checked = iEETConfig.tracking[k],
+			keepShownOnClick = true,
+			func = function()
+				if iEETConfig.tracking[k] then
+					iEETConfig.tracking[k] = false
+				else
+					iEETConfig.tracking[k] = true
+				end
+			end,
+		})
+	end
+	table.insert(iEET.eventListMenu, {text = 'Deselect all', notCheckable = true, func = function()
+		for k,_ in spairs(iEETConfig.tracking) do
+			iEETConfig.tracking[k] = false
+		end
+		iEET:updateEventMenu()
+		EasyMenu(iEET.eventListMenu, iEET.eventListMenuFrame, iEET.eventlist, 0 , 0, 'MENU');
+		end})
+	table.insert(iEET.eventListMenu, {text = 'Select all', notCheckable = true, func = function()
+		for k,_ in spairs(iEETConfig.tracking) do
+			iEETConfig.tracking[k] = true
+		end
+		iEET:updateEventMenu()
+		EasyMenu(iEET.eventListMenu, iEET.eventListMenuFrame,iEET.eventlist, 0 , 0, 'MENU');
+		end})
+	table.insert(iEET.eventListMenu, { text = 'Apply changes', notCheckable = true, func = function()
+		CloseDropDownMenus()
+		local msg
+		if iEET.editbox:GetText() ~= 'Search' then
+			local txt = iEET.editbox:GetText()
+			if string.len(txt) > 1 then
+				msg = string.lower(txt)
+			end
+		end
+		iEET:loopData(msg)
+	end})
+end
+iEET.npcListMenu = {}
+iEET.npcListMenuFrame = CreateFrame('Frame', 'iEETNPCListMenu', UIParent, 'UIDropDownMenuTemplate')
+function iEET:updateNPCListMenu()
+	iEET.npcListMenu = nil
+	iEET.npcListMenu = {}
+	table.insert(iEET.npcListMenu, {text = 'Ignored NPCs', isTitle = true, notCheckable = true})
 	if iEET.collector then
 		-- NPCs
-		local tempIgnoreNPCs = {text = 'Ignore NPCs', hasArrow = true, notCheckable = true, menuList = {}}
 		for k in spairs(iEET.collector.encounterNPCs) do
-			table.insert(tempIgnoreNPCs.menuList, {
+			table.insert(iEET.npcListMenu, {
 			text = k,
 			isNotRadio = true,
 			checked = iEET.ignoring[k],
@@ -1658,23 +1801,44 @@ function iEET:updateOptionMenu()
 			end,
 			})
 		end
-		table.insert(tempIgnoreNPCs.menuList, { text = 'Save', notCheckable = true, func = function()
-			CloseDropDownMenus()
-			local msg
-			if iEET.editbox:GetText() ~= 'Search' then
-				local txt = iEET.editbox:GetText()
-				if string.len(txt) > 1 then
-					msg = string.lower(txt)
-				end
-			end
-			iEET:loopData(msg)
+	end
+	table.insert(iEET.npcListMenu, {text = 'Deselect all', notCheckable = true, func = function()
+		for k in spairs(iEET.collector.encounterNPCs) do
+			iEET.ignoring[k] = nil
+		end
+		iEET:updateNPCListMenu()
+		EasyMenu(iEET.npcListMenu, iEET.npcListMenuFrame, iEET.npcList, 0 , 0, 'MENU');
 		end})
-		table.insert(iEET.optionMenu, tempIgnoreNPCs)
+	table.insert(iEET.npcListMenu, {text = 'Select all', notCheckable = true, func = function()
+		for k in spairs(iEET.collector.encounterNPCs) do
+			iEET.ignoring[k] = true
+		end
+		iEET:updateNPCListMenu()
+		EasyMenu(iEET.npcListMenu, iEET.npcListMenuFrame, iEET.npcList, 0 , 0, 'MENU');
+		end})
+	table.insert(iEET.npcListMenu, { text = 'Apply changes', notCheckable = true, func = function()
+		CloseDropDownMenus()
+		local msg
+		if iEET.editbox:GetText() ~= 'Search' then
+			local txt = iEET.editbox:GetText()
+			if string.len(txt) > 1 then
+				msg = string.lower(txt)
+			end
+		end
+		iEET:loopData(msg)
+	end})
+end
+iEET.spellListMenu = {}
+iEET.spellListMenuFrame = CreateFrame('Frame', 'iEETSpellListMenu', UIParent, 'UIDropDownMenuTemplate')
+function iEET:updateSpellListMenu()
+	iEET.spellListMenu = nil
+	iEET.spellListMenu = {}
+	table.insert(iEET.spellListMenu, {text = 'Ignored Spells', isTitle = true, notCheckable = true})
+	if iEET.collector then
 		-- Spells
-		local tempIgnoreSpells = {text = 'Ignore Spells', hasArrow = true, notCheckable = true, menuList = {}}
 		for k,v in spairs(iEET.collector.encounterSpells) do
 			if not iEET.ignoreList[k] then -- Filter fake spells out
-				table.insert(tempIgnoreSpells.menuList, {
+				table.insert(iEET.spellListMenu, {
 				text = k .. ' - ' .. v,
 				isNotRadio = true,
 				checked = iEET.ignoring[k],
@@ -1689,36 +1853,23 @@ function iEET:updateOptionMenu()
 				})
 			end
 		end
-		table.insert(tempIgnoreSpells.menuList, { text = 'Save', notCheckable = true, func = function()
-			CloseDropDownMenus()
-			local msg
-			if iEET.editbox:GetText() ~= 'Search' then
-				local txt = iEET.editbox:GetText()
-				if string.len(txt) > 1 then
-					msg = string.lower(txt)
-				end
+		--table.insert(iEET.optionMenu, tempIgnoreSpells)
+	end
+	table.insert(iEET.spellListMenu, {text = 'Deselect all', notCheckable = true, func = function()
+			for k in spairs(iEET.collector.encounterSpells) do
+				iEET.ignoring[k] = nil
 			end
-			iEET:loopData(msg)
-		end})
-		table.insert(iEET.optionMenu, tempIgnoreSpells)
-	end
-	local tempEvents = {text = 'Events', hasArrow = true, notCheckable = true, menuList = {}}
-	for k,_ in spairs(iEETConfig.tracking) do
-		table.insert(tempEvents.menuList, {
-			text = k,
-			isNotRadio = true,
-			checked = iEETConfig.tracking[k],
-			keepShownOnClick = true,
-			func = function()
-				if iEETConfig.tracking[k] then
-					iEETConfig.tracking[k] = false
-				else
-					iEETConfig.tracking[k] = true
-				end
-			end,
-		})
-	end
-	table.insert(tempEvents.menuList, { text = 'Save', notCheckable = true, func = function()
+			iEET:updateSpellListMenu()
+			EasyMenu(iEET.spellListMenu, iEET.spellListMenuFrame, iEET.spellList , 0 , 0, 'MENU');
+			end})
+	table.insert(iEET.spellListMenu, {text = 'Select all', notCheckable = true, func = function()
+			for k in spairs(iEET.collector.encounterSpells) do
+				iEET.ignoring[k] = true
+			end
+			iEET:updateSpellListMenu()
+			EasyMenu(iEET.spellListMenu, iEET.spellListMenuFrame, iEET.spellList , 0 , 0, 'MENU');
+			end})
+	table.insert(iEET.spellListMenu, { text = 'Apply changes', notCheckable = true, func = function()
 		CloseDropDownMenus()
 		local msg
 		if iEET.editbox:GetText() ~= 'Search' then
@@ -1729,115 +1880,9 @@ function iEET:updateOptionMenu()
 		end
 		iEET:loopData(msg)
 	end})
-	table.insert(iEET.optionMenu, tempEvents)
-	local settings = {
-		text = 'Settings',
-		hasArrow = true,
-		notCheckable = true,
-		keepShownOnClick = true,
-		menuList = {
-			{text = 'Color',
-			notCheckable = true,
-			keepShownOnClick = true,
-			hasArrow = true,
-			menuList = {
-				{text = 'Main Frame',
-				notCheckable = true,
-				hasArrow = true,
-				keepShownOnClick = true,
-				menuList = {
-					{text = 'Background',
-					notCheckable = true,
-					hasArrow = false,
-					keepShownOnClick = false,
-					func = function()
-						iEET:ShowColorPicker('mainBG')
-					end},
-					{text = 'Border',
-					notCheckable = true,
-					hasArrow = false,
-					keepShownOnClick = false,
-					func = function()
-						iEET:ShowColorPicker('mainBorder')
-					end},
-					{text = 'Reset',
-					notCheckable = true,
-					hasArrow = false,
-					keepShownOnClick = false,
-					func = function()
-						iEETConfig.colors.main = {
-							['bg'] = {['r'] = 0.1, ['g'] = 0.1, ['b'] = 0.1, ['a'] = 0.9},
-							['border'] = {['r'] = 0, ['g'] = 0, ['b'] = 0, ['a'] = 1},
-						}
-						iEET:UpdateColors('main',nil,true) --force update after reset
-					end},
-				},},
-				{text = 'Filtering Frame',
-				notCheckable = true,
-				hasArrow = true,
-				keepShownOnClick = true,
-				menuList = {
-					{text = 'Background',
-					notCheckable = true,
-					hasArrow = false,
-					keepShownOnClick = false,
-					func = function()
-						iEET:ShowColorPicker('optionsBG')
-					end},
-					{text = 'Border',
-					notCheckable = true,
-					hasArrow = false,
-					keepShownOnClick = false,
-					func = function()
-					iEET:ShowColorPicker('optionsBorder')
-					end},
-					{text = 'Reset',
-					notCheckable = true,
-					hasArrow = false,
-					keepShownOnClick = false,
-					func = function()
-						iEETConfig.colors.options = {
-							['bg'] = {['r'] = 0.1, ['g'] = 0.1, ['b'] = 0.1, ['a'] = 0.9},
-							['border'] = {['r'] = 0.64, ['g'] = 0, ['b'] = 0, ['a'] = 1},
-						}
-						iEET:UpdateColors('options',nil,true) --force update after reset
-					end},
-				},},
-			},},
-			{text = 'Automatic saving',
-			isNotRadio = true,
-			checked = iEETConfig.autoSave,
-			keepShownOnClick = false,
-			func = function()
-				if iEETConfig.autoSave then
-					iEETConfig.autoSave = false
-					iEET:print('Automatic saving is now off.')
-				else
-					iEETConfig.autoSave = true
-					iEET:print('Automatic saving is now on.')
-				end
-			end},
-			{text = 'Class coloring',
-			isNotRadio = true,
-			checked = iEETConfig.classColors,
-			keepShownOnClick = false,
-			func = function()
-				if iEETConfig.classColors then
-					iEETConfig.classColors = false
-					iEET:print('Class coloring is now off.')
-				else
-					iEETConfig.classColors = true
-					iEET:print('Class coloring is now on.')
-				end
-				iEET:loopData()
-			end},
-		},
-	}
-	table.insert(iEET.optionMenu, settings)
-	table.insert(iEET.optionMenu, { text = 'Close', notCheckable = true, func = function () CloseDropDownMenus(); end})
 end
-iEET.optionMenuFrame = CreateFrame("Frame", "iEETEventListMenu", UIParent, "UIDropDownMenuTemplate")
 iEET.encounterListMenu = {}
+iEET.encounterListMenuFrame = CreateFrame('Frame', 'iEETEncounterListMenu', UIParent, 'UIDropDownMenuTemplate')
 function iEET:updateEncounterListMenu()
 		iEET.encounterListMenu = nil
 		iEET.encounterListMenu = {}
@@ -1909,7 +1954,6 @@ function iEET:updateEncounterListMenu()
 	end
 	table.insert(iEET.encounterListMenu, { text = 'Exit', notCheckable = true, func = function () CloseDropDownMenus() end})
 end
-iEET.encounterListMenuFrame = CreateFrame("Frame", "iEETEncounterListMenu", UIParent, "UIDropDownMenuTemplate")
 function iEET:CreateMainFrame()
 	iEET.frame = CreateFrame("Frame", "iEETFrame", UIParent)
 	iEET.frame:SetSize(598,800)
@@ -2223,7 +2267,7 @@ function iEET:CreateMainFrame()
 		iEET.encounterAbilitiesContent:SetPoint('CENTER', iEET.encounterAbilitiesAnchor, 'CENTER', 0, 0)
 		iEET.encounterAbilitiesContent:SetFont(iEET.font, iEET.fontsize)
 		iEET.encounterAbilitiesContent:SetFading(false)
-		iEET.encounterAbilitiesContent:SetInsertMode("BOTTOM")
+		iEET.encounterAbilitiesContent:SetInsertMode('BOTTOM')
 		iEET.encounterAbilitiesContent:SetJustifyH(iEET.justifyH)
 		iEET.encounterAbilitiesContent:SetMaxLines(200)
 		iEET.encounterAbilitiesContent:SetSpacing(iEET.spacing)
@@ -2318,10 +2362,10 @@ function iEET:CreateMainFrame()
 		iEET:loopData(msg)
 	end)
 	iEET.editbox:SetAutoFocus(false)
-	iEET.editbox:SetWidth(300)
+	iEET.editbox:SetWidth(262)
 	iEET.editbox:SetHeight(21)
 	iEET.editbox:SetTextInsets(2, 2, 1, 0)
-	iEET.editbox:SetPoint('RIGHT', iEET.top, 'RIGHT', -25,0)
+	iEET.editbox:SetPoint('RIGHT', iEET.top, 'RIGHT', -24,0)
 	iEET.editbox:SetFrameStrata('HIGH')
 	iEET.editbox:SetFrameLevel(3)
 	iEET.editbox:Show()
@@ -2340,36 +2384,44 @@ function iEET:CreateMainFrame()
 		iEET[name]:SetFrameStrata('HIGH')
 		iEET[name]:SetFrameLevel(3)
 		iEET[name]:RegisterForClicks('AnyUp')
-		iEET[name]:SetScript('OnLeave', function()
-		GameTooltip:Hide()
-		end)
 	end
+	--[Events][NPCs][Spells][E(encounters)][F(filtering)][O(options)][S(spreadsheet)]
 	----Event list:
-	createButton('eventlist', 'iEETEventListMenuButton',21,21,'I','LEFT','top','LEFT',2,0)
+	createButton('eventlist',nil,60,21,'Events','LEFT','top','LEFT',2,0)
 	iEET.eventlist:SetScript('OnClick',function()
-		iEET:updateOptionMenu()
-		EasyMenu(iEET.optionMenu, iEET.optionMenuFrame, "cursor", 0 , 0, "MENU");
+		iEET:updateEventMenu()
+		EasyMenu(iEET.eventListMenu, iEET.eventListMenuFrame, iEET.eventlist, 0 , 0, 'MENU')
 	end)
-	iEET.eventlist:SetScript('OnEnter', function()
-		GameTooltip:SetOwner(iEET.frame, 'ANCHOR_CURSOR', 0, 0)
-		GameTooltip:ClearLines()
-		GameTooltip:SetText('Open ignore list')
-		GameTooltip:Show()
+	--iEET:updateOptionMenu()
+	--NPC list
+	createButton('npcList', nil,60,21,'NPCs','LEFT','eventlist','RIGHT',1,0)
+	iEET.npcList:SetScript('OnClick',function()
+		iEET:updateNPCListMenu()
+		EasyMenu(iEET.npcListMenu, iEET.npcListMenuFrame, iEET.npcList, 0 , 0, 'MENU')
 	end)
-	--TO DO: split event list in to Settings, NPCs, Spells, Events buttons
-	iEET:updateOptionMenu()
+	--Spells list
+	createButton('spellList', nil,60,21,'Spells','LEFT','npcList','RIGHT',1,0)
+	iEET.spellList:SetScript('OnClick',function()
+		iEET:updateSpellListMenu()
+		EasyMenu(iEET.spellListMenu, iEET.spellListMenuFrame, iEET.spellList, 0 , 0, 'MENU')
+	end)
 	----Encounter list button:
-	createButton('encounterListButton','iEETEncounterListMenuButton',21,21,'E','LEFT','eventlist','RIGHT',1,0)
+	createButton('encounterListButton',nil,60,21,'Fights','LEFT','spellList','RIGHT',1,0)
 	iEET.encounterListButton:SetScript('OnClick',function()
-		EasyMenu(iEET.encounterListMenu, iEET.encounterListMenuFrame, "cursor", 0 , 0, "MENU");
+		iEET:updateEncounterListMenu()
+		EasyMenu(iEET.encounterListMenu, iEET.encounterListMenuFrame, iEET.encounterListButton, 0 , 0, 'MENU')
 	end)
-	iEET.encounterListButton:SetScript('OnEnter', function()
-		GameTooltip:SetOwner(iEET.frame, 'ANCHOR_CURSOR', 0, 0)
-		GameTooltip:ClearLines()
-		GameTooltip:SetText('Open encounter list')
-		GameTooltip:Show()
+	----Filtering window button:
+	createButton('filteringButton', nil,21,21,'F','LEFT','encounterListButton','RIGHT',1,0)
+	iEET.filteringButton:SetScript('OnClick',function()
+		iEET:Options()
 	end)
-	iEET:updateEncounterListMenu()
+	--Settings
+	createButton('optionsList', nil,21,21,'O','LEFT','filteringButton','RIGHT',1,0)
+	iEET.optionsList:SetScript('OnClick',function()
+		iEET:updateOptionsMenu()
+		EasyMenu(iEET.optionsMenu, iEET.optionsMenuFrame, iEET.optionsList, 0 , 0, 'MENU')
+	end)
 	----Spreadsheet export button:
 	iEET.spreadsheetCopyMenu = {
 		{ text = 'Excel', notCheckable = true, func = function() iEET:copyCurrent(3) end},
@@ -2377,38 +2429,15 @@ function iEET:CreateMainFrame()
 		{ text = 'OpenOffice', notCheckable = true, func = function() iEET:copyCurrent(2) end},
 		{ text = 'Cancel', notCheckable = true, func = function() CloseDropDownMenus() end},
 	}
-	iEET.spreadsheetListMenuFrame = CreateFrame("Frame", "iEETspreadsheetListMenu", UIParent, "UIDropDownMenuTemplate")
-	createButton('spreadsheetCopyButton',nil,21,21,'S','LEFT','encounterListButton','RIGHT',1,0)
+	iEET.spreadsheetListMenuFrame = CreateFrame('Frame', 'iEETspreadsheetListMenu', UIParent, 'UIDropDownMenuTemplate')
+	createButton('spreadsheetCopyButton',nil,21,21,'S','LEFT','optionsList','RIGHT',1,0)
 	iEET.spreadsheetCopyButton:SetScript('OnClick',function()
-		EasyMenu(iEET.spreadsheetCopyMenu, iEET.spreadsheetListMenuFrame, "cursor", 0 , 0, "MENU");
-	end)
-	iEET.spreadsheetCopyButton:SetScript('OnEnter', function()
-		GameTooltip:SetOwner(iEET.frame, 'ANCHOR_CURSOR', 0, 0)
-		GameTooltip:ClearLines()
-		GameTooltip:SetText('Export current data to spreadsheet')
-		GameTooltip:Show()
-	end)
-	----Filtering window button:
-	createButton('filteringButton', nil,21,21,'F','LEFT','spreadsheetCopyButton','RIGHT',1,0)
-	iEET.filteringButton:SetScript('OnClick',function()
-		iEET:Options()
-	end)
-	iEET.filteringButton:SetScript('OnEnter', function()
-		GameTooltip:SetOwner(iEET.frame, 'ANCHOR_CURSOR', 0, 0)
-		GameTooltip:ClearLines()
-		GameTooltip:AddLine('Open filtering options')
-		GameTooltip:Show()
+		EasyMenu(iEET.spreadsheetCopyMenu, iEET.spreadsheetListMenuFrame, iEET.spreadsheetCopyButton, 0 , 0, 'MENU');
 	end)
 	--Main window exit button
 	createButton('exitButton', nil,21,21,'X','LEFT','editbox','RIGHT',1,0)
 	iEET.exitButton:SetScript('OnClick',function()
 		iEET.frame:Hide()
-	end)
-	iEET.exitButton:SetScript('OnEnter', function()
-		GameTooltip:SetOwner(iEET.frame, 'ANCHOR_CURSOR', 0, 0)
-		GameTooltip:ClearLines()
-		GameTooltip:AddLine('Exit')
-		GameTooltip:Show()
 	end)
 	--fill window
 	iEET:loopData()
