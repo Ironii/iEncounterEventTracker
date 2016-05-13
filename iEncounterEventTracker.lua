@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.521
+iEET.version = 1.522
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -2578,7 +2578,12 @@ Event names/values:
 30/MONSTER_SAY
 31/MONSTER_YELL
 32/UNIT_TARGET
-33/INSTANCE_ENCOUNTER_ENGAGE_UNIT/IEEU]]
+33/INSTANCE_ENCOUNTER_ENGAGE_UNIT/IEEU
+34/UNIT_POWER
+35/PLAYER_REGEN_DISABLED/COMBAT_START
+36/PLAYER_REGEN_ENABLED/COMBAT_END
+37/MANUAL_LOGGING_START/MANUAL_START
+38/MANUAL_LOGGING_END/MANUAL_END]]
 			iEET.infoFrame.text:SetText(infoText)
 			iEET.infoFrame.text:Show()
 			iEET.infoFrame:SetSize(iEET.infoFrame.text:GetStringWidth()+4,iEET.infoFrame.text:GetStringHeight()+4)

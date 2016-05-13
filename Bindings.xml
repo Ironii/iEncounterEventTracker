@@ -11,4 +11,7 @@
 	<Binding name ="IEET_OPTIONS" header="IEET" category="ADDONS">
 		IEET_TOGGLE("options")
 	</Binding>
+	<Binding name ="IEET_FORCE" header="IEET" category="ADDONS">
+		IEET_TOGGLE("force")
+	</Binding>
 </Bindings>
