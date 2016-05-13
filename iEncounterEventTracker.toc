@@ -1,5 +1,5 @@
 ## Interface: 60200
-## Title: iEET
+## Title: iEncounterEventTracker
 ## Notes: Ironi's Encounter Event Tracker
 ## Author: Ironi
 ## Version: 1.512
