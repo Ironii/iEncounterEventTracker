@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.512
+iEET.version = 1.521
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -67,12 +67,7 @@ local eventsToTrack = {
 	['SPELL_PERIODIC_HEAL'] = 'SP_HEAL',
 
 	['UNIT_DIED'] = 'UNIT_DIED',
-	['UNIT_TARGET'] = 'UNIT_TARGET',
-	
-	['INSTANCE_ENCOUNTER_ENGAGE_UNIT'] = 'IEEU',
-	
-	['UNIT_POWER'] = 'UNIT_POWER',
-};
+}
 local addon = CreateFrame('frame')
 addon:RegisterEvent('ENCOUNTER_START')
 addon:RegisterEvent('ENCOUNTER_END')
@@ -128,7 +123,10 @@ iEET.events = {
 		['UNIT_POWER'] = 34,
 					
 		['PLAYER_REGEN_DISABLED'] = 35,
-		['PLAYER_REGEN_ENABLED'] 36,
+		['PLAYER_REGEN_ENABLED'] = 36,
+		
+		['MANUAL_LOGGING_START'] = 37, -- Fake event for manual logging
+		['MANUAL_LOGGING_END'] = 38, -- Fake event for manual logging
 	},
 	['fromID'] = {
 		[1] = {
@@ -275,6 +273,14 @@ iEET.events = {
 			l = 'PLAYER_REGEN_ENABLED',
 			s = 'COMBAT_END',
 		},
+		[37] = {
+			l = 'MANUAL_LOGGING_START',
+			s = 'MANUAL_START',
+		},
+		[38] = {
+			l = 'MANUAL_LOGGING_END',
+			s = 'MANUAL_END',
+		},
 	},
 }
 iEET.ignoreList = {  -- Ignore list for 'Ignore Spell's menu, use event ignore to hide these if you want (they are fake spells)
@@ -348,8 +354,12 @@ function iEET:LoadDefaults()
 			['INSTANCE_ENCOUNTER_ENGAGE_UNIT'] = true,
 			
 			['UNIT_POWER'] = true,
+			
 			['PLAYER_REGEN_DISABLED'] = true,
-			['PLAYER_REGEN_ENABLED'] true,
+			['PLAYER_REGEN_ENABLED'] = true,
+			
+			['MANUAL_LOGGING_START'] = true,
+			['MANUAL_LOGGING_END'] = true,
 		},
 		['version'] = iEET.version,
 		['autoSave'] = true,
@@ -397,75 +407,42 @@ function addon:ADDON_LOADED(addonName)
 	end
 end
 function addon:ENCOUNTER_START(encounterID, encounterName)
-	iEET.IEEUnits = nil
-	iEET.IEEUnits = {}
-	iEET.unitPowerUnits = nil
-	iEET.unitPowerUnits = {}
-	iEET.data = nil
-	iEET.data = {}
-	iEET.raidComp = nil
-	iEET.raidComp = {}
-	--Collecting raid comp info for destName class coloring + class info
-	if IsInRaid() then -- ignore solo play etc, don't care about old raids
-		for i = 1, GetNumGroupMembers() do
-			local unitID = 'raid' .. i
-			if UnitExists(unitID) then
-				iEET.raidComp[UnitGUID(unitID)] = {
-					['class'] = select(3,UnitClass(unitID)), -- Class number
-					['role'] = select(12,GetRaidRosterInfo(i)), -- Combat Role, DAMAGER/HEALER/TANK
-				}
-			end
-		end
-	end
-	iEET.encounterInfoData = { --TODO
-		['s'] = GetTime(),
-		['eN'] = encounterName,
-		['pT'] = date('%y.%m.%d %H:%M'), -- y.m.d instead of d.m.y for easier sorting
-		['fT'] = '00:00',
-		['d']= 0,
-		['rS'] = 0,
-		['k'] = 0,
-		['v'] = iEET.version,
-	}
-	table.insert(iEET.data, {['e'] = 27, ['t'] = GetTime(), ['cN'] = encounterName, ['tN'] = encounterID})
-	addon:RegisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
-	addon:RegisterEvent('CHAT_MSG_MONSTER_SAY')
-	addon:RegisterEvent('CHAT_MSG_MONSTER_EMOTE')
-	addon:RegisterEvent('CHAT_MSG_MONSTER_YELL')
-	addon:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
-	addon:RegisterEvent('UNIT_TARGET')
-	addon:RegisterEvent('INSTANCE_ENCOUNTER_ENGAGE_UNIT')
-	addon:RegisterEvent('UNIT_POWER')
-end
-function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize, kill)
-	table.insert(iEET.data, {['e'] = 28, ['t'] = GetTime() ,['cN'] = kill == 1 and 'Victory!' or 'Wipe'})
-	addon:UnregisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
-	addon:UnregisterEvent('CHAT_MSG_MONSTER_SAY')
-	addon:UnregisterEvent('CHAT_MSG_MONSTER_EMOTE')
-	addon:UnregisterEvent('CHAT_MSG_MONSTER_YELL')
-	addon:UnregisterEvent('UNIT_SPELLCAST_SUCCEEDED')
-	addon:UnregisterEvent('UNIT_TARGET')
-	addon:UnregisterEvent('INSTANCE_ENCOUNTER_ENGAGE_UNIT')
-	addon:UnregisterEvent('UNIT_POWER')
-	if iEET.encounterInfoData then
-		iEET.encounterInfoData.fT = iEET.encounterInfoData.s and date('%M:%S', (GetTime() - iEET.encounterInfoData.s)) or '00:00' -- if we are missing start time for some reason
-		iEET.encounterInfoData.d = difficultyID
-		iEET.encounterInfoData.k = kill
-		iEET.encounterInfoData.rS = raidSize
-	else
-			iEET.encounterInfoData = { --TODO
+	if not iEET.forceRecording then
+		iEET:StartRecording()
+		iEET.encounterInfoData = { --TODO
 			['s'] = GetTime(),
 			['eN'] = encounterName,
 			['pT'] = date('%y.%m.%d %H:%M'), -- y.m.d instead of d.m.y for easier sorting
 			['fT'] = '00:00',
-			['d']= difficultyID,
-			['rS'] = raidSize,
-			['k'] = kill,
+			['d']= 0,
+			['rS'] = 0,
+			['k'] = 0,
 			['v'] = iEET.version,
 		}
 	end
-	if iEETConfig.autoSave then
-		iEET:ExportData(true)
+	table.insert(iEET.data, {['e'] = 27, ['t'] = GetTime(), ['cN'] = encounterName, ['tN'] = encounterID})
+end
+function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize, kill)
+	table.insert(iEET.data, {['e'] = 28, ['t'] = GetTime() ,['cN'] = kill == 1 and 'Victory!' or 'Wipe'})
+	if not iEET.forceRecording then
+		if iEET.encounterInfoData then
+			iEET.encounterInfoData.fT = iEET.encounterInfoData.s and date('%M:%S', (GetTime() - iEET.encounterInfoData.s)) or '00:00' -- if we are missing start time for some reason
+			iEET.encounterInfoData.d = difficultyID
+			iEET.encounterInfoData.k = kill
+			iEET.encounterInfoData.rS = raidSize
+		else
+				iEET.encounterInfoData = {
+				['s'] = GetTime(),
+				['eN'] = encounterName,
+				['pT'] = date('%y.%m.%d %H:%M'), -- y.m.d instead of d.m.y for easier sorting
+				['fT'] = '00:00',
+				['d']= difficultyID,
+				['rS'] = raidSize,
+				['k'] = kill,
+				['v'] = iEET.version,
+			}
+		end
+		iEET:StopRecording()
 	end
 end
 function addon:UNIT_SPELLCAST_SUCCEEDED(unitID, spellName,_,arg4,spellID)
@@ -714,6 +691,9 @@ end
 function addon:PLAYER_REGEN_ENABLED()
 	table.insert(iEET.data, {['e'] = 36, ['t'] = GetTime() ,['cN'] = '-Combat'})
 end
+function iEET:TrimWS(str)
+	return str:gsub('^%s*(.-)%s*$', '%1')
+end
 function iEET:ShowColorPicker(frame)
 --function iEET:ShowColorPicker(r,g,b,a,callback)
 	iEET.colorToChange = frame
@@ -772,9 +752,9 @@ function iEET:UpdateColors(frame, prevColors, force)
 	end
 end
 function iEET:getColor(event, sourceGUID, spellID)
-	if event and event == 27 then
+	if (event and event == 27) or (event and event == 37) then
 		return {0,1,0}
-	elseif event and event == 28 then
+	elseif (event and event == 28) or (event and event == 38) then
 		return {1,0,0}
 	elseif sourceGUID then
 		if colors[sourceGUID] and colors[sourceGUID][event] and colors[sourceGUID][event][spellID] then
@@ -1235,16 +1215,16 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 		if extraData and  extraData:match('^%d-\n%d-\n%-*') then
 			local toColor = string.match(extraData,'^(%d-)\n')
 			if toColor == '3' then
-				local sourceString, targetString = strsplit(';',string.gsub(extraData,'^(%d-)\n', ''))
-				local _,classIndex, role = strsplit('\n',sourceString)
-				local localizedClass, class = GetClassInfo(tonumber(classIndex))
+				local stringToSplit = string.gsub(extraData,'^(%d-)\n', '')
+				local sourceString, targetString = strsplit(';',stringToSplit)
+				local sourceClassIndex, sourceRole = strsplit('\n',sourceString)
+				local localizedClass, class = GetClassInfo(tonumber(sourceClassIndex))
 				sourceColor = RAID_CLASS_COLORS[class]
-				sourceHyperlink = '\124HiEETList:' .. localizedClass .. '\n' .. role .. '\124h%s\124h'
-				
-				classIndex, role = strsplit('\n',targetString)
-				localizedClass, class = select(2, GetClassInfo(tonumber(classIndex)))
+				sourceHyperlink = '\124HiEETList:' .. localizedClass .. '\n' .. sourceRole .. '\124h%s\124h'
+				local _,targetClassIndex, targetRole = strsplit('\n',targetString)
+				localizedClass, class = select(2, GetClassInfo(tonumber(targetClassIndex)))
 				targetColor = RAID_CLASS_COLORS[class]
-				targetHyperlink = '\124HiEETList:' .. localizedClass .. '\n' .. role .. '\124h%s\124h'
+				targetHyperlink = '\124HiEETList:' .. localizedClass .. '\n' .. targetRole .. '\124h%s\124h'
 			else
 				local _,classIndex, role = strsplit('\n',extraData)
 				local localizedClass, class = GetClassInfo(tonumber(classIndex))
@@ -1378,7 +1358,7 @@ function iEET:loopData(msg)
 		['encounterSpells'] = {},
 	}
 	for k,v in ipairs(iEET.data) do
-		if v.e == 27 then -- ENCOUNTER_START
+		if v.e == 27 or v.e == 37 then -- ENCOUNTER_START
 			starttime = v.t
 		end
 		if v.cN and not iEET.collector.encounterNPCs[v.cN] and v.e ~= 27 and v.e ~= 28 then -- Collect npc names, 27 = ENCOUNTER_START, 28 = ENCOUNTER_END
@@ -2894,9 +2874,9 @@ end
 function iEET:ExportData(auto)
 	if iEET.encounterInfoData then -- nil check
 		if auto then
-			local m,s = string.match(iEET.encounterInfoData.fT, '(%d):(%d)')
+			local m,s = string.match(iEET.encounterInfoData.fT, '(%d):(%d*)')
 			if m*60+s < iEETConfig.autoDiscard then
-				iEET:print('discarded', m*60+s)
+				iEET:print(string.format('discarded (%ss)', m*60+s))
 				return
 			end
 			if InCombatLockdown() then
@@ -2992,16 +2972,130 @@ function iEET:ConvertOldReports()
 	end
 	iEET:print('Converted ' .. count .. ' old reports to new format.')
 end
-function iEET:Force(start)
+function iEET:StartRecording(force)
+	iEET.IEEUnits = nil
+	iEET.IEEUnits = {}
+	iEET.unitPowerUnits = nil
+	iEET.unitPowerUnits = {}
+	iEET.data = nil
+	iEET.data = {}
+	iEET.raidComp = nil
+	iEET.raidComp = {}
+	--Collecting raid comp info for destName class coloring + class info
+	if IsInRaid() then -- ignore solo play etc, don't care about old raids
+		for i = 1, GetNumGroupMembers() do
+			local unitID = 'raid' .. i
+			if UnitExists(unitID) then
+				iEET.raidComp[UnitGUID(unitID)] = {
+					['class'] = select(3,UnitClass(unitID)), -- Class number
+					['role'] = select(12,GetRaidRosterInfo(i)), -- Combat Role, DAMAGER/HEALER/TANK
+				}
+			end
+		end
+	elseif IsInGroup() then
+		for i = 1, GetNumGroupMembers()-1 do
+			local unitID = 'party' .. i
+			if UnitExists(unitID) then
+				iEET.raidComp[UnitGUID(unitID)] = {
+					['class'] = select(3,UnitClass(unitID)), -- Class number
+					['role'] = select(12,GetRaidRosterInfo(i)), -- Combat Role, DAMAGER/HEALER/TANK
+				}
+			end
+		end
+		iEET.raidComp[UnitGUID('player')] = {
+			['class'] = select(3,UnitClass('player')), -- Class number
+			['role'] = 'Unknown', -- Combat Role, DAMAGER/HEALER/TANK
+		}
+	end
+	addon:RegisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
+	addon:RegisterEvent('CHAT_MSG_MONSTER_SAY')
+	addon:RegisterEvent('CHAT_MSG_MONSTER_EMOTE')
+	addon:RegisterEvent('CHAT_MSG_MONSTER_YELL')
+	addon:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
+	addon:RegisterEvent('UNIT_TARGET')
+	addon:RegisterEvent('INSTANCE_ENCOUNTER_ENGAGE_UNIT')
+	addon:RegisterEvent('UNIT_POWER')
+	if force then
+		addon:RegisterEvent('PLAYER_REGEN_DISABLED')
+		addon:RegisterEvent('PLAYER_REGEN_ENABLED')
+	end
+end
+function iEET:StopRecording(force)
+	addon:UnregisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
+	addon:UnregisterEvent('CHAT_MSG_MONSTER_SAY')
+	addon:UnregisterEvent('CHAT_MSG_MONSTER_EMOTE')
+	addon:UnregisterEvent('CHAT_MSG_MONSTER_YELL')
+	addon:UnregisterEvent('UNIT_SPELLCAST_SUCCEEDED')
+	addon:UnregisterEvent('UNIT_TARGET')
+	addon:UnregisterEvent('INSTANCE_ENCOUNTER_ENGAGE_UNIT')
+	addon:UnregisterEvent('UNIT_POWER')
+	if force then
+		addon:UnregisterEvent('PLAYER_REGEN_DISABLED')
+		addon:UnregisterEvent('PLAYER_REGEN_ENABLED')
+	end
+	if iEETConfig.autoSave then
+		iEET:ExportData(true)
+	end
+end
+function iEET:Force(start, name)
 	if start then
+		iEET:StartRecording(true)
+		table.insert(iEET.data, {['e'] = 37, ['t'] = GetTime() ,['cN'] = 'Start Logging'})
+		iEET.forceRecording = true
+		local nameToSave = GetRealZoneText() -- use zone as encounter name by default
+		if name then
+			nameToSave = name
+		end
+		iEET:print('Manual recording started: ' .. nameToSave)
+		local dID = 1
+		if IsInRaid() then
+			dID = GetRaidDifficultyID()
+		else
+			dID = GetDungeonDifficultyID()
+		end
+		iEET.encounterInfoData = {
+			['s'] = GetTime(),
+			['eN'] = nameToSave,
+			['pT'] = date('%y.%m.%d %H:%M'), -- y.m.d instead of d.m.y for easier sorting
+			['fT'] = '00:00',
+			['d']= dID,
+			['rS'] = GetNumGroupMembers(),
+			['k'] = 1,
+			['v'] = iEET.version,
+		}
 		--register events and start recording
 	else
 		--unregister events and stop recording
+		iEET.forceRecording = false
+		table.insert(iEET.data, {['e'] = 38, ['t'] = GetTime() ,['cN'] = 'End Logging'})
+		if iEET.encounterInfoData then
+			iEET.encounterInfoData.fT = iEET.encounterInfoData.s and date('%M:%S', (GetTime() - iEET.encounterInfoData.s)) or '00:00' -- if we are missing start time for some reason
+		else
+			local dID = 1
+			if IsInRaid() then
+				dID = GetRaidDifficultyID()
+			else
+				dID = GetDungeonDifficultyID()
+			end
+			iEET.encounterInfoData = {
+			['s'] = GetTime(),
+			['eN'] = GetRealZoneText(),
+			['pT'] = date('%y.%m.%d %H:%M'), -- y.m.d instead of d.m.y for easier sorting
+			['fT'] = '00:00',
+			['d']= dID,
+			['rS'] = GetNumGroupMembers(),
+			['k'] = 1,
+			['v'] = iEET.version,
+			}
+		end
+		iEET:print(string.format('Stopped recording: %s (%s)', iEET.encounterInfoData.eN, iEET.encounterInfoData.fT))
+		iEET:StopRecording(true)
 	end
 end
 SLASH_IEET1 = "/ieet"
 SLASH_IEET2 = '/iencountereventtracker'
-SlashCmdList["IEET"] = function(msg)
+SlashCmdList["IEET"] = function(realMsg)
+	local msg = realMsg
 	if msg then msg = string.lower(msg) end
 	if msg:len() <= 1 then
 		iEET:Toggle()
@@ -3058,6 +3152,18 @@ SlashCmdList["IEET"] = function(msg)
 		}
 		iEET:UpdateColors('main',nil,true) --force update after reset
 		iEET:UpdateColors('options',nil,true) --force update after reset
+	elseif string.match(msg, 'force') then
+		local arg = string.sub(realMsg, 6)
+		arg = iEET:TrimWS(arg)
+		local name
+		if arg:len() > 0 then
+			name = arg
+		end
+		if iEET.forceRecording then
+			iEET:Force()
+		else
+			iEET:Force(true, name)
+		end
 	else
 		iEET:print(string.format('Command "%s" not found, read the readme.txt.', msg))
 	end
@@ -3067,6 +3173,7 @@ BINDING_NAME_IEET_TOGGLE = 'Toggle window'
 BINDING_NAME_IEET_EXPORT = 'Export Data'
 BINDING_NAME_IEET_COPY = 'Copy currently shown fight to spreadsheet'
 BINDING_NAME_IEET_OPTIONS = 'Show filtering options window'
+BINDING_NAME_IEET_FORCE = 'Start/Stop manual logging'
 function IEET_TOGGLE(window)
 	if window == 'frame' then
 		iEET:Toggle()
@@ -3076,6 +3183,12 @@ function IEET_TOGGLE(window)
 		iEET:ExportData()
 	elseif window == 'options' and not InCombatLockdown() then
 		iEET:Options()
+	elseif window == 'force' then
+		if iEET.forceRecording then
+			iEET:Force()
+		else
+			iEET:Force(true)
+		end
 	end
 end
 function iEET_Debug(v)
