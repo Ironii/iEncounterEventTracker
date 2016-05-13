@@ -19,10 +19,10 @@ local _, iEET = ...
 iEET.data = {}
 local isAlpha = select(4, GetBuildInfo()) >= 70000 and true or false
 iEET.ignoring = {} -- so ignore list resets on relog, don't want to save it, atleast not yet
-iEET.font = isAlpha and 'Fonts\\ARIALN.TTF' or 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
---iEET.font = 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
-iEET.fontsize = isAlpha and 11 or 9
---iEET.fontsize = 9
+--iEET.font = isAlpha and 'Fonts\\ARIALN.TTF' or 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
+iEET.font = 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
+--iEET.fontsize = isAlpha and 11 or 9
+iEET.fontsize = 9
 iEET.spacing = 1
 iEET.scale = 1
 iEET.justifyH = 'LEFT'
@@ -126,6 +126,9 @@ iEET.events = {
 		['INSTANCE_ENCOUNTER_ENGAGE_UNIT'] = 33,
 		
 		['UNIT_POWER'] = 34,
+					
+		['PLAYER_REGEN_DISABLED'] = 35,
+		['PLAYER_REGEN_ENABLED'] 36,
 	},
 	['fromID'] = {
 		[1] = {
@@ -264,6 +267,14 @@ iEET.events = {
 			l = 'UNIT_POWER',
 			s = 'UNIT_POWER',
 		},
+		[35] = {
+			l = 'PLAYER_REGEN_DISABLED',
+			s = 'COMBAT_START',
+		},
+		[36] = {
+			l = 'PLAYER_REGEN_ENABLED',
+			s = 'COMBAT_END',
+		},
 	},
 }
 iEET.ignoreList = {  -- Ignore list for 'Ignore Spell's menu, use event ignore to hide these if you want (they are fake spells)
@@ -337,6 +348,8 @@ function iEET:LoadDefaults()
 			['INSTANCE_ENCOUNTER_ENGAGE_UNIT'] = true,
 			
 			['UNIT_POWER'] = true,
+			['PLAYER_REGEN_DISABLED'] = true,
+			['PLAYER_REGEN_ENABLED'] true,
 		},
 		['version'] = iEET.version,
 		['autoSave'] = true,
@@ -694,6 +707,12 @@ function addon:CHAT_MSG_MONSTER_YELL(msg, sourceName)
 		['cN'] = sourceName,
 		['sG'] = sourceName,
 	});
+end
+function addon:PLAYER_REGEN_DISABLED()
+	table.insert(iEET.data, {['e'] = 35, ['t'] = GetTime() ,['cN'] = '+Combat'})
+end
+function addon:PLAYER_REGEN_ENABLED()
+	table.insert(iEET.data, {['e'] = 36, ['t'] = GetTime() ,['cN'] = '-Combat'})
 end
 function iEET:ShowColorPicker(frame)
 --function iEET:ShowColorPicker(r,g,b,a,callback)
@@ -1280,49 +1299,43 @@ function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink)
 		if hyperlink then
 			value = hyperlink:format(value)
 		end
-	elseif isAlpha and frameID == 3 then -- event, ps. im getting tired of alpha using different font...
-		if value and value == 'ENCOUNTER_START' then
-			value = 'ENCOUNTER_STA'
-		end
+	--elseif isAlpha and frameID == 3 then -- event, ps. im getting tired of alpha using different font...
+	--	if value and value == 'ENCOUNTER_START' then
+	--		value = 'ENCOUNTER_STA'
+	--	end
 	elseif frameID == 4 then -- spellName
-		if isAlpha and string.len(value) > 18 then
-			value =  string.sub(value, 1, 18)
-		elseif string.len(value) > 20 then
-			value = string.sub(value, 1, 20)
-		end
-		--[[
+		--if isAlpha and string.len(value) > 18 then
+		--	value =  string.sub(value, 1, 18)
+		--elseif string.len(value) > 20 then
+		--	value = string.sub(value, 1, 20)
+		--end
 		if string.len(value) > 20 then
 			value = string.sub(value, 1, 20)
 		end
-		--]]
 		if hyperlink then
 			value = hyperlink:format(value)
 		end
 	elseif frameID == 5 then -- sourceName
-		if isAlpha and value and string.len(value) > 17 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
-			value = string.sub(value, 1, 17)
-		elseif value and string.len(value) > 18 then
-			value = string.sub(value, 1, 18)
-		end
-		--[[
+		--if isAlpha and value and string.len(value) > 17 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
+		--	value = string.sub(value, 1, 17)
+		--elseif value and string.len(value) > 18 then
+		--	value = string.sub(value, 1, 18)
+		--end
 		if value and string.len(value) > 18 then
 			value = string.sub(value, 1, 18)
 		end
-		--]]
 		if hyperlink then -- Spell details, for IEEU and UNIT_POWER
 			value = hyperlink:format(value)
 		end
 	elseif frameID == 6 then -- targetName
-		if isAlpha and value and string.len(value) > 13 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
-			value = string.sub(value, 1, 13)
-		elseif value and string.len(value) > 14 then
-			value = string.sub(value, 1, 14)
-		end
-		--[[
+		--if isAlpha and value and string.len(value) > 13 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
+		--	value = string.sub(value, 1, 13)
+		--elseif value and string.len(value) > 14 then
+		--	value = string.sub(value, 1, 14)
+		--end
 		if value and string.len(value) > 14 then
 			value = string.sub(value, 1, 14)
 		end
-		--]]
 		if hyperlink then -- Spell details, for IEEU and UNIT_POWER
 			value = hyperlink:format(value)
 		end
@@ -2978,6 +2991,13 @@ function iEET:ConvertOldReports()
 		end
 	end
 	iEET:print('Converted ' .. count .. ' old reports to new format.')
+end
+function iEET:Force(start)
+	if start then
+		--register events and start recording
+	else
+		--unregister events and stop recording
+	end
 end
 SLASH_IEET1 = "/ieet"
 SLASH_IEET2 = '/iencountereventtracker'
