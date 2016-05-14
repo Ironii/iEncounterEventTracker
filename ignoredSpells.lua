@@ -11,6 +11,8 @@ iEET.ignoredSpells = {
 	[109075] = true,	--Binding Shot Visual
 --Priest
 	[81782] = true, 	--Power Word: Barrier
+--Shaman
+	[157384] = true,	--Eye of the Storm
 --General
 	[159234] = true, 	--Mark of the Thunderlord
 	[159675] = true, 	--Mark of Warsong
