@@ -18,6 +18,7 @@ iEET.interrupts = {
 	
 	--Hunter
 	[147362] = true, --Counter Shot
+	[187707] = true, --Muzzle
 	
 	--Mage
 	[2139] = true, --Counterspell
