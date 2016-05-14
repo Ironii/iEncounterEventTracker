@@ -21,12 +21,14 @@ iEET.npcIgnoreList = {
 	[92993] = true, 	--Burning Blade Banner
 
 --Hunter
+	[46647] = true,		--Flare
 	[62005] = true, 	--Beast(?)
 	[86187] = true, 	--Beast
 	[90521] = true,		--Binding Shot
 	[94072] = true,		--Dark Minion
 	[95021] = true, 	--Felboar (hunter 4pc?)
 	[95582] = true,		--Beast
+	[104493] = true,	--Spitting Cobra
 
 --Mage
 	[31216] = true, 	--Mirror Image
@@ -81,6 +83,7 @@ iEET.npcIgnoreList = {
 	[95255] = true,		--Earthquake Totem
 	[97022] = true,		--Greater Lightning Elemental
 	[97285] = true,		--Wind Rush Totem
+	[97369] = true, 	--Liquid Magma Totem
 	[100099] = true,	--Voodoo Totem
 	[100820] = true,	--Spirit Wolf
 	[100943] = true, 	--Earthen Shield Totem
