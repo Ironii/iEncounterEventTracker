@@ -11,6 +11,8 @@ bnet:
 --General------------------
 ---------------------------
 
+If you want to test the addon without doing raids, copy the strings from testData under WTF/Account/<Account>/SavedVariables/iEncounterEventTracker.lua, there are 2 tables, iEETConfig and iEET_Data, copy the strings under iEET_Data
+if you want to save fights for later, you can also copy iEET_Data strings and just paste them in later when you want to look trough them
 red line on the top of the main window indicates that you have filters active that doens't show up in the main window (check filtering options)
 
 use mousewheel to scroll down/up
