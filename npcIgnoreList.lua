@@ -2,18 +2,22 @@ local _, iEET = ...
 iEET.npcIgnoreList = {
 --Death Knight
 	[24207] = true, 	--Army of the Dead
+	[26125] = true,		--Ghoul
 	[27829] = true,		--Ebon Gargoyle
 	[27893] = true, 	--Rune Weapon
 	[82521] = true,		--Defile
 	[97055] = true,		--Shambling Horror
+	[99541] = true,		--Risen Skulker
 	[99773] = true,		--Bloodworm
 	[100876] = true,	--Val'kyr Battlemaiden
+	[106848] = true,	--Transformed abomination
 
 --Druid
 	[1964] = true,		--Treant
 	[47649] = true, 	--Wild Mushroom
 	[54983] = true,		--Treant
 	[94852] = true, 	--Boomkin 4pc	
+	[103822] = true,	--Treant
 
 --General
 	[35642] = true, 	--Jeeves
@@ -23,11 +27,13 @@ iEET.npcIgnoreList = {
 --Hunter
 	[46647] = true,		--Flare
 	[62005] = true, 	--Beast(?)
+	[62856] = true,		--Dire Beast
 	[86187] = true, 	--Beast
 	[90521] = true,		--Binding Shot
 	[94072] = true,		--Dark Minion
 	[95021] = true, 	--Felboar (hunter 4pc?)
 	[95582] = true,		--Beast
+	[103268] = true,	--Dire Beast
 	[104493] = true,	--Spitting Cobra
 
 --Mage
@@ -50,6 +56,7 @@ iEET.npcIgnoreList = {
 	[73967] = true,		--Xuen
 	[78065] = true,		--Jade Serpent Statue
 	[99625] = true,		--Wind Spirit
+	[100868] = true,	--Chi'ji
 
 --Priest
 	[19668] = true, 	--Shadowfiend
@@ -73,6 +80,7 @@ iEET.npcIgnoreList = {
 	[53006] = true,		--Spirit Link Totem
 	[59712]	= true, 	--Stone Bulwark Totem
 	[59764] = true,		--Healing Tide Totem
+	[60561] = true,		--Earthgrab Totem
 	[61029] = true,		--Primal Fire Elemental
 	[61056] = true,		--Primal Earth Elemental
 	[61245] = true,		--Capacitor Totem
@@ -87,11 +95,19 @@ iEET.npcIgnoreList = {
 	[100099] = true,	--Voodoo Totem
 	[100820] = true,	--Spirit Wolf
 	[100943] = true, 	--Earthen Shield Totem
+	[102392] = true,	--Resonance Totem
 	[104818] = true,	--Ancestral Protection Totem
 	[105422] = true,	--Tidal Totem
+	[106317] = true,	--Storm Totem
+	[106319] = true,	--Ember Totem
+	[106321] = true,	--Tailwind Totem
 
 --Warlock
 	[416] = true,		--Imp
+	[417] = true,		--Felhunter
+	[1860] = true,		--Voidwalker
+	[1863] = true,		--Succubus
+	[4277] = true,		--Eye of Killrogg
 	[11859] = true, 	--Doomguard
 	[17252] = true,		--Felguard
 	[78158] = true,		--Doomguard
@@ -100,6 +116,7 @@ iEET.npcIgnoreList = {
 	[59000] = true, 	--Terrorguard
 	[59262] = true,		--Demonic Gateway
 	[59271] = true,		--Demonic Gateway
+	[78217] = true,		--Infernal
 	[82927] = true,		--Inner Demon
 	[98035] = true, 	--Dreadstalker
 	[95468] = true, 	--T18 Demo (Illidari Satyr)
