@@ -21,6 +21,7 @@ iEET.dispels = {
 	
 	--Paladin
 	[4987] = 1, --Cleanse
+	[213644] = 1, --Cleanse Toxins
 	
 	--Priest
 	[527] = 1, --Purify
