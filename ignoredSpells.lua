@@ -6,9 +6,10 @@ iEET.ignoredSpells = {
 	[145629] = true,	--Anti-Magic Zone
 	[155166] = true, 	--Breath of Sindragosa	
 --Hunter
+	[109075] = true,	--Binding Shot Visual
 	[117526] = true, 	--Binding Shot
 	[117553] = true,	--Binding Shot	
-	[109075] = true,	--Binding Shot Visual
+	[132951] = true,	--Flare
 --Priest
 	[81782] = true, 	--Power Word: Barrier
 --Shaman
