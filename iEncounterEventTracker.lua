@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.522
+iEET.version = 1.523
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -72,6 +72,7 @@ local addon = CreateFrame('frame')
 addon:RegisterEvent('ENCOUNTER_START')
 addon:RegisterEvent('ENCOUNTER_END')
 addon:RegisterEvent('ADDON_LOADED')
+addon:RegisterEvent('PLAYER_LOGOUT')
 addon:SetScript('OnEvent', function(self, event, ...)
 	self[event](self, ...)
 end)
@@ -404,6 +405,11 @@ function addon:ADDON_LOADED(addonName)
 		iEETConfig.version = iEET.version
 		--end
 		addon:UnregisterEvent('ADDON_LOADED')
+	end
+end
+function addon:PLAYER_LOGOUT()
+	if iEET.forceRecording then
+		iEET:Force()
 	end
 end
 function addon:ENCOUNTER_START(encounterID, encounterName)
