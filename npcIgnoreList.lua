@@ -1,6 +1,6 @@
 local _, iEET = ...
 iEET.npcIgnoreList = {
---Death Knight
+--Death Knight Unholy[x], Blood[x], Frost[x]
 	[24207] = true, 	--Army of the Dead
 	[26125] = true,		--Ghoul
 	[27829] = true,		--Ebon Gargoyle
@@ -24,8 +24,7 @@ iEET.npcIgnoreList = {
 	[77789] = true,		--Blingtron 5000
 	[92993] = true, 	--Burning Blade Banner
 
---Hunter
-	[46647] = true,		--Flare
+--Hunter BM[x], MM[x], Survi[x]
 	[62005] = true, 	--Beast(?)
 	[62856] = true,		--Dire Beast
 	[86187] = true, 	--Beast
@@ -36,7 +35,7 @@ iEET.npcIgnoreList = {
 	[103268] = true,	--Dire Beast
 	[104493] = true,	--Spitting Cobra
 
---Mage
+--Mage Frost[x], Fire[x], Arcane[x]
 	[31216] = true, 	--Mirror Image
 	[47243] = true,		--Mirror Image
 	[47244] = true,		--Mirror Image
@@ -102,7 +101,7 @@ iEET.npcIgnoreList = {
 	[106319] = true,	--Ember Totem
 	[106321] = true,	--Tailwind Totem
 
---Warlock
+--Warlock Affliction[x], Demo[x], Destro[x]
 	[416] = true,		--Imp
 	[417] = true,		--Felhunter
 	[1860] = true,		--Voidwalker
@@ -118,9 +117,10 @@ iEET.npcIgnoreList = {
 	[59271] = true,		--Demonic Gateway
 	[78217] = true,		--Infernal
 	[82927] = true,		--Inner Demon
-	[98035] = true, 	--Dreadstalker
+	[94584] = true,		--Chaos Portal (Dimensional Rift, Destruction artifact)
 	[95468] = true, 	--T18 Demo (Illidari Satyr)
 	[95469] = true,		--T18 Demo (Visicous Hellhound)
+	[98035] = true, 	--Dreadstalker
 	[99737] = true,		--Wild Imp
 	[103673] = true, 	--Beholder
 }
