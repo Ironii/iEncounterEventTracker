@@ -394,7 +394,6 @@ function iEET:LoadDefaults()
 			end
 		end
 	end
-	print('iEET: loaded default settings.')
 end
 function addon:ADDON_LOADED(addonName)
 	if addonName == 'iEncounterEventTracker' then
