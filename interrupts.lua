@@ -48,5 +48,5 @@ iEET.interrupts = {
 	[171140] = true, --Shadow Lock (Doomguard, Grimoire of Supremacy)
 	
 	--Warrior
-	[6552] = true, --Pummel	
+	[6552] = true, --Pummel
 }
