@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.530
+iEET.version = 1.531
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -465,10 +465,12 @@ function addon:UNIT_SPELLCAST_SUCCEEDED(unitID, spellName,_,arg4,spellID)
 			php = math.floor(chp/maxhp*1000+0.5)/10
 		end
 		--3-2084-1520-9097-202968-0028916A53
+		--[[
 		if isAlpha then
 			local id = select(5, strsplit('-', arg4))
 			spellID = tonumber(id)
 		end
+		--]]
 		if not iEET.npcIgnoreList[tonumber(npcID)] then
 			if not iEET.ignoredSpells[spellID] then
 				table.insert(iEET.data, {
