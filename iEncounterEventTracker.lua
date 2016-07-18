@@ -17,7 +17,7 @@ compare
 --]]
 local _, iEET = ...
 iEET.data = {}
-local isAlpha = select(4, GetBuildInfo()) >= 70000 and true or false
+--local isAlpha = select(4, GetBuildInfo()) >= 70000 and true or false
 iEET.ignoring = {} -- so ignore list resets on relog, don't want to save it, atleast not yet
 --iEET.font = isAlpha and 'Fonts\\ARIALN.TTF' or 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
 iEET.font = 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
