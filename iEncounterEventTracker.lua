@@ -1717,6 +1717,18 @@ function iEET:updateOptionsMenu()
 			iEET:updateOptionsMenu()
 			EasyMenu(iEET.optionsMenu, iEET.optionsMenuFrame, iEET.optionsList, 0 , 0, 'MENU');
 		end})
+		
+	table.insert(iEET.optionsMenu, {text = 'Use automatic saving only inside raid instances', isNotRadio = true, checked = iEETConfig.onlyRaids, keepShownOnClick = false, func = function()
+			if iEETConfig.onlyRaids then
+				iEETConfig.onlyRaids = false
+				iEET:print('Always using automatic saving.')
+			else
+				iEETConfig.onlyRaids = true
+				iEET:print('Use automatic saving only inside raid instances.')
+			end
+			iEET:updateOptionsMenu()
+			EasyMenu(iEET.optionsMenu, iEET.optionsMenuFrame, iEET.optionsList, 0 , 0, 'MENU');
+		end})
 	table.insert(iEET.optionsMenu, {text = 'Class coloring', isNotRadio = true,	checked = iEETConfig.classColors, keepShownOnClick = true, func = function()
 			if iEETConfig.classColors then
 				iEETConfig.classColors = false
@@ -3046,7 +3058,14 @@ function iEET:StopRecording(force)
 		addon:UnregisterEvent('PLAYER_REGEN_ENABLED')
 	end
 	if iEETConfig.autoSave then
-		iEET:ExportData(true)
+		if iEETConfig.onlyRaids then
+			local _, instanceType = IsInInstance()
+			if instanceType and instanceType == 'raid' then
+				iEET:ExportData(true)
+			end
+		else
+			iEET:ExportData(true)
+		end
 	end
 end
 function iEET:Force(start, name)
