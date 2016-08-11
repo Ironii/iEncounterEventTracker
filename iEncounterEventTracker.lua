@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.531
+iEET.version = 1.532
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -107,7 +107,7 @@ iEET.events = {
 		['SPELL_PERIODIC_HEAL'] = 24,
 
 		['UNIT_DIED'] = 25,
-
+		
 		['UNIT_SPELLCAST_SUCCEEDED'] = 26,
 
 		['ENCOUNTER_START'] = 27,
@@ -128,6 +128,9 @@ iEET.events = {
 		
 		['MANUAL_LOGGING_START'] = 37, -- Fake event for manual logging
 		['MANUAL_LOGGING_END'] = 38, -- Fake event for manual logging
+		
+		['UNIT_SPELLCAST_START'] = 39,
+		['UNIT_SPELLCAST_CHANNEL_START'] = 40,
 	},
 	['fromID'] = {
 		[1] = {
@@ -282,6 +285,14 @@ iEET.events = {
 			l = 'MANUAL_LOGGING_END',
 			s = 'MANUAL_END',
 		},
+		[39] = {
+			l = 'UNIT_SPELLCAST_START',
+			s = 'USC_START',
+		},
+		[40] = {
+			l = 'UNIT_SPELLCAST_CHANNEL_START',
+			s = 'USC_C_START',
+		},
 	},
 }
 iEET.ignoreList = {  -- Ignore list for 'Ignore Spell's menu, use event ignore to hide these if you want (they are fake spells)
@@ -344,6 +355,9 @@ function iEET:LoadDefaults()
 			['UNIT_DIED'] = true,
 
 			['UNIT_SPELLCAST_SUCCEEDED'] = true,
+			['UNIT_SPELLCAST_START'] = true,
+			['UNIT_SPELLCAST_CHANNEL_START'] = true,
+			
 			['MONSTER_EMOTE'] = true,
 			['MONSTER_SAY'] = true,
 			['MONSTER_YELL'] = true,
@@ -475,6 +489,80 @@ function addon:UNIT_SPELLCAST_SUCCEEDED(unitID, spellName,_,arg4,spellID)
 			if not iEET.ignoredSpells[spellID] then
 				table.insert(iEET.data, {
 					['e'] = 26,
+					['t'] = GetTime(),
+					['sG'] = sourceGUID or 'NONE',
+					['cN'] = sourceName or 'NONE',
+					['tN'] = unitID or nil,
+					['sN'] = spellName or nil,
+					['sI'] = spellID or nil,
+					['hp'] = php or nil,
+				});
+			end
+		end
+	end
+end
+function addon:UNIT_SPELLCAST_START(unitID, spellName,_,arg4,spellID)
+	local sourceGUID = UnitGUID(unitID)
+	local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
+	if sourceGUID then -- fix for arena id's
+		unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
+	end
+	if (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and iEET.approvedSpells[spellID]) or not sourceGUID then
+		local sourceName = UnitName(unitID)
+		local chp = UnitHealth(unitID)
+		local maxhp = UnitHealthMax(unitID)
+		local php = nil
+		if chp and maxhp then
+			php = math.floor(chp/maxhp*1000+0.5)/10
+		end
+		--3-2084-1520-9097-202968-0028916A53
+		--[[
+		if isAlpha then
+			local id = select(5, strsplit('-', arg4))
+			spellID = tonumber(id)
+		end
+		--]]
+		if not iEET.npcIgnoreList[tonumber(npcID)] then
+			if not iEET.ignoredSpells[spellID] then
+				table.insert(iEET.data, {
+					['e'] = 39,
+					['t'] = GetTime(),
+					['sG'] = sourceGUID or 'NONE',
+					['cN'] = sourceName or 'NONE',
+					['tN'] = unitID or nil,
+					['sN'] = spellName or nil,
+					['sI'] = spellID or nil,
+					['hp'] = php or nil,
+				});
+			end
+		end
+	end
+end
+function addon:UNIT_SPELLCAST_CHANNEL_START(unitID, spellName,_,arg4,spellID)
+	local sourceGUID = UnitGUID(unitID)
+	local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
+	if sourceGUID then -- fix for arena id's
+		unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
+	end
+	if (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and iEET.approvedSpells[spellID]) or not sourceGUID then
+		local sourceName = UnitName(unitID)
+		local chp = UnitHealth(unitID)
+		local maxhp = UnitHealthMax(unitID)
+		local php = nil
+		if chp and maxhp then
+			php = math.floor(chp/maxhp*1000+0.5)/10
+		end
+		--3-2084-1520-9097-202968-0028916A53
+		--[[
+		if isAlpha then
+			local id = select(5, strsplit('-', arg4))
+			spellID = tonumber(id)
+		end
+		--]]
+		if not iEET.npcIgnoreList[tonumber(npcID)] then
+			if not iEET.ignoredSpells[spellID] then
+				table.insert(iEET.data, {
+					['e'] = 40,
 					['t'] = GetTime(),
 					['sG'] = sourceGUID or 'NONE',
 					['cN'] = sourceName or 'NONE',
@@ -888,7 +976,7 @@ function iEET:ShouldShow(eventData,e_time, msg) -- TESTING, msg is a temporary f
 	(iEET.dispels[eventData.sI] and iEET.ignoring.Dispellers) or --spellid = dispel and dispellers are ignored
 	(iEET.ignoring[eventData.cN]) then
 		shouldShow = false
-	elseif eventData.e == 26 then -- UNIT_SPELLCAST_SUCCEEDED
+	elseif eventData.e == 26 or eventData.e == 39 or eventData.e == 40 then -- UNIT_SPELLCAST_SUCCEEDED
 		local targetName = eventData.tN
 		if string.find(eventData.tN, 'nameplate') then
 			targetName = 'nameplates'
@@ -1368,25 +1456,23 @@ function iEET:loopData(msg)
 		if v.e == 27 or v.e == 37 then -- ENCOUNTER_START
 			starttime = v.t
 		end
-		if v.cN and not iEET.collector.encounterNPCs[v.cN] and v.e ~= 27 and v.e ~= 28 then -- Collect npc names, 27 = ENCOUNTER_START, 28 = ENCOUNTER_END
-			if v.e == 26 then -- UNIT_SPELLCAST_SUCCEEDED
-				if string.find(v.tN, 'nameplate') then -- could be safe to assume that there will be atleast one nameplate unitid
-					if not iEET.collector.encounterNPCs.nameplates then
-						iEET.collector.encounterNPCs.nameplates = true
-					end
-				elseif v.tN and not iEET.collector.encounterNPCs[v.tN] then
-					iEET.collector.encounterNPCs[v.tN] = true
+		if v.e == 26 or v.e == 39 or v.e == 40 then -- UNIT_SPELLCAST_SUCCEEDED
+			if string.find(v.tN, 'nameplate') then -- could be safe to assume that there will be atleast one nameplate unitid
+				if not iEET.collector.encounterNPCs.nameplates then
+					iEET.collector.encounterNPCs.nameplates = true
 				end
-			elseif v.sI then
-				if iEET.interrupts[v.sI] then
-					if not iEET.collector.encounterNPCs.Interrupters then
-						iEET.collector.encounterNPCs.Interrupters = true
-					end
-				elseif iEET.dispels[v.sI] then
-					iEET.collector.encounterNPCs.Dispellers = true
-				elseif not iEET.ignoreList[v.sI] then --ignore fake spells
-					iEET.collector.encounterNPCs[v.cN] = true
+			elseif v.tN and not iEET.collector.encounterNPCs[v.tN] then
+				iEET.collector.encounterNPCs[v.tN] = true
+			end
+		elseif v.cN and v.sI and not iEET.collector.encounterNPCs[v.cN] and v.e ~= 27 and v.e ~= 28 then -- Collect npc names, 27 = ENCOUNTER_START, 28 = ENCOUNTER_END
+			if iEET.interrupts[v.sI] then
+				if not iEET.collector.encounterNPCs.Interrupters then
+					iEET.collector.encounterNPCs.Interrupters = true
 				end
+			elseif iEET.dispels[v.sI] then
+				iEET.collector.encounterNPCs.Dispellers = true
+			elseif not iEET.ignoreList[v.sI] then --ignore fake spells
+				iEET.collector.encounterNPCs[v.cN] = true
 			end
 		end
 		if v.sI and v.sN and not iEET.collector.encounterSpells[v.sI] and v.e ~= 27 and v.e ~= 28 then -- Collect spells, 27 = ENCOUNTER_START, 28 = ENCOUNTER_END
@@ -2602,7 +2688,10 @@ Event names/values:
 35/PLAYER_REGEN_DISABLED/COMBAT_START
 36/PLAYER_REGEN_ENABLED/COMBAT_END
 37/MANUAL_LOGGING_START/MANUAL_START
-38/MANUAL_LOGGING_END/MANUAL_END]]
+38/MANUAL_LOGGING_END/MANUAL_END
+39/UNIT_SPELLCAST_START/USC_START
+40/UNIT_SPELLCAST_CHANNEL_START/USC_C_START]]
+
 			iEET.infoFrame.text:SetText(infoText)
 			iEET.infoFrame.text:Show()
 			iEET.infoFrame:SetSize(iEET.infoFrame.text:GetStringWidth()+4,iEET.infoFrame.text:GetStringHeight()+4)
@@ -3039,6 +3128,8 @@ function iEET:StartRecording(force)
 	addon:RegisterEvent('UNIT_TARGET')
 	addon:RegisterEvent('INSTANCE_ENCOUNTER_ENGAGE_UNIT')
 	addon:RegisterEvent('UNIT_POWER')
+	addon:RegisterEvent('UNIT_SPELLCAST_START')
+	addon:RegisterEvent('UNIT_SPELLCAST_CHANNEL_START')
 	if force then
 		addon:RegisterEvent('PLAYER_REGEN_DISABLED')
 		addon:RegisterEvent('PLAYER_REGEN_ENABLED')
@@ -3053,6 +3144,8 @@ function iEET:StopRecording(force)
 	addon:UnregisterEvent('UNIT_TARGET')
 	addon:UnregisterEvent('INSTANCE_ENCOUNTER_ENGAGE_UNIT')
 	addon:UnregisterEvent('UNIT_POWER')
+	addon:UnregisterEvent('UNIT_SPELLCAST_START')
+	addon:UnregisterEvent('UNIT_SPELLCAST_CHANNEL_START')
 	if force then
 		addon:UnregisterEvent('PLAYER_REGEN_DISABLED')
 		addon:UnregisterEvent('PLAYER_REGEN_ENABLED')
@@ -3195,6 +3288,8 @@ SlashCmdList["IEET"] = function(realMsg)
 		else
 			iEET:Force(true, name)
 		end
+	elseif string.match(msg, 'version') then
+		iEET:print(iEETConfig.version)
 	else
 		iEET:print(string.format('Command "%s" not found, read the readme.txt.', msg))
 	end
