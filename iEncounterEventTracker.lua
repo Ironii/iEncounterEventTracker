@@ -24,7 +24,6 @@ iEET.font = 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
 --iEET.fontsize = isAlpha and 11 or 9
 iEET.fontsize = 9
 iEET.spacing = 1
-iEET.scale = 1
 iEET.justifyH = 'LEFT'
 iEET.backdrop = {
 	bgFile = 'Interface\\Buttons\\WHITE8x8',
@@ -2056,7 +2055,6 @@ function iEET:CreateMainFrame()
 	iEET.frame = CreateFrame("Frame", "iEETFrame", UIParent)
 	iEET.frame:SetSize(598,800)
 	iEET.frame:SetPoint('CENTER', UIParent, 'CENTER', 0,0)
-	iEET.scale = (GetScreenHeight()/GetScreenWidth()/iEET.frame:GetEffectiveScale())
 	iEET.frame:SetScript("OnMouseDown", function(self,button)
 		iEET.frame:ClearAllPoints()
 		iEET.frame:StartMoving()
@@ -2417,8 +2415,6 @@ function iEET:CreateMainFrame()
 	iEET.encounterAbilitiesText:Show()
 	iEET.frame:EnableMouse(true)
 	iEET.frame:SetMovable(true)
-	--local scale = (0.63999998569489/iEET.frame:GetEffectiveScale())
-	iEET.frame:SetScale(iEET.scale)
 	iEET.editbox = CreateFrame('EditBox', 'iEETEditBox', iEET.frame)
 	iEET.editbox:SetBackdrop({
 			bgFile = "Interface\\Buttons\\WHITE8x8",
@@ -2554,8 +2550,6 @@ function iEET:CreateOptionsFrame()
 	iEET.optionsFrame:SetFrameLevel(1)
 	iEET.optionsFrame:EnableMouse(true)
 	iEET.optionsFrame:SetMovable(true)
-	--local scale = (0.63999998569489/iEET.optionsFrame:GetEffectiveScale())
-	iEET.optionsFrame:SetScale(iEET.scale)
 	-- Options title frame
 	iEET.optionsFrameTop = CreateFrame('FRAME', nil, iEET.optionsFrame)
 	iEET.optionsFrameTop:SetSize(650, 25)
@@ -2608,10 +2602,6 @@ function iEET:CreateOptionsFrame()
 			iEET.infoFrame:Show()
 			iEET.infoFrame:SetFrameStrata('DIALOG')
 			iEET.infoFrame:SetFrameLevel(1)
-			if not iEET.frame then
-				iEET.scale = (GetScreenHeight()/GetScreenWidth()/iEET.infoFrame:GetEffectiveScale())
-			end
-			iEET.infoFrame:SetScale(iEET.scale)
 			iEET.infoFrame.text = iEET.infoFrame:CreateFontString()
 			iEET.infoFrame.text:SetFont(iEET.font, 11)
 			iEET.infoFrame.text:SetPoint('TOPLEFT', iEET.infoFrame, 'TOPLEFT', 2,-2)
