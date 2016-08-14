@@ -3229,6 +3229,8 @@ SlashCmdList["IEET"] = function(realMsg)
 		else
 			iEET:print('No data to import.')
 		end
+	elseif string.match(msg, 'export') and not InCombatLockdown() then
+		iEET:ExportData()
 	elseif string.match(msg, 'clear') then
 		iEET_Data = nil
 		iEET_Data = {}
