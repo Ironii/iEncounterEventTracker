@@ -36,7 +36,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.540
+iEET.version = 1.541
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -77,6 +77,9 @@ addon:SetScript('OnEvent', function(self, event, ...)
 end)
 iEET.IEEUnits = {}
 iEET.unitPowerUnits = {}
+iEET.fakeSpells = {
+	
+}
 iEET.events = {
 	['toID'] = {
 		['SPELL_CAST_START'] = 1,
@@ -130,6 +133,9 @@ iEET.events = {
 		
 		['UNIT_SPELLCAST_START'] = 39,
 		['UNIT_SPELLCAST_CHANNEL_START'] = 40,
+		
+		['UNIT_SPELLCAST_INTERRUPTIBLE'] = 41,
+		['UNIT_SPELLCAST_NOT_INTERRUPTIBLE'] = 42,
 	},
 	['fromID'] = {
 		[1] = {
@@ -292,6 +298,14 @@ iEET.events = {
 			l = 'UNIT_SPELLCAST_CHANNEL_START',
 			s = 'USC_C_START',
 		},
+		[41] = {
+			l = 'UNIT_SPELLCAST_INTERRUPTIBLE',
+			s = 'INTERRUPTIBLE',
+		},
+		[42] = {
+			l = 'UNIT_SPELLCAST_NOT_INTERRUPTIBLE',
+			s = 'NOT_INTERRUPTIBLE',
+		},
 	},
 }
 iEET.ignoreList = {  -- Ignore list for 'Ignore Spell's menu, use event ignore to hide these if you want (they are fake spells)
@@ -356,6 +370,8 @@ function iEET:LoadDefaults()
 			['UNIT_SPELLCAST_SUCCEEDED'] = true,
 			['UNIT_SPELLCAST_START'] = true,
 			['UNIT_SPELLCAST_CHANNEL_START'] = true,
+			['UNIT_SPELLCAST_INTERRUPTIBLE'] = true,
+			['UNIT_SPELLCAST_NOT_INTERRUPTIBLE'] = true,
 			
 			['MONSTER_EMOTE'] = true,
 			['MONSTER_SAY'] = true,
@@ -426,6 +442,7 @@ function addon:PLAYER_LOGOUT()
 end
 function addon:ENCOUNTER_START(encounterID, encounterName)
 	if not iEET.forceRecording then
+		local mapID = select(8, GetInstanceInfo())
 		iEET:StartRecording()
 		iEET.encounterInfoData = { --TODO
 			['s'] = GetTime(),
@@ -435,6 +452,7 @@ function addon:ENCOUNTER_START(encounterID, encounterName)
 			['d']= 0,
 			['rS'] = 0,
 			['k'] = 0,
+			['zI'] = mapID,
 			['v'] = iEET.version,
 		}
 	end
@@ -449,7 +467,8 @@ function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize,
 			iEET.encounterInfoData.k = kill
 			iEET.encounterInfoData.rS = raidSize
 		else
-				iEET.encounterInfoData = {
+			local mapID = select(8, GetInstanceInfo())
+			iEET.encounterInfoData = {
 				['s'] = GetTime(),
 				['eN'] = encounterName,
 				['pT'] = date('%y.%m.%d %H:%M'), -- y.m.d instead of d.m.y for easier sorting
@@ -457,6 +476,7 @@ function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize,
 				['d']= difficultyID,
 				['rS'] = raidSize,
 				['k'] = kill,
+				['zI'] = mapID,
 				['v'] = iEET.version,
 			}
 		end
@@ -568,6 +588,68 @@ function addon:UNIT_SPELLCAST_CHANNEL_START(unitID, spellName,_,arg4,spellID)
 					['tN'] = unitID or nil,
 					['sN'] = spellName or nil,
 					['sI'] = spellID or nil,
+					['hp'] = php or nil,
+				});
+			end
+		end
+	end
+end
+function addon:UNIT_SPELLCAST_INTERRUPTIBLE(unitID)
+	local sourceGUID = UnitGUID(unitID)
+	local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
+	if sourceGUID then -- fix for arena id's
+		unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
+	end
+	if (unitType == 'Creature') or (unitType == 'Vehicle') or not sourceGUID then
+		local sourceName = UnitName(unitID)
+		local chp = UnitHealth(unitID)
+		local maxhp = UnitHealthMax(unitID)
+		local php = nil
+		if chp and maxhp then
+			php = math.floor(chp/maxhp*1000+0.5)/10
+		end
+		if not iEET.npcIgnoreList[tonumber(npcID)] then
+			if not iEET.ignoredSpells[spellID] then
+				local spellName = GetSpellInfo(140021)
+				table.insert(iEET.data, {
+					['e'] = 41,
+					['t'] = GetTime(),
+					['sG'] = sourceGUID or 'NONE',
+					['cN'] = sourceName or 'NONE',
+					['tN'] = unitID or nil,
+					['sN'] = '-'..spellName,
+					['sI'] = 140021,
+					['hp'] = php or nil,
+				});
+			end
+		end
+	end
+end
+function addon:UNIT_SPELLCAST_NOT_INTERRUPTIBLE(unitID)
+	local sourceGUID = UnitGUID(unitID)
+	local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
+	if sourceGUID then -- fix for arena id's
+		unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
+	end
+	if (unitType == 'Creature') or (unitType == 'Vehicle') or not sourceGUID then
+		local sourceName = UnitName(unitID)
+		local chp = UnitHealth(unitID)
+		local maxhp = UnitHealthMax(unitID)
+		local php = nil
+		if chp and maxhp then
+			php = math.floor(chp/maxhp*1000+0.5)/10
+		end
+		if not iEET.npcIgnoreList[tonumber(npcID)] then
+			local spellName = GetSpellInfo(140021)
+			if not iEET.ignoredSpells[spellID] then
+				table.insert(iEET.data, {
+					['e'] = 42,
+					['t'] = GetTime(),
+					['sG'] = sourceGUID or 'NONE',
+					['cN'] = sourceName or 'NONE',
+					['tN'] = unitID or nil,
+					['sN'] = '-'..spellName,
+					['sI'] = 140021,
 					['hp'] = php or nil,
 				});
 			end
@@ -1455,7 +1537,7 @@ function iEET:loopData(msg)
 		if v.e == 27 or v.e == 37 then -- ENCOUNTER_START
 			starttime = v.t
 		end
-		if v.e == 26 or v.e == 39 or v.e == 40 then -- UNIT_SPELLCAST_SUCCEEDED
+		if v.e == 26 or v.e == 39 or v.e == 40 or v.e == 41 or v.e == 42 then -- UNIT_SPELLCAST_SUCCEEDED
 			if string.find(v.tN, 'nameplate') then -- could be safe to assume that there will be atleast one nameplate unitid
 				if not iEET.collector.encounterNPCs.nameplates then
 					iEET.collector.encounterNPCs.nameplates = true
@@ -1985,6 +2067,7 @@ function iEET:updateEncounterListMenu()
 		iEET.encounterListMenu = {}
 	if iEET_Data then
 		local encountersTempTable = {}
+		local zonesTemp = {}
 		for k,_ in pairs(iEET_Data) do -- Get encounters
 			if string.find(k, 'encounterName=') then
 				iEET:print('found old reports, please use "/ieet convert" to continue')
@@ -1992,7 +2075,7 @@ function iEET:updateEncounterListMenu()
 			end
 			local temp = {}
 			for eK,eV in string.gmatch(k, '{(.-)=(.-)}') do
-				if eK == 'd' or eK == 'rS' or eK == 's' or eK == 'k' or eK == 'v' then
+				if eK == 'd' or eK == 'rS' or eK == 's' or eK == 'k' or eK == 'v' or eK == 'zI' then
 					if tonumber(eV) then
 						eV = tonumber(eV)
 					end
@@ -2000,6 +2083,18 @@ function iEET:updateEncounterListMenu()
 				temp[eK] = eV
 			end
 			temp.dataKey = k
+			if temp.zI then
+				local zone = GetRealZoneText(temp.zI)
+				temp.zoneName = zone
+				if not zonesTemp[zone] then
+					zonesTemp[zone] = {text = zone, hasArrow = true, notCheckable = true, menuList = {}}
+				end
+			else
+				temp.zoneName = UNKNOWN
+				if not zonesTemp[UNKNOWN] then
+					zonesTemp[UNKNOWN] = {text = UNKNOWN, hasArrow = true, notCheckable = true, menuList = {}}
+				end
+			end
 			if not encountersTempTable[temp.eN] then
 				encountersTempTable[temp.eN] = {}
 			end
@@ -2010,18 +2105,18 @@ function iEET:updateEncounterListMenu()
 		end -- Sorted by encounter -> Sort by ids inside
 		-- temp{} -> encounter{} -> difficulty{} -> fight{}
 
-
-		for encounterName,_ in spairs(encountersTempTable) do -- Get alphabetically sorted encounters
+		for encounterName in spairs(encountersTempTable) do -- Get alphabetically sorted encounters
 			--Looping bosses
-			--print(encounterName) -- Debug
 			local t = {text = encounterName, hasArrow = true, notCheckable = true, menuList = {}}
 			local t2 = {}
+			local zone
 			for difficultyID,_ in spairs(encountersTempTable[encounterName]) do
 				-- Looping difficulties
-				--print('difficultyID', difficultyID) -- Debug
 				t2 = {text = GetDifficultyInfo(difficultyID), hasArrow = true, notCheckable = true, menuList = {}}
-				--for k,v in pairs(encountersTempTable[encounterName][difficultyID]) do
 				for k,v in spairs(encountersTempTable[encounterName][difficultyID], function(t,a,b) return t[b].pT < t[a].pT end) do
+					if not zone or (zone == UNKNOWN and v.zoneName ~= zone) then
+						zone = v.zoneName
+					end
 					local fightEntry = {
 						text = (v.k == 1 and '+ ' or '- ') .. v.fT .. ' (' .. v.pT .. ')',
 						notCheckable = true,
@@ -2046,7 +2141,11 @@ function iEET:updateEncounterListMenu()
 				end
 				table.insert(t.menuList, t2)
 			end
-			table.insert(iEET.encounterListMenu, t)
+			table.insert(zonesTemp[zone].menuList, t)
+			--table.insert(iEET.encounterListMenu, t)
+		end
+		for zoneName,v in spairs(zonesTemp) do
+			table.insert(iEET.encounterListMenu, v)
 		end
 	end
 	table.insert(iEET.encounterListMenu, { text = 'Exit', notCheckable = true, func = function () CloseDropDownMenus() end})
@@ -3013,7 +3112,7 @@ function iEET:ImportData(dataKey)
 	iEET.data = {}
 	iEET.encounterInfoData = {}
 	for eK,eV in string.gmatch(dataKey, '{(.-)=(.-)}') do
-		if eK == 'd' or eK == 'rS' or eK == 's' or eK == 'k' or eK == 'v'  then
+		if eK == 'd' or eK == 'rS' or eK == 's' or eK == 'k' or eK == 'v' or eK == 'zI'  then
 			if tonumber(eV) then
 				eV = tonumber(eV)
 			end
@@ -3120,6 +3219,8 @@ function iEET:StartRecording(force)
 	addon:RegisterEvent('UNIT_POWER')
 	addon:RegisterEvent('UNIT_SPELLCAST_START')
 	addon:RegisterEvent('UNIT_SPELLCAST_CHANNEL_START')
+	addon:RegisterEvent('UNIT_SPELLCAST_INTERRUPTIBLE')
+	addon:RegisterEvent('UNIT_SPELLCAST_NOT_INTERRUPTIBLE')
 	if force then
 		addon:RegisterEvent('PLAYER_REGEN_DISABLED')
 		addon:RegisterEvent('PLAYER_REGEN_ENABLED')
@@ -3136,6 +3237,8 @@ function iEET:StopRecording(force)
 	addon:UnregisterEvent('UNIT_POWER')
 	addon:UnregisterEvent('UNIT_SPELLCAST_START')
 	addon:UnregisterEvent('UNIT_SPELLCAST_CHANNEL_START')
+	addon:UnregisterEvent('UNIT_SPELLCAST_INTERRUPTIBLE')
+	addon:UnregisterEvent('UNIT_SPELLCAST_NOT_INTERRUPTIBLE')
 	if force then
 		addon:UnregisterEvent('PLAYER_REGEN_DISABLED')
 		addon:UnregisterEvent('PLAYER_REGEN_ENABLED')
