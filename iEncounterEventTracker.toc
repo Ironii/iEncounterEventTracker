@@ -4,7 +4,7 @@
 ## Author: Ironi
 ## Version: 1.541
 ## DefaultState: enabled
-## SavedVariables: iEETConfig, iEET_Data
+## SavedVariables: iEETConfig, iEET_Data, iEET_ExportFromWTF
 
 iEncounterEventTracker.lua
 approvedSpells.lua

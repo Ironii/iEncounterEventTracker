@@ -8,6 +8,11 @@ iEET.ignoredSpells = {
 	[159678] = true,	--Mark of Shadowmoon
 	[159679] = true,	--Mark of Blackrock
 	[173322] = true,	--Mark of Bleeding Hollow
+	[216099] = true,	--Aw, Nuts!
+	[222278] = true,	--Grim Resolve
+	[222294] = true,	--Tranquil Presence
+	
+	
 
 --Death Knight
 	[145629] = true,	--Anti-Magic Zone
@@ -15,6 +20,7 @@ iEET.ignoredSpells = {
 
 --Hunter
 	[109075] = true,	--Binding Shot Visual
+	[117614] = true,	--Binding Shot Visual
 	[117526] = true,	--Binding Shot
 	[117553] = true,	--Binding Shot
 	[132951] = true,	--Flare

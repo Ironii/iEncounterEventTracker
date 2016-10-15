@@ -16,6 +16,7 @@ iEET.npcIgnoreList = {
 	[99773] = true,		--Bloodworm
 	[100876] = true,	--Val'kyr Battlemaiden
 	[106848] = true,	--Transformed abomination
+	[111748] = true,	--Shadowy Reflection (Blood Artifact)
 
 --Demon Hunter
 
@@ -36,6 +37,8 @@ iEET.npcIgnoreList = {
 	[95582] = true,		--Beast
 	[103268] = true,	--Dire Beast
 	[104493] = true,	--Spitting Cobra
+	[113344] = true,	--Beast
+	[113347] = true,	--Dire Beast
 
 --Mage
 	[31216] = true,		--Mirror Image

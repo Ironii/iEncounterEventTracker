@@ -440,7 +440,8 @@ function addon:PLAYER_LOGOUT()
 		iEET:Force()
 	end
 end
-function addon:ENCOUNTER_START(encounterID, encounterName)
+function addon:ENCOUNTER_START(encounterID, encounterName, ...)
+	print('iEET debug:', encounterID, encounterName, ...)
 	if not iEET.forceRecording then
 		local mapID = select(8, GetInstanceInfo())
 		iEET:StartRecording()
@@ -458,7 +459,8 @@ function addon:ENCOUNTER_START(encounterID, encounterName)
 	end
 	table.insert(iEET.data, {['e'] = 27, ['t'] = GetTime(), ['cN'] = encounterName, ['tN'] = encounterID})
 end
-function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize, kill)
+function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize, kill,...)
+	print('iEET debug:', EncounterID, encounterName, difficultyID, raidSize, kill,...)
 	table.insert(iEET.data, {['e'] = 28, ['t'] = GetTime() ,['cN'] = kill == 1 and 'Victory!' or 'Wipe'})
 	if not iEET.forceRecording then
 		if iEET.encounterInfoData then
@@ -789,6 +791,7 @@ function addon:COMBAT_LOG_EVENT_UNFILTERED(timestamp,event,hideCaster,sourceGUID
 						['sG'] = sourceGUID or 'NONE',
 						['cN'] = sourceName or 'NONE',
 						['tN'] = destName or nil,
+						['dG'] = destGUID or nil,
 						['sN'] = spellName or 'NONE',
 						['sI'] = spellID or 'NONE',
 						['eD']= eD,
@@ -1650,7 +1653,7 @@ function iEET:AddNewFiltering(msg)
 	if msg:match('^%d-%) ') then
 		msg = msg:gsub('^%d-%) ', '')
 	end
-	local lineID = iEET.optionsFrameFilterTexts:GetCurrentLine()+2
+	local lineID = iEET.optionsFrameFilterTexts:GetNumMessages()+1
 	iEET.optionsFrameFilterTexts:AddMessage(lineID .. ') ' .. msg)
 end
 function iEET:ClearFilteringArgs()
@@ -2440,6 +2443,51 @@ function iEET:CreateMainFrame()
 	end
 	--SPELL LISTING--
 	do
+		--Slider
+		iEET.mainFrameSlider = CreateFrame('Slider', nil, iEET.frame)
+		iEET.mainFrameSlider:SetSize(8,834)
+		iEET.mainFrameSlider:SetThumbTexture('Interface\\AddOns\\iTargetingFrames\\media\\thumb')
+		iEET.mainFrameSlider:SetBackdrop(bd)
+		iEET.mainFrameSlider:SetBackdropColor(0.1,0.1,0.1,0.9)
+		iEET.mainFrameSlider:SetBackdropBorderColor(0,0,0,1)
+		iEET.mainFrameSlider:SetPoint('LEFT', iEET.frame, 'RIGHT', 0,0)
+		iEET.mainFrameSlider:SetMinMaxValues(0, 500)
+		iEET.mainFrameSlider:SetValue(0)
+		iEET.mainFrameSlider:EnableMouseWheel(true)
+		iEET.mainFrameSlider:SetScript('OnValueChanged', function(self, value)
+			--f.scrollFrame:SetVerticalScroll(value)
+		end)
+		local scrollFunc = function(self, delta)
+			if delta == -1 then --down
+				local value = iEET.mainFrameSlider:GetValue()+20
+				local min, max = iEET.mainFrameSlider:GetMinMaxValues()
+				value = math.min(value, max)
+				iEET.mainFrameSlider:SetValue(value)
+			else -- up
+				local value = iEET.mainFrameSlider:GetValue()-20
+				value = max(0, value)
+				iEET.mainFrameSlider:SetValue(value)
+			end
+		end
+		iEET.mainFrameSlider:SetScript('OnMouseWheel', scrollFunc)
+		iEET.mainFrameSliderBG = CreateFrame('FRAME', nil , iEET.frame)
+		--iEET.contentAnchor8 = CreateFrame('FRAME', nil , iEET.frame)
+		iEET.mainFrameSliderBG:SetSize(8, 834)
+		iEET.mainFrameSliderBG:SetPoint('TOPLEFT', iEET.frame, 'TOPRIGHT', 0, 0)
+		iEET.mainFrameSliderBG:SetBackdrop({
+			bgFile = "Interface\\Buttons\\WHITE8x8",
+			edgeFile = "Interface\\Buttons\\WHITE8x8",
+			edgeSize = 1,
+			insets = {
+				left = -1,
+				right = -1,
+				top = -1,
+				bottom = -1,
+			},
+		})
+		iEET.mainFrameSliderBG:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
+		iEET.mainFrameSliderBG:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
+		
 		iEET.encounterAbilitiesAnchor = CreateFrame('FRAME', nil, iEET.frame)
 		iEET.encounterAbilitiesAnchor:SetSize(200, 400)
 		iEET.encounterAbilitiesAnchor:SetPoint('TOPLEFT', iEET.frame, 'TOPRIGHT', -1, 0)
@@ -3309,6 +3357,38 @@ function iEET:Force(start, name)
 		iEET:StopRecording(true)
 	end
 end
+function iEET:ExportFightsToWTF()
+	iEET_ExportFromWTF = {}
+	local fightCount = 0
+	for k,v in pairs(iEET_Data) do -- Get encounters
+		local temp = {}
+		for eK,eV in string.gmatch(k, '{(.-)=(.-)}') do
+			if eK == 'd' or eK == 'rS' or eK == 's' or eK == 'k' or eK == 'v' or eK == 'zI' then
+				if tonumber(eV) then
+					eV = tonumber(eV)
+				end
+			end
+			temp[eK] = eV
+		end
+		local dif = GetDifficultyInfo(temp.d) or 1
+		local zone = ''
+		if temp.zI then
+			zone = GetRealZoneText(temp.zI)
+		else
+			zone = UNKNOWN
+		end
+		local str = string.format('%s (%s)', zone, dif)
+		if not iEET_ExportFromWTF[str] then
+			iEET_ExportFromWTF[str] = {}
+		end
+		if not iEET_ExportFromWTF[str][temp.eN] then
+			iEET_ExportFromWTF[str][temp.eN] = {}
+		end
+		iEET_ExportFromWTF[str][temp.eN][k] = v
+		fightCount = fightCount + 1
+	end
+	iEET:print(fightCount .. ' fights sorted into "iEET_ExportFromWTF".')
+end
 SLASH_IEET1 = "/ieet"
 SLASH_IEET2 = '/iencountereventtracker'
 SlashCmdList["IEET"] = function(realMsg)
@@ -3385,6 +3465,11 @@ SlashCmdList["IEET"] = function(realMsg)
 		end
 	elseif string.match(msg, 'version') then
 		iEET:print(iEETConfig.version)
+	elseif string.match(msg, 'clearwtf') then
+		iEET_ExportFromWTF = {}
+		iEET:print('Export variable cleared.')
+	elseif string.match(msg, 'wtf') then
+		iEET:ExportFightsToWTF()
 	else
 		iEET:print(string.format('Command "%s" not found, read the readme.txt.', msg))
 	end
