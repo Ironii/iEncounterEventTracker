@@ -3414,6 +3414,9 @@ SlashCmdList["IEET"] = function(realMsg)
 		end
 	elseif string.match(msg, 'export') and not InCombatLockdown() then
 		iEET:ExportData()
+	elseif string.match(msg, 'clearwtf') then
+		iEET_ExportFromWTF = {}
+		iEET:print('Export variable cleared.')
 	elseif string.match(msg, 'clear') then
 		iEET_Data = nil
 		iEET_Data = {}
@@ -3465,9 +3468,6 @@ SlashCmdList["IEET"] = function(realMsg)
 		end
 	elseif string.match(msg, 'version') then
 		iEET:print(iEETConfig.version)
-	elseif string.match(msg, 'clearwtf') then
-		iEET_ExportFromWTF = {}
-		iEET:print('Export variable cleared.')
 	elseif string.match(msg, 'wtf') then
 		iEET:ExportFightsToWTF()
 	else
