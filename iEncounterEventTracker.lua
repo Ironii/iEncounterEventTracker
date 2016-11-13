@@ -77,6 +77,8 @@ addon:SetScript('OnEvent', function(self, event, ...)
 end)
 iEET.IEEUnits = {}
 iEET.unitPowerUnits = {}
+iEET.encounterShortList = {}
+iEET.maxScrollRange = 0
 iEET.fakeSpells = {
 	
 }
@@ -968,29 +970,37 @@ end
 function iEET:print(msg)
 	print('iEET: ', msg)
 end
-function iEET:ScrollContent(delta)
-	if delta == -1 then
+function iEET:ScrollContent(delta, fixedValue)
+	if fixedValue then
+		local offSet = iEET.maxScrollRange-fixedValue
 		for i = 1, 8 do
-			--local f = _G['iEET_content' .. i]
-			if IsShiftKeyDown() then
-				--iEET['content' .. i]:PageDown()
-				for scrollFix=1, 45 do
-					iEET['content' .. i]:ScrollDown()
-				end
-			else
-				iEET['content' .. i]:ScrollDown()
-			end
+			iEET['content' .. i]:SetScrollOffset(offSet)
 		end
 	else
-		for i = 1, 8 do
+		if delta == -1 then
+			local offSet
 			if IsShiftKeyDown() then
-				--iEET['content' .. i]:PageUp()
-				for scrollFix=1, 45 do
-					iEET['content' .. i]:ScrollUp()
-				end
+				offSet = iEET['content' .. 1]:GetScrollOffset()-75
 			else
-				iEET['content' .. i]:ScrollUp()
+				offSet = iEET['content' .. 1]:GetScrollOffset()-1
 			end
+				
+			for i = 1, 8 do
+				iEET['content' .. i]:SetScrollOffset(offSet)
+			end
+			iEET.mainFrameSlider:SetValue(iEET.maxScrollRange-offSet)
+		else
+			local offSet
+			if IsShiftKeyDown() then
+				offSet = iEET['content' .. 1]:GetScrollOffset()+75
+			else
+				offSet = iEET['content' .. 1]:GetScrollOffset()+1
+			end
+				
+			for i = 1, 8 do
+				iEET['content' .. i]:SetScrollOffset(offSet)
+			end
+			iEET.mainFrameSlider:SetValue(iEET.maxScrollRange-offSet)
 		end
 	end
 end
@@ -1631,6 +1641,10 @@ function iEET:loopData(msg)
 			end
 		end
 	end
+	-- Update Slider values
+	iEET.maxScrollRange = iEET['content' .. 1]:GetMaxScrollRange()
+	iEET.mainFrameSlider:SetMinMaxValues(0, iEET.maxScrollRange)
+	iEET.mainFrameSlider:SetValue(iEET.maxScrollRange)
 	iEET.frame:Show()
 end
 function iEET:AddNewFiltering(msg)
@@ -2098,54 +2112,58 @@ function iEET:updateEncounterListMenu()
 					zonesTemp[UNKNOWN] = {text = UNKNOWN, hasArrow = true, notCheckable = true, menuList = {}}
 				end
 			end
-			if not encountersTempTable[temp.eN] then
-				encountersTempTable[temp.eN] = {}
+			if not encountersTempTable[temp.zoneName] then
+				encountersTempTable[temp.zoneName] = {}
 			end
-			if not encountersTempTable[temp.eN][temp.d] then
-				encountersTempTable[temp.eN][temp.d] = {}
+			if not encountersTempTable[temp.zoneName][temp.eN] then
+				encountersTempTable[temp.zoneName][temp.eN] = {}
 			end
-			table.insert(encountersTempTable[temp.eN][temp.d], temp)
+			if not encountersTempTable[temp.zoneName][temp.eN][temp.d] then
+				encountersTempTable[temp.zoneName][temp.eN][temp.d] = {}
+			end
+			table.insert(encountersTempTable[temp.zoneName][temp.eN][temp.d], temp)
 		end -- Sorted by encounter -> Sort by ids inside
 		-- temp{} -> encounter{} -> difficulty{} -> fight{}
-
-		for encounterName in spairs(encountersTempTable) do -- Get alphabetically sorted encounters
-			--Looping bosses
-			local t = {text = encounterName, hasArrow = true, notCheckable = true, menuList = {}}
-			local t2 = {}
-			local zone
-			for difficultyID,_ in spairs(encountersTempTable[encounterName]) do
-				-- Looping difficulties
-				t2 = {text = GetDifficultyInfo(difficultyID), hasArrow = true, notCheckable = true, menuList = {}}
-				for k,v in spairs(encountersTempTable[encounterName][difficultyID], function(t,a,b) return t[b].pT < t[a].pT end) do
-					if not zone or (zone == UNKNOWN and v.zoneName ~= zone) then
-						zone = v.zoneName
-					end
-					local fightEntry = {
-						text = (v.k == 1 and '+ ' or '- ') .. v.fT .. ' (' .. v.pT .. ')',
-						notCheckable = true,
-						hasArrow = true,
-						checked = false,
-						keepShownOnClick = false,
-						func = function()
-							iEET:ImportData(v.dataKey)
-							iEET:Toggle(true) -- not really needed
-							CloseDropDownMenus()
-						end,
-						menuList = {{ -- delete menu
-							text = 'Delete',
+		for zoneName, encountersTemp in pairs(encountersTempTable) do
+			for encounterName in spairs(encountersTemp) do -- Get alphabetically sorted encounters
+				--Looping bosses
+				local t = {text = encounterName, hasArrow = true, notCheckable = true, menuList = {}}
+				local t2 = {}
+				local zone
+				for difficultyID,_ in spairs(encountersTemp[encounterName]) do
+					-- Looping difficulties
+					t2 = {text = GetDifficultyInfo(difficultyID), hasArrow = true, notCheckable = true, menuList = {}}
+					for k,v in spairs(encountersTemp[encounterName][difficultyID], function(t,a,b) return t[b].pT < t[a].pT end) do
+						if not zone or (zone == UNKNOWN and v.zoneName ~= zone) then
+							zone = v.zoneName
+						end
+						local fightEntry = {
+							text = (v.k == 1 and '+ ' or '- ') .. v.fT .. ' (' .. v.pT .. ')',
 							notCheckable = true,
+							hasArrow = true,
+							checked = false,
+							keepShownOnClick = false,
 							func = function()
-								iEET_Data[v.dataKey] = nil
-								iEET:updateEncounterListMenu()
+								iEET:ImportData(v.dataKey)
+								iEET:Toggle(true) -- not really needed
+								CloseDropDownMenus()
 							end,
-						},},
-					}
-					table.insert(t2.menuList, fightEntry)
+							menuList = {{ -- delete menu
+								text = 'Delete',
+								notCheckable = true,
+								func = function()
+									iEET_Data[v.dataKey] = nil
+									iEET:updateEncounterListMenu()
+								end,
+							},},
+						}
+						table.insert(t2.menuList, fightEntry)
+					end
+					table.insert(t.menuList, t2)
 				end
-				table.insert(t.menuList, t2)
+				table.insert(zonesTemp[zone].menuList, t)
+				--table.insert(iEET.encounterListMenu, t)
 			end
-			table.insert(zonesTemp[zone].menuList, t)
-			--table.insert(iEET.encounterListMenu, t)
 		end
 		for zoneName,v in spairs(zonesTemp) do
 			table.insert(iEET.encounterListMenu, v)
@@ -2155,7 +2173,7 @@ function iEET:updateEncounterListMenu()
 end
 function iEET:CreateMainFrame()
 	iEET.frame = CreateFrame("Frame", "iEETFrame", UIParent)
-	iEET.frame:SetSize(598,800)
+	iEET.frame:SetSize(598,834)
 	iEET.frame:SetPoint('CENTER', UIParent, 'CENTER', 0,0)
 	iEET.frame:SetScript("OnMouseDown", function(self,button)
 		iEET.frame:ClearAllPoints()
@@ -2178,8 +2196,8 @@ function iEET:CreateMainFrame()
 	iEET.frame:SetFrameStrata('HIGH')
 	iEET.frame:SetFrameLevel(1)
 	iEET.top = CreateFrame('FRAME', nil, iEET.frame)
-	iEET.top:SetSize(598, 25)
-	iEET.top:SetPoint('BOTTOMRIGHT', iEET.frame, 'TOPRIGHT', 0, -1)
+	iEET.top:SetSize(605, 25)
+	iEET.top:SetPoint('BOTTOMLEFT', iEET.frame, 'TOPLEFT', 0, -1)
 	iEET.top:SetBackdrop(iEET.backdrop);
 	iEET.top:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
 	iEET.top:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
@@ -2315,7 +2333,7 @@ function iEET:CreateMainFrame()
 		iEET['content' .. i]:SetFading(false)
 		iEET['content' .. i]:SetInsertMode("BOTTOM")
 		iEET['content' .. i]:SetJustifyH(iEET.justifyH)
-		iEET['content' .. i]:SetMaxLines(5000)
+		iEET['content' .. i]:SetMaxLines(10000)
 		iEET['content' .. i]:SetSpacing(iEET.spacing)
 		iEET['content' .. i]:EnableMouseWheel(true)
 		iEET['content' .. i]:SetScript("OnMouseWheel", function(self, delta)
@@ -2413,7 +2431,7 @@ function iEET:CreateMainFrame()
 		iEET['detailContent' .. i]:SetFading(false)
 		iEET['detailContent' .. i]:SetInsertMode('BOTTOM')
 		iEET['detailContent' .. i]:SetJustifyH(iEET.justifyH)
-		iEET['detailContent' .. i]:SetMaxLines(5000)
+		iEET['detailContent' .. i]:SetMaxLines(10000)
 		iEET['detailContent' .. i]:SetSpacing(iEET.spacing)
 		iEET['detailContent' .. i]:EnableMouseWheel(true)
 		iEET['detailContent' .. i]:SetScript("OnMouseWheel", function(self, delta)
@@ -2450,30 +2468,32 @@ function iEET:CreateMainFrame()
 		iEET.mainFrameSlider:SetBackdrop(bd)
 		iEET.mainFrameSlider:SetBackdropColor(0.1,0.1,0.1,0.9)
 		iEET.mainFrameSlider:SetBackdropBorderColor(0,0,0,1)
-		iEET.mainFrameSlider:SetPoint('LEFT', iEET.frame, 'RIGHT', 0,0)
-		iEET.mainFrameSlider:SetMinMaxValues(0, 500)
+		iEET.mainFrameSlider:SetPoint('BOTTOMLEFT', iEET.frame, 'BOTTOMRIGHT', -1,0)
+		iEET.mainFrameSlider:SetMinMaxValues(0, 10)
 		iEET.mainFrameSlider:SetValue(0)
+		iEET.mainFrameSlider:SetValueStep(1)
 		iEET.mainFrameSlider:EnableMouseWheel(true)
-		iEET.mainFrameSlider:SetScript('OnValueChanged', function(self, value)
-			--f.scrollFrame:SetVerticalScroll(value)
+		local lastValue = 0
+		--iEET.maxScrollRange
+		iEET.mainFrameSlider:SetScript('OnMouseDown', function(self, button)
+			iEET.mainFrameSlider:SetScript('OnUpdate', function()
+				local value = math.floor(self:GetValue())
+				if value ~= lastValue then
+					iEET:ScrollContent(delta, value)
+					lastValue = value
+				end
+			end)
 		end)
-		local scrollFunc = function(self, delta)
-			if delta == -1 then --down
-				local value = iEET.mainFrameSlider:GetValue()+20
-				local min, max = iEET.mainFrameSlider:GetMinMaxValues()
-				value = math.min(value, max)
-				iEET.mainFrameSlider:SetValue(value)
-			else -- up
-				local value = iEET.mainFrameSlider:GetValue()-20
-				value = max(0, value)
-				iEET.mainFrameSlider:SetValue(value)
-			end
-		end
-		iEET.mainFrameSlider:SetScript('OnMouseWheel', scrollFunc)
+		iEET.mainFrameSlider:SetScript('OnMouseUp', function(self, button)
+			iEET.mainFrameSlider:SetScript('OnUpdate', nil)
+		end)
+		iEET.mainFrameSlider:SetScript('OnMouseWheel', function(self, delta)
+			iEET:ScrollContent(delta)
+		end)
 		iEET.mainFrameSliderBG = CreateFrame('FRAME', nil , iEET.frame)
 		--iEET.contentAnchor8 = CreateFrame('FRAME', nil , iEET.frame)
 		iEET.mainFrameSliderBG:SetSize(8, 834)
-		iEET.mainFrameSliderBG:SetPoint('TOPLEFT', iEET.frame, 'TOPRIGHT', 0, 0)
+		iEET.mainFrameSliderBG:SetPoint('BOTTOMLEFT', iEET.frame, 'BOTTOMRIGHT', -1, 0)
 		iEET.mainFrameSliderBG:SetBackdrop({
 			bgFile = "Interface\\Buttons\\WHITE8x8",
 			edgeFile = "Interface\\Buttons\\WHITE8x8",
@@ -2490,7 +2510,8 @@ function iEET:CreateMainFrame()
 		
 		iEET.encounterAbilitiesAnchor = CreateFrame('FRAME', nil, iEET.frame)
 		iEET.encounterAbilitiesAnchor:SetSize(200, 400)
-		iEET.encounterAbilitiesAnchor:SetPoint('TOPLEFT', iEET.frame, 'TOPRIGHT', -1, 0)
+		--iEET.encounterAbilitiesAnchor:SetPoint('TOPLEFT', iEET.frame, 'TOPRIGHT', -1, 0)
+		iEET.encounterAbilitiesAnchor:SetPoint('TOPLEFT', iEET.frame, 'TOPRIGHT', 6, 0)
 		iEET.encounterAbilitiesAnchor:SetBackdrop({
 			bgFile = "Interface\\Buttons\\WHITE8x8",
 			edgeFile = "Interface\\Buttons\\WHITE8x8",
@@ -2603,7 +2624,7 @@ function iEET:CreateMainFrame()
 		iEET:loopData(msg)
 	end)
 	iEET.editbox:SetAutoFocus(false)
-	iEET.editbox:SetWidth(262)
+	iEET.editbox:SetWidth(269)
 	iEET.editbox:SetHeight(21)
 	iEET.editbox:SetTextInsets(2, 2, 1, 0)
 	iEET.editbox:SetPoint('RIGHT', iEET.top, 'RIGHT', -24,0)
@@ -2623,7 +2644,7 @@ function iEET:CreateMainFrame()
 		iEET[name].text:SetText(buttonText)
 		iEET[name]:SetPoint(point, iEET[anchorFrame], relativePoint, xOffset,yOffset)
 		iEET[name]:SetFrameStrata('HIGH')
-		iEET[name]:SetFrameLevel(3)
+		iEET[name]:SetFrameLevel(4)
 		iEET[name]:RegisterForClicks('AnyUp')
 	end
 	--[Events][NPCs][Spells][E(encounters)][F(filtering)][O(options)][S(spreadsheet)]
@@ -3396,32 +3417,20 @@ SlashCmdList["IEET"] = function(realMsg)
 	if msg then msg = string.lower(msg) end
 	if msg:len() <= 1 then
 		iEET:Toggle()
-	elseif string.match(msg, 'copy') then
+	elseif msg == 'copy' then
 		iEET:copyCurrent()
-	elseif string.match(msg, 'filters') then
+	elseif msg == 'filters' then
 		iEET:Options()
-	elseif string.match(msg, 'import') then
-		if iEET_Data then
-			iEET:Toggle(true)
-			local id = string.gsub(msg, 'import ', '')
-			if iEET_Data[id] then
-				iEET:ImportData(id)
-			else
-				iEET:print('key [' .. id .. '] not found')
-			end
-		else
-			iEET:print('No data to import.')
-		end
-	elseif string.match(msg, 'export') and not InCombatLockdown() then
+	elseif msg == 'export' and not InCombatLockdown() then
 		iEET:ExportData()
-	elseif string.match(msg, 'clearwtf') then
+	elseif msg == 'clearwtf' then
 		iEET_ExportFromWTF = {}
 		iEET:print('Export variable cleared.')
-	elseif string.match(msg, 'clear') then
+	elseif msg == 'clear' then
 		iEET_Data = nil
 		iEET_Data = {}
 		iEET:print('iEET_Data wiped.')
-	elseif string.match(msg, 'autosave') then
+	elseif msg == 'autosave' then
 		if iEETConfig.autoSave then
 			iEETConfig.autoSave = false
 			iEET:print('Automatic saving after ENCOUNTER_END off.')
@@ -3437,11 +3446,11 @@ SlashCmdList["IEET"] = function(realMsg)
 		else
 			iEET:print('Invalid number')
 		end
-	elseif string.match(msg, 'help') then
+	elseif msg == 'help' then
 		iEET:print('/ieet autosave to toggle autosaving\r/ieet autodiscard X to change auto discard timer\r/ieet clear to delete every fight entry')
-	elseif string.match(msg, 'convert') then
+	elseif msg == 'convert' then
 		iEET:ConvertOldReports()
-	elseif string.match(msg, 'colorreset') then
+	elseif msg == 'colorreset' then
 		iEETConfig.colors = {
 			['main'] = {
 				['bg'] = {['r'] = 0.1, ['g'] = 0.1, ['b'] = 0.1, ['a'] = 0.9},
@@ -3454,7 +3463,7 @@ SlashCmdList["IEET"] = function(realMsg)
 		}
 		iEET:UpdateColors('main',nil,true) --force update after reset
 		iEET:UpdateColors('options',nil,true) --force update after reset
-	elseif string.match(msg, 'force') then
+	elseif msg == 'force' then
 		local arg = string.sub(realMsg, 6)
 		arg = iEET:TrimWS(arg)
 		local name
@@ -3466,9 +3475,9 @@ SlashCmdList["IEET"] = function(realMsg)
 		else
 			iEET:Force(true, name)
 		end
-	elseif string.match(msg, 'version') then
+	elseif msg == 'version' then
 		iEET:print(iEETConfig.version)
-	elseif string.match(msg, 'wtf') then
+	elseif msg == 'wtf' then
 		iEET:ExportFightsToWTF()
 	else
 		iEET:print(string.format('Command "%s" not found, read the readme.txt.', msg))
