@@ -14,6 +14,9 @@ hp	Health		number	USCS only
 --]]--------------------------------------------------------------
 --[[TO DO:--
 compare
+add:
+CHAT_MSG_RAID_BOSS_EMOTE
+RAID_BOSS_EMOTE
 --]]
 local _, iEET = ...
 iEET.data = {}
@@ -36,7 +39,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.541
+iEET.version = 1.542
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -457,6 +460,7 @@ function addon:ENCOUNTER_START(encounterID, encounterName, ...)
 			['k'] = 0,
 			['zI'] = mapID,
 			['v'] = iEET.version,
+			['eI'] = encounterID,
 		}
 	end
 	table.insert(iEET.data, {['e'] = 27, ['t'] = GetTime(), ['cN'] = encounterName, ['tN'] = encounterID})
@@ -482,6 +486,7 @@ function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize,
 				['k'] = kill,
 				['zI'] = mapID,
 				['v'] = iEET.version,
+				['eI'] = EncounterID,
 			}
 		end
 		iEET:StopRecording()
@@ -1925,6 +1930,23 @@ function iEET:updateOptionsMenu()
 			EasyMenu(iEET.optionsMenu, iEET.optionsMenuFrame, iEET.optionsList, 0 , 0, 'MENU');
 			iEET:loopData()
 		end})
+	table.insert(iEET.optionsMenu, {text = 'Clear all fights', notCheckable = true, keepShownOnClick = true, hasArrow = true, menuList = {
+		{text = 'Are you sure?', keepShownOnClick = true, notCheckable = true, hasArrow = true, menuList = {
+			{text = 'For realsies?', keepShownOnClick = true, notCheckable = true, hasArrow = true, menuList = {
+				{text = 'Clear all fights', notCheckable = true, function()
+					iEET_Data = nil
+					iEET_Data = {}
+					iEET:print('iEET_Data wiped.')
+					end}
+				}
+			}
+		}}
+	}})
+	table.insert(iEET.optionsMenu, {text = 'Export sorted fights to WTF file', notCheckable = true, func = function() iEET:ExportFightsToWTF() end})
+	table.insert(iEET.optionsMenu, {text = 'Clear exported fights (iEET_ExportFromWTF)', notCheckable = true, func = function()
+		iEET_ExportFromWTF = {}
+		iEET:print('Export variable cleared.')
+	end})
 	table.insert(iEET.optionsMenu, { text = 'Close', notCheckable = true, func = function () CloseDropDownMenus(); end})
 end
 iEET.eventListMenu = {}
@@ -2092,12 +2114,16 @@ function iEET:updateEncounterListMenu()
 			end
 			local temp = {}
 			for eK,eV in string.gmatch(k, '{(.-)=(.-)}') do
-				if eK == 'd' or eK == 'rS' or eK == 's' or eK == 'k' or eK == 'v' or eK == 'zI' then
+				if eK == 'd' or eK == 'rS' or eK == 's' or eK == 'k' or eK == 'v' or eK == 'zI' or eK == 'eI' then
 					if tonumber(eV) then
 						eV = tonumber(eV)
 					end
 				end
 				temp[eK] = eV
+			end
+			if not temp.eI then
+				iEET:print('found old reports, please use "/ieet convert" to continue')
+				return
 			end
 			temp.dataKey = k
 			if temp.zI then
@@ -2175,7 +2201,7 @@ function iEET:CreateMainFrame()
 	iEET.frame = CreateFrame("Frame", "iEETFrame", UIParent)
 	iEET.frame:SetSize(598,834)
 	iEET.frame:SetPoint('CENTER', UIParent, 'CENTER', 0,0)
-	iEET.frame:SetScript("OnMouseDown", function(self,button)
+	iEET.frame:SetScript('OnMouseDown', function(self,button)
 		iEET.frame:ClearAllPoints()
 		iEET.frame:StartMoving()
 	end)
@@ -2331,11 +2357,13 @@ function iEET:CreateMainFrame()
 		iEET['content' .. i]:SetPoint('CENTER', iEET['contentAnchor' .. i], 'CENTER', 0, 0)
 		iEET['content' .. i]:SetFont(iEET.font, iEET.fontsize)
 		iEET['content' .. i]:SetFading(false)
+		--iEET['content' .. i]:SetClipsChildren(true)
 		iEET['content' .. i]:SetInsertMode("BOTTOM")
 		iEET['content' .. i]:SetJustifyH(iEET.justifyH)
 		iEET['content' .. i]:SetMaxLines(10000)
 		iEET['content' .. i]:SetSpacing(iEET.spacing)
 		iEET['content' .. i]:EnableMouseWheel(true)
+		--iEET['content' .. i]:SetFrameLevel(4)
 		iEET['content' .. i]:SetScript("OnMouseWheel", function(self, delta)
 			iEET:ScrollContent(delta)
 		end)
@@ -3181,7 +3209,7 @@ function iEET:ImportData(dataKey)
 	iEET.data = {}
 	iEET.encounterInfoData = {}
 	for eK,eV in string.gmatch(dataKey, '{(.-)=(.-)}') do
-		if eK == 'd' or eK == 'rS' or eK == 's' or eK == 'k' or eK == 'v' or eK == 'zI'  then
+		if eK == 'd' or eK == 'rS' or eK == 's' or eK == 'k' or eK == 'v' or eK == 'zI' or eK == 'eI' then
 			if tonumber(eV) then
 				eV = tonumber(eV)
 			end
@@ -3203,7 +3231,9 @@ function iEET:ImportData(dataKey)
 	iEET:loopData()
 	iEET:print(string.format('Imported %s on %s (%s), %sman (%s), Time: %s.',iEET.encounterInfoData.eN,GetDifficultyInfo(iEET.encounterInfoData.d),iEET.encounterInfoData.fT, iEET.encounterInfoData.rS, (iEET.encounterInfoData.k == 1 and 'kill' or 'wipe'), iEET.encounterInfoData.pT))
 end
-function iEET:ConvertOldReports()
+function iEET:ConvertOldReports() -- XXX remove at some point
+	-- assuming no one uses these logs anymore
+	--[[
 	local oldEventVars = {
 		timestamp = 't',
 		casterName = 'cN',
@@ -3241,6 +3271,38 @@ function iEET:ConvertOldReports()
 			count = count + 1
 		end
 	end
+	]]
+	local function getEncounterStartData(data)
+		for v in string.gmatch(data, 'D|(.-)|D') do
+			local targetData
+			local eventData
+			for dK,dV in string.gmatch(v, '{(.-)=(.-)}') do
+				if dK == 'e' then
+					if tonumber(dV) == 27 then
+						eventData = tonumber(dV)
+					end
+				elseif dK == 'tN' then
+					targetData = dV
+				end
+				if targetData and eventData then
+					return '{eI='..tonumber(targetData)..'}'
+				end
+			end
+		end
+		return
+	end
+	local newDataTable = {}
+	local count = 0
+	for key, dataString in pairs(iEET_Data) do
+		if not key:find('eI=') then
+			local eI = getEncounterStartData(dataString)
+			newDataTable[key .. (eI or '{eI=0}')] = dataString
+			count = count + 1
+		else
+			newDataTable[key] = dataString
+		end
+	end
+	iEET_Data = newDataTable
 	iEET:print('Converted ' .. count .. ' old reports to new format.')
 end
 function iEET:StartRecording(force)
@@ -3384,7 +3446,7 @@ function iEET:ExportFightsToWTF()
 	for k,v in pairs(iEET_Data) do -- Get encounters
 		local temp = {}
 		for eK,eV in string.gmatch(k, '{(.-)=(.-)}') do
-			if eK == 'd' or eK == 'rS' or eK == 's' or eK == 'k' or eK == 'v' or eK == 'zI' then
+			if eK == 'd' or eK == 'rS' or eK == 's' or eK == 'k' or eK == 'v' or eK == 'zI' or eK == 'eI' then
 				if tonumber(eV) then
 					eV = tonumber(eV)
 				end
@@ -3408,7 +3470,7 @@ function iEET:ExportFightsToWTF()
 		iEET_ExportFromWTF[str][temp.eN][k] = v
 		fightCount = fightCount + 1
 	end
-	iEET:print(fightCount .. ' fights sorted into "iEET_ExportFromWTF".')
+	iEET:print(fightCount .. ' fights sorted into "iEET_ExportFromWTF".\nYou can copy it after reloading UI or logging out.')
 end
 SLASH_IEET1 = "/ieet"
 SLASH_IEET2 = '/iencountereventtracker'
