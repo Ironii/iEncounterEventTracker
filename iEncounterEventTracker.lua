@@ -39,7 +39,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.542
+iEET.version = 1.543
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -141,6 +141,9 @@ iEET.events = {
 		
 		['UNIT_SPELLCAST_INTERRUPTIBLE'] = 41,
 		['UNIT_SPELLCAST_NOT_INTERRUPTIBLE'] = 42,
+		
+		['RAID_BOSS_EMOTE'] = 43,
+		['RAID_BOSS_WHISPER'] = 44,
 	},
 	['fromID'] = {
 		[1] = {
@@ -311,6 +314,14 @@ iEET.events = {
 			l = 'UNIT_SPELLCAST_NOT_INTERRUPTIBLE',
 			s = 'NOT_INTERRUPTIBLE',
 		},
+		[43]= {
+			l = 'RAID_BOSS_EMOTE',
+			s = 'RB_EMOTE',
+		},
+		[44] = {
+			l = 'RAID_BOSS_WHISPER',
+			s = 'RB_WHISPER',
+		},
 	},
 }
 iEET.ignoreList = {  -- Ignore list for 'Ignore Spell's menu, use event ignore to hide these if you want (they are fake spells)
@@ -395,6 +406,9 @@ function iEET:LoadDefaults()
 			
 			['MANUAL_LOGGING_START'] = true,
 			['MANUAL_LOGGING_END'] = true,
+			
+			['RAID_BOSS_EMOTE'] = true,
+			['RAID_BOSS_WHISPER'] = true,
 		},
 		['version'] = iEET.version,
 		['autoSave'] = true,
@@ -851,7 +865,7 @@ function addon:CHAT_MSG_MONSTER_EMOTE(msg, sourceName)
 		['sI'] = msg,
 		['cN'] = sourceName,
 		['sG'] = sourceName,
-	});
+	})
 end
 function addon:CHAT_MSG_MONSTER_SAY(msg, sourceName)
 	table.insert(iEET.data, {
@@ -870,6 +884,25 @@ function addon:CHAT_MSG_MONSTER_YELL(msg, sourceName)
 		['cN'] = sourceName,
 		['sG'] = sourceName,
 	});
+end
+function addon:RAID_BOSS_EMOTE(msg, sourceName)
+	table.insert(iEET.data, {
+		['e'] = 43,
+		['t'] = GetTime(),
+		['sI'] = msg,
+		['cN'] = sourceName or UNKNOWN,
+		['sG'] = sourceName or UNKNOWN,
+	})
+end
+function addon:RAID_BOSS_WHISPER(msg, sourceName) -- im not sure if there is sourceName, needs testing
+	table.insert(iEET.data, {
+		['e'] = 44,
+		['t'] = GetTime(),
+		['sI'] = msg,
+		['cN'] = sourceName or UNKNOWN,
+		['sG'] = sourceName or UNKNOWN,
+		['tN'] = 'player', -- meh
+	})
 end
 function addon:PLAYER_REGEN_DISABLED()
 	table.insert(iEET.data, {['e'] = 35, ['t'] = GetTime() ,['cN'] = '+Combat'})
@@ -1373,9 +1406,9 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 	iEET:addMessages(1, 1, timestamp, color, '\124HiEETtime:' .. timestamp ..'\124h%s\124h')
 	iEET:addMessages(1, 2, intervall, color, intervall and ('\124HiEETtime:' .. intervall ..'\124h%s\124h') or nil)
 	iEET:addMessages(1, 3, iEET.events.fromID[event].s, color)
-	if event == 29 or event == 30 or event == 31 then -- MONSTER_EMOTE = 29, MOSNTER_SAY = 30, MONSTER_YELL = 31
+	if event == 29 or event == 30 or event == 31 or event == 43 or event == 44 then -- MONSTER_EMOTE = 29, MOSNTER_SAY = 30, MONSTER_YELL = 31, RAID_BOSS_EMOTE = 43, RAID_BOSS_WHISPER = 44
 		local msg = spellID
-		if event == 29 then --trying to fix monster emotes, MONSTER_EMOTE
+		if event == 29 or event == 43 or event == 44 then --trying to fix monster emotes, MONSTER_EMOTE
 			--"|TInterface\\Icons\\spell_fel_elementaldevastation.blp:20|tVerestriona's |cFFFF0000|Hspell:182008|h[Latent Energy]|h|r reacts violently as they step into the |cFFFF0000|Hspell:179582|h[Rumbling Fissure]|h|r!}|D|"
 			--TODO: Better solution
 			--[[
@@ -3709,6 +3742,8 @@ function iEET:StartRecording(force)
 	addon:RegisterEvent('UNIT_SPELLCAST_CHANNEL_START')
 	addon:RegisterEvent('UNIT_SPELLCAST_INTERRUPTIBLE')
 	addon:RegisterEvent('UNIT_SPELLCAST_NOT_INTERRUPTIBLE')
+	addon:RegisterEvent('RAID_BOSS_EMOTE')
+	addon:RegisterEvent('RAID_BOSS_WHISPER')	
 	if force then
 		addon:RegisterEvent('PLAYER_REGEN_DISABLED')
 		addon:RegisterEvent('PLAYER_REGEN_ENABLED')
@@ -3727,6 +3762,8 @@ function iEET:StopRecording(force)
 	addon:UnregisterEvent('UNIT_SPELLCAST_CHANNEL_START')
 	addon:UnregisterEvent('UNIT_SPELLCAST_INTERRUPTIBLE')
 	addon:UnregisterEvent('UNIT_SPELLCAST_NOT_INTERRUPTIBLE')
+	addon:UnregisterEvent('RAID_BOSS_EMOTE')
+	addon:UnregisterEvent('RAID_BOSS_WHISPER')
 	if force then
 		addon:UnregisterEvent('PLAYER_REGEN_DISABLED')
 		addon:UnregisterEvent('PLAYER_REGEN_ENABLED')
