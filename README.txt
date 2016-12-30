@@ -5,7 +5,9 @@ irc:
 	Ironi@Quakenet
 	Ironii@Freenode
 bnet:
-	Ironi#2880
+	Ironi#2880 (EU)
+discord:
+	Ironi#2097
 
 ---------------------------
 --General------------------
@@ -119,3 +121,9 @@ Event names/values:
 38/MANUAL_LOGGING_END/MANUAL_END
 39/UNIT_SPELLCAST_START/USC_START
 40/UNIT_SPELLCAST_CHANNEL_START/USC_C_START
+
+
+Advanced Deleting:
+iEET_Advanced_Delete(dif, encounter, fightTime)
+Usage: iEET_Advanced_Delete(<difficulty, number, or false for any difficulty>, <encounterID(number) or true, <fight time (delete under), number, seconds>)
+Example: iEET_Advanced_Delete(false, true, 60), would delete any fights under 60 seconds

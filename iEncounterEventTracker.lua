@@ -1378,12 +1378,16 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 		if event == 29 then --trying to fix monster emotes, MONSTER_EMOTE
 			--"|TInterface\\Icons\\spell_fel_elementaldevastation.blp:20|tVerestriona's |cFFFF0000|Hspell:182008|h[Latent Energy]|h|r reacts violently as they step into the |cFFFF0000|Hspell:179582|h[Rumbling Fissure]|h|r!}|D|"
 			--TODO: Better solution
+			--[[
 			msg = string.gsub(spellID, "|T.+|t", "") -- Textures
 			msg = string.gsub(msg, "spell:%d-", "") -- Spells
 			msg = string.gsub(msg, "|h", "") -- Spells
 			msg = string.gsub(msg, "|H", "") -- Spells
 			msg = string.gsub(msg, "|c........", "") -- Colors
 			msg = string.gsub(msg, "|r", "") -- Colors
+			--]]
+			msg = string.gsub(spellID, '|', '^') -- replace | with ^ to indicate there is a hyperlink but without messing up the tooltips
+			msg = string.gsub(spellID, '%%', '%%%%')
 		end
 		iEET:addMessages(1, 4, 'Message', color, '\124HiEETcustomyell:' .. event .. ':' .. msg .. '\124h%s\124h') -- NEEDS CHANGING
 	elseif spellID then
@@ -1831,6 +1835,7 @@ function iEET:updateOptionsMenu()
 	iEET.optionsMenu = nil
 	iEET.optionsMenu = {}
 	table.insert(iEET.optionsMenu, {text = 'Options', isTitle = true, notCheckable = true})
+	table.insert(iEET.optionsMenu, {text = 'Mass delete options', notCheckable = true, func = function() iEET:toggleDeleteOptions() end})
 	table.insert(iEET.optionsMenu, {text = 'Color', notCheckable = true, keepShownOnClick = true, hasArrow = true, menuList = {
 			{text = 'Main Frame',
 			notCheckable = true,
@@ -1906,7 +1911,6 @@ function iEET:updateOptionsMenu()
 			iEET:updateOptionsMenu()
 			EasyMenu(iEET.optionsMenu, iEET.optionsMenuFrame, iEET.optionsList, 0 , 0, 'MENU');
 		end})
-		
 	table.insert(iEET.optionsMenu, {text = 'Use automatic saving only inside raid instances', isNotRadio = true, checked = iEETConfig.onlyRaids, keepShownOnClick = false, func = function()
 			if iEETConfig.onlyRaids then
 				iEETConfig.onlyRaids = false
@@ -2733,6 +2737,92 @@ function iEET:CreateMainFrame()
 	iEET:loopData()
 	iEET.frame:Show()
 end
+function iEET:massDelete(data)
+	local specificEncounter = tonumber(data.encounter)
+	--First gather eligible encounters, IF its required
+	local encounters = {}
+	for key,dataString in pairs(iEET_Data) do
+		if specificEncounter then
+			if (not data.dif or (data.dif and key:find('{d='..data.dif..'}'))) and key:find('{eI='..specificEncounter..'}') then
+				encounters[key] = false
+			end
+		else
+			if not data.dif or (data.dif and key:find('{d='..data.dif..'}')) then
+				encounters[key] = false
+			end
+		end
+	end
+	if data.del == 'deleteAllWipes' then
+		for key,_ in pairs(encounters) do
+			if key:find('{k=1}') then
+				encounters[key] = true
+			end
+		end
+	elseif tonumber(data.del) then
+		for key, _ in pairs(encounters) do
+			local ftH, ftM = key:match('{fT=(%d+):(%d+)}')
+			if tonumber(ftH)*60+tonumber(ftM) > data.del then -- Save longer than
+				encounters[key] = true
+			end
+		end
+	elseif data.del == 'saveLastKill' or data.del == 'saveShortestKill' or tonumber(data.del)then -- need to sort by encounterID
+		local encountersByID = {}
+		for key, _ in pairs(encounters) do
+			if key:find('{k=1}') then
+				local eID = key:match('{eI=(%d+)}')
+				if not eID then
+					iEET:print('found old reports, please use "/ieet convert" to continue')
+					break
+				end
+				if not encountersByID[eID] then
+					encountersByID[eID] = {}
+				end
+				local year,month,day,hour,mins = key:match('{pT=(%d+).(%d+).(%d+) (%d+):(%d+)}')
+				local ftH, ftM = key:match('{fT=(%d+):(%d+)}')
+				encountersByID[eID][key] = {
+					['killDate'] = tonumber(year..month..day..hour..mins),
+					['fightTime'] = tonumber(ftH)*60+tonumber(ftM),
+				}
+			end
+		end
+		local key = ''
+		local compare
+		for encounterID, encounterData in pairs(encountersByID) do
+			for encounterKey, eData in pairs(encounterData) do
+				if data.del == 'saveLastKill' then
+					if not compare then
+						compare = eData.killDate
+						key = encounterKey
+					elseif eData.killDate > compare then
+						compare = eData.killDate
+						key = encounterKey
+					end
+				else -- Save shortest
+					if not compare then
+						key = encounterKey
+						compare = eData.fightTime
+					elseif eData.fightTime < compare then
+						key = encounterKey
+						compare = eData.fightTime
+					end
+				end
+			end
+			if compare then -- Shouldn't be needed, but its there for safety
+				encounters[key] = true
+				compare = nil
+			end
+		end
+	end
+	local counter = 0
+	for k,v in pairs(encounters) do
+		if not v then
+			counter = counter + 1
+			iEET_Data[k] = nil
+		end
+	end
+	iEET:print(counter .. ' fights deleted.')
+	encounters = nil
+end
 function iEET:CreateOptionsFrame()
 	-- Options main frame
 	iEET.optionsFrame = CreateFrame('Frame', 'iEETOptionsFrame', UIParent)
@@ -3061,6 +3151,273 @@ Event names/values:
 		end
 	end)
 	iEET:FillFilters()
+end
+function iEET:toggleDeleteOptions()
+	if not iEET.deleteOptions then
+		--Delete options main frame
+			local width = 310
+		iEET.deleteOptions = {}
+		iEET.deleteOptions.mainFrame = CreateFrame('Frame', 'iEETDeleteFrame', UIParent)
+		iEET.deleteOptions.mainFrame:SetSize(width,110)
+		iEET.deleteOptions.mainFrame:SetPoint('CENTER', UIParent, 'CENTER', 0,0)
+		iEET.deleteOptions.mainFrame:SetBackdrop(iEET.backdrop);
+		iEET.deleteOptions.mainFrame:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
+		iEET.deleteOptions.mainFrame:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
+		iEET.deleteOptions.mainFrame:Show()
+		iEET.deleteOptions.mainFrame:SetFrameStrata('DIALOG')
+		iEET.deleteOptions.mainFrame:SetFrameLevel(1)
+		iEET.deleteOptions.mainFrame:EnableMouse(true)
+		iEET.deleteOptions.mainFrame:SetMovable(true)
+		-- Options title frame
+		iEET.deleteOptions.top = CreateFrame('FRAME', nil, iEET.deleteOptions.mainFrame)
+		iEET.deleteOptions.top:SetSize(width, 15)
+		iEET.deleteOptions.top:SetPoint('BOTTOMRIGHT', iEET.deleteOptions.mainFrame, 'TOPRIGHT', 0, -1)
+		iEET.deleteOptions.top:SetBackdrop(iEET.backdrop)
+		iEET.deleteOptions.top:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
+		iEET.deleteOptions.top:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
+		iEET.deleteOptions.top:SetScript('OnMouseDown', function(self,button)
+			iEET.deleteOptions.mainFrame:ClearAllPoints()
+			iEET.deleteOptions.mainFrame:StartMoving()
+		end)
+		iEET.deleteOptions.top:SetScript('OnMouseUp', function(self, button)
+			iEET.deleteOptions.mainFrame:StopMovingOrSizing()
+		end)
+		iEET.deleteOptions.top:EnableMouse(true)
+		iEET.deleteOptions.top:Show()
+		iEET.deleteOptions.top:SetFrameStrata('DIALOG')
+		iEET.deleteOptions.top:SetFrameLevel(1)
+		-- Options title text
+		iEET.deleteOptions.top.text = iEET.deleteOptions.top:CreateFontString()
+		iEET.deleteOptions.top.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+		iEET.deleteOptions.top.text:SetPoint('CENTER', iEET.deleteOptions.top, 'CENTER', 0,0)
+		iEET.deleteOptions.top.text:SetText('Delete options')
+		iEET.deleteOptions.top.text:Show()
+		
+		iEET.deleteOptions.top.exitButton = CreateFrame('FRAME', nil, iEET.deleteOptions.mainFrame)
+		iEET.deleteOptions.top.exitButton:SetSize(15, 15)
+		iEET.deleteOptions.top.exitButton:SetPoint('TOPRIGHT', iEET.deleteOptions.top, 'TOPRIGHT', 0, 0)
+		iEET.deleteOptions.top.exitButton:SetBackdrop(iEET.backdrop)
+		iEET.deleteOptions.top.exitButton:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
+		iEET.deleteOptions.top.exitButton:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
+		iEET.deleteOptions.top.exitButton:SetScript('OnMouseDown', function(self,button)
+			iEET.deleteOptions.mainFrame:Hide()
+		end)
+		iEET.deleteOptions.top.exitButton:EnableMouse(true)
+		iEET.deleteOptions.top.exitButton:Show()
+		iEET.deleteOptions.top.exitButton:SetFrameStrata('DIALOG')
+		iEET.deleteOptions.top.exitButton:SetFrameLevel(2)
+		iEET.deleteOptions.top.exitButton.text = iEET.deleteOptions.top.exitButton:CreateFontString()
+		iEET.deleteOptions.top.exitButton.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+		iEET.deleteOptions.top.exitButton.text:SetPoint('CENTER', iEET.deleteOptions.top.exitButton, 'CENTER', 0,0)
+		iEET.deleteOptions.top.exitButton.text:SetText('X')
+		iEET.deleteOptions.top.exitButton.text:Show()
+		
+		
+		local deleteOptionsVars = {
+			dif = false,
+			encounter = false,
+			del = false,
+		}
+		local function setErrorText(check)
+			if check then
+				if deleteOptionsVars.encounter and deleteOptionsVars.del then
+					return true
+				else
+					return false
+				end
+			end
+			local errorText
+			if not  deleteOptionsVars.encounter then
+				errorText = 'Error: EncounterID has to be number, use "" or "*" to select all encounters.'
+			end
+			if not deleteOptionsVars.del then
+				if errorText then
+					errorText = errorText .. '\nError: Choose delete mode.'
+				else
+					errorText = 'Error: Choose delete mode.'
+				end
+			end
+			if errorText then
+				iEET.deleteOptions.errorText:SetText(errorText)
+				iEET.deleteOptions.errorText:Show()
+			else
+				iEET.deleteOptions.errorText:SetText('')
+				iEET.deleteOptions.errorText:Hide()
+			end
+		end
+		local function getMenuTable(menuOption)
+			local t = {}
+			if menuOption == 'dif' then
+				local tempKeys = {}
+				for keyString, dataString in pairs(iEET_Data) do
+					local dif = keyString:match('{d=(%d+)}')
+					tempKeys[tonumber(dif)] = true
+				end
+				for difID, _ in spairs(tempKeys) do
+					local difName, groupType = GetDifficultyInfo(difID)
+					local temp = {}
+					temp.text = string.format('%s (%s)', difName, groupType)
+					temp.keepShownOnClick = false
+					temp.isNotRadio = true
+					temp.notCheckable = true
+					temp.func = function()
+						deleteOptionsVars.dif = difID
+						iEET.deleteOptions.chooseDifficulty.text:SetText(string.format('%s (%s)', difName, groupType))
+					end
+					table.insert(t, temp)
+				end
+				table.insert(t, {text = 'Any', func = function()
+					deleteOptionsVars.dif = false
+					iEET.deleteOptions.chooseDifficulty.text:SetText('Any')
+				end, notCheckable = true})
+			else
+				local opt = {
+					[1] = {k = 'deleteAll', v = 'Delete all'},
+					[2] = {k = 'saveLastKill', v = 'Save last kill'},
+					[3] = {k = 'saveShortestKill', v = 'Save shortest kill'},
+					[4] = {k = 'deleteAllWipes', v = 'Delete all wipes'},
+					[5] = {k = 60, v = 'Delete under 60sec fights'},
+					[6] = {k = 120, v = 'Delete under 120sec fights'},
+					[7] = {k = 180, v = 'Delete under 180sec fights'},
+					[8] = {k = 240, v = 'Delete under 240sec fights'},
+					[9] = {k = 300, v = 'Delete under 300sec fights'},
+					[10] = {k = 360, v = 'Delete under 360sec fights'},
+					[11] = {k = 420, v = 'Delete under 420sec fights'},
+				}
+				for _, data in ipairs(opt) do
+					local temp = {}
+					temp.text = data.v
+					temp.keepShownOnClick = false
+					temp.isNotRadio = true
+					temp.notCheckable = true
+					temp.func = function()
+						deleteOptionsVars.del = data.k
+						iEET.deleteOptions.chooseDeleteMode.text:SetText(data.v)
+						setErrorText()
+					end
+					table.insert(t, temp)
+				end
+			end
+			table.insert(t, {text = 'Close', func = function() CloseDropDownMenus() end, notCheckable = true})
+			return t
+		end
+		
+		iEET.deleteOptions.chooseDifficulty = CreateFrame('button', nil, iEET.deleteOptions.mainFrame)
+		iEET.deleteOptions.chooseDifficulty:SetBackdrop(iEET.backdrop)
+		iEET.deleteOptions.chooseDifficulty:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
+		iEET.deleteOptions.chooseDifficulty:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
+		iEET.deleteOptions.chooseDifficulty:SetSize(100,20)
+		iEET.deleteOptions.chooseDifficulty:EnableMouse(true)
+		iEET.deleteOptions.chooseDifficulty:SetPoint('TOPLEFT', iEET.deleteOptions.mainFrame, 'TOPLEFT', 3,-18)
+		iEET.deleteOptions.chooseDifficulty.text = iEET.deleteOptions.chooseDifficulty:CreateFontString()
+		iEET.deleteOptions.chooseDifficulty.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+		iEET.deleteOptions.chooseDifficulty.text:SetPoint('CENTER', iEET.deleteOptions.chooseDifficulty, 'CENTER', 0,0)
+		iEET.deleteOptions.chooseDifficulty.text:SetWidth(100)
+		iEET.deleteOptions.chooseDifficulty.text:SetHeight(20)
+		iEET.deleteOptions.chooseDifficulty.text:SetText('Any')
+		iEET.deleteOptions.chooseDifficulty.title = iEET.deleteOptions.chooseDifficulty:CreateFontString()
+		iEET.deleteOptions.chooseDifficulty.title:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+		iEET.deleteOptions.chooseDifficulty.title:SetPoint('BOTTOM', iEET.deleteOptions.chooseDifficulty, 'TOP', 0,3)
+		iEET.deleteOptions.chooseDifficulty.title:SetText('Difficulty')				
+		iEET.deleteOptions.chooseDifficulty.menu = CreateFrame('Frame', 'iEET_Delete_ChooseDifficulty', iEET.deleteOptions.mainFrame, 'UIDropDownMenuTemplate')
+		iEET.deleteOptions.chooseDifficulty:SetScript('OnClick',function()
+			if UIDROPDOWNMENU_OPEN_MENU then
+				CloseDropDownMenus()
+				return
+			end
+			EasyMenu(getMenuTable('dif'), iEET.deleteOptions.chooseDifficulty.menu, iEET.deleteOptions.chooseDifficulty, 0 , 0)
+		end)
+		iEET.deleteOptions.chooseEncounter = CreateFrame('editbox', nil, iEET.deleteOptions.mainFrame)
+		iEET.deleteOptions.chooseEncounter:SetSize(100,20)
+		iEET.deleteOptions.chooseEncounter:SetAutoFocus(false)
+		iEET.deleteOptions.chooseEncounter:SetTextInsets(2, 2, 1, 0)
+		iEET.deleteOptions.chooseEncounter:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+		iEET.deleteOptions.chooseEncounter:SetBackdrop(iEET.backdrop)
+		iEET.deleteOptions.chooseEncounter:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
+		iEET.deleteOptions.chooseEncounter:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
+		iEET.deleteOptions.chooseEncounter:SetPoint('TOP', iEET.deleteOptions.mainFrame, 'TOP', 0,-18)
+		iEET.deleteOptions.chooseEncounter:SetScript('OnTextChanged', function(self)
+			local text = self:GetText()
+			if tonumber(text) then
+				deleteOptionsVars.encounter = tonumber(text)
+				setErrorText()
+			elseif text == '*' or text == '' then
+				deleteOptionsVars.encounter = true
+				setErrorText()
+			else
+				deleteOptionsVars.encounter = false
+				setErrorText()
+			end
+		end)
+		iEET.deleteOptions.chooseEncounter:SetScript('OnEnterPressed', function(self)
+			self:ClearFocus()
+		end)
+		iEET.deleteOptions.chooseEncounter:SetText('*')
+		iEET.deleteOptions.chooseEncounter.text = iEET.deleteOptions.chooseEncounter:CreateFontString()
+		iEET.deleteOptions.chooseEncounter.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+		iEET.deleteOptions.chooseEncounter.text:SetPoint('BOTTOM', iEET.deleteOptions.chooseEncounter, 'TOP', 0,3)
+		iEET.deleteOptions.chooseEncounter.text:SetText('Encounter ID')
+		
+		iEET.deleteOptions.chooseDeleteMode = CreateFrame('button', nil, iEET.deleteOptions.mainFrame)
+		iEET.deleteOptions.chooseDeleteMode:SetBackdrop(iEET.backdrop)
+		iEET.deleteOptions.chooseDeleteMode:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
+		iEET.deleteOptions.chooseDeleteMode:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
+		iEET.deleteOptions.chooseDeleteMode:SetSize(100,20)
+		iEET.deleteOptions.chooseDeleteMode:EnableMouse(true)
+		iEET.deleteOptions.chooseDeleteMode:SetPoint('TOPRIGHT', iEET.deleteOptions.mainFrame, 'TOPRIGHT', -3,-18)
+		iEET.deleteOptions.chooseDeleteMode.text = iEET.deleteOptions.chooseDeleteMode:CreateFontString()
+		iEET.deleteOptions.chooseDeleteMode.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+		iEET.deleteOptions.chooseDeleteMode.text:SetPoint('CENTER', iEET.deleteOptions.chooseDeleteMode, 'CENTER', 0,0)
+		iEET.deleteOptions.chooseDeleteMode.text:SetWidth(100)
+		iEET.deleteOptions.chooseDeleteMode.text:SetHeight(20)
+		iEET.deleteOptions.chooseDeleteMode.text:SetText('Choose')
+		iEET.deleteOptions.chooseDeleteMode.title = iEET.deleteOptions.chooseDeleteMode:CreateFontString()
+		iEET.deleteOptions.chooseDeleteMode.title:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+		iEET.deleteOptions.chooseDeleteMode.title:SetPoint('BOTTOM', iEET.deleteOptions.chooseDeleteMode, 'TOP', 0,3)
+		iEET.deleteOptions.chooseDeleteMode.title:SetText('Delete option')				
+		iEET.deleteOptions.chooseDeleteMode.menu = CreateFrame('Frame', 'iEET_Delete_DeleteOption', iEET.deleteOptions.mainFrame, 'UIDropDownMenuTemplate')
+		iEET.deleteOptions.chooseDeleteMode:SetScript('OnClick',function()
+			if UIDROPDOWNMENU_OPEN_MENU then
+				CloseDropDownMenus()
+				return
+			end
+			EasyMenu(getMenuTable(), iEET.deleteOptions.chooseDeleteMode.menu, iEET.deleteOptions.chooseDeleteMode, 0 , 0)
+		end)
+		
+		iEET.deleteOptions.deleteButton = CreateFrame('FRAME', nil, iEET.deleteOptions.mainFrame)
+		iEET.deleteOptions.deleteButton:SetSize(width-6, 25)
+		iEET.deleteOptions.deleteButton:SetPoint('BOTTOM', iEET.deleteOptions.mainFrame, 'BOTTOM', 0, 3)
+		iEET.deleteOptions.deleteButton:SetBackdrop(iEET.backdrop)
+		iEET.deleteOptions.deleteButton:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
+		iEET.deleteOptions.deleteButton:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
+		iEET.deleteOptions.deleteButton:SetScript('OnMouseDown', function(self,button)
+			if setErrorText(true) then
+				iEET:massDelete(deleteOptionsVars)
+			end
+		end)
+		iEET.deleteOptions.deleteButton:EnableMouse(true)
+		iEET.deleteOptions.deleteButton:Show()
+		iEET.deleteOptions.deleteButton:SetFrameStrata('DIALOG')
+		iEET.deleteOptions.deleteButton:SetFrameLevel(2)
+		iEET.deleteOptions.deleteButton.text = iEET.deleteOptions.deleteButton:CreateFontString()
+		iEET.deleteOptions.deleteButton.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+		iEET.deleteOptions.deleteButton.text:SetPoint('CENTER', iEET.deleteOptions.deleteButton, 'CENTER', 0,0)
+		iEET.deleteOptions.deleteButton.text:SetText('Delete')
+		iEET.deleteOptions.deleteButton.text:Show()
+		
+		iEET.deleteOptions.errorText = iEET.deleteOptions.mainFrame:CreateFontString()
+		iEET.deleteOptions.errorText:SetFont(iEET.font, iEET.fontsize+2, 'OUTLINE')
+		iEET.deleteOptions.errorText:SetPoint('BOTTOM', iEET.deleteOptions.deleteButton, 'TOP', 0,3)
+		iEET.deleteOptions.errorText:SetPoint('TOP', iEET.deleteOptions.chooseEncounter, 'BOTTOM', 0,-3)
+		iEET.deleteOptions.errorText:SetWidth(width-20)
+		iEET.deleteOptions.errorText:SetJustifyV('MIDDLE')
+		iEET.deleteOptions.errorText:SetText('')
+		iEET.deleteOptions.errorText:SetTextColor(1,0,0,1)
+	elseif iEET.deleteOptions.mainFrame:IsShown() then
+		iEET.deleteOptions.mainFrame:Hide()
+	else
+		iEET.deleteOptions.mainFrame:Show()
+	end
 end
 function iEET:Options()
 	if iEET.optionsFrame then
@@ -3570,4 +3927,10 @@ function IEET_TOGGLE(window)
 end
 function iEET_Debug(v)
 	return iEET[v]
+end
+function iEET_Advanced_Delete(dif, encounter, fightTime) -- Usage: iEET_Advanced_Delete(<difficulty, number, or false for any difficulty>, <encounterID(number) or true, <fight time (delete under), number, seconds>)
+	--example: iEET_Advanced_Delete(false, true, 60), would delete any fights under 60 seconds
+	if encounter and fightTime then
+		iEET:massDelete({['dif'] = dif, ['encounter'] = encounter, ['del'] = fightTime})
+	end
 end
