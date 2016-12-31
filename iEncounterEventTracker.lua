@@ -1411,16 +1411,14 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 		if event == 29 or event == 43 or event == 44 then --trying to fix monster emotes, MONSTER_EMOTE
 			--"|TInterface\\Icons\\spell_fel_elementaldevastation.blp:20|tVerestriona's |cFFFF0000|Hspell:182008|h[Latent Energy]|h|r reacts violently as they step into the |cFFFF0000|Hspell:179582|h[Rumbling Fissure]|h|r!}|D|"
 			--TODO: Better solution
-			--[[
 			msg = string.gsub(spellID, "|T.+|t", "") -- Textures
-			msg = string.gsub(msg, "spell:%d-", "") -- Spells
 			msg = string.gsub(msg, "|h", "") -- Spells
 			msg = string.gsub(msg, "|H", "") -- Spells
 			msg = string.gsub(msg, "|c........", "") -- Colors
 			msg = string.gsub(msg, "|r", "") -- Colors
-			--]]
-			msg = string.gsub(spellID, '|', '^') -- replace | with ^ to indicate there is a hyperlink but without messing up the tooltips
-			msg = string.gsub(spellID, '%%', '%%%%')
+			--msg = string.gsub(msg, '|', '\n') -- replace | with ^ to indicate there is a hyperlink but without messing up the tooltips
+			msg = string.gsub(msg, '%%', '%%%%')
+			msg = string.gsub(msg, ':', ';;')
 		end
 		iEET:addMessages(1, 4, 'Message', color, '\124HiEETcustomyell:' .. event .. ':' .. msg .. '\124h%s\124h') -- NEEDS CHANGING
 	elseif spellID then
@@ -1835,7 +1833,8 @@ function iEET:Hyperlinks(linkData, link)
 	local linkType = strsplit(':', linkData)
 	if linkType == 'iEETcustomyell' then
 		local _, event, spellID, spellName = strsplit(':',linkData)
-		GameTooltip:SetText(spellID)
+		local text = spellID:gsub(';;', ':')
+		GameTooltip:SetText(text)
 		--iEET_content4:AddMessage('\124HiEETcustomspell:' .. event .. ':' .. spellID .. ':' .. spellname ..'\124h' .. spellName .. '\124h', unpack(getColor(event, sourceGUID, spellID)))
 	elseif linkType == 'iEETcustomspell' then
 		local _, event, spellID, spellName, npcID = strsplit(':',linkData)
