@@ -2144,10 +2144,10 @@ function iEET:updateEncounterListMenu()
 		local encountersTempTable = {}
 		local zonesTemp = {}
 		for k,_ in pairs(iEET_Data) do -- Get encounters
-			if string.find(k, 'encounterName=') then
-				iEET:print('found old reports, please use "/ieet convert" to continue')
-				return
-			end
+			--if string.find(k, 'encounterName=') then -- swichted to first :Show()
+			--	iEET:print('found old reports, please use "/ieet convert" to continue')
+			--	return
+			--end
 			local temp = {}
 			for eK,eV in string.gmatch(k, '{(.-)=(.-)}') do
 				if eK == 'd' or eK == 'rS' or eK == 's' or eK == 'k' or eK == 'v' or eK == 'zI' or eK == 'eI' then
@@ -2157,10 +2157,10 @@ function iEET:updateEncounterListMenu()
 				end
 				temp[eK] = eV
 			end
-			if not temp.eI then
-				iEET:print('found old reports, please use "/ieet convert" to continue')
-				return
-			end
+			--if not temp.eI then
+			--	iEET:print('found old reports, please use "/ieet convert" to continue')
+			--	return
+			--end
 			temp.dataKey = k
 			if temp.zI then
 				local zone = GetRealZoneText(temp.zI)
@@ -2297,6 +2297,62 @@ function iEET:CreateMainFrame()
 	iEET.encounterInfo.text:SetPoint('CENTER', iEET.encounterInfo, 'CENTER', 0,1)
 	iEET.encounterInfo.text:SetText("Ironi's Encounter Event Tracker")
 	iEET.encounterInfo.text:Show()
+	
+	-- Prev button
+	iEET.prevEncounter = CreateFrame('FRAME', nil, iEET.frame)
+	iEET.prevEncounter:SetSize(18, 18)
+	iEET.prevEncounter:SetPoint('BOTTOMRIGHT', iEET.encounterInfo, 'BOTTOMLEFT', 0, 0)
+	iEET.prevEncounter:SetBackdrop(iEET.backdrop);
+	iEET.prevEncounter:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
+	iEET.prevEncounter:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
+	iEET.prevEncounter:SetScript('OnMouseDown', function(self,button)
+		iEET:ImportData(iEET:getNextPrevEncounter(-1))
+	end)
+	iEET.prevEncounter:SetScript('OnEnter', function()
+		GameTooltip:SetOwner(iEET.prevEncounter, 'ANCHOR_BOTTOMLEFT', 0, 20)
+		GameTooltip:SetText(iEET:getTooltipForEncounter(iEET:getNextPrevEncounter(-1)))
+	end)
+	iEET.prevEncounter:SetScript('OnLeave', function()
+		GameTooltip:ClearLines()
+		GameTooltip:Hide()
+	end)
+	iEET.prevEncounter:EnableMouse(true)
+	iEET.prevEncounter:Show()
+	iEET.prevEncounter:SetFrameStrata('HIGH')
+	iEET.prevEncounter:SetFrameLevel(2)
+	iEET.prevEncounter.text = iEET.prevEncounter:CreateFontString()
+	iEET.prevEncounter.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+	iEET.prevEncounter.text:SetPoint('CENTER', iEET.prevEncounter, 'CENTER', 0,1)
+	iEET.prevEncounter.text:SetText('<')
+	iEET.prevEncounter.text:Show()
+	
+	-- Next button
+	iEET.nextEncounter = CreateFrame('FRAME', nil, iEET.frame)
+	iEET.nextEncounter:SetSize(18, 18)
+	iEET.nextEncounter:SetPoint('BOTTOMLEFT', iEET.encounterInfo, 'BOTTOMRIGHT', 0, 0)
+	iEET.nextEncounter:SetBackdrop(iEET.backdrop);
+	iEET.nextEncounter:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
+	iEET.nextEncounter:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
+	iEET.nextEncounter:SetScript('OnMouseDown', function(self,button)
+		iEET:ImportData(iEET:getNextPrevEncounter(1))
+	end)
+	iEET.nextEncounter:SetScript('OnEnter', function()
+		GameTooltip:SetOwner(iEET.nextEncounter, 'ANCHOR_BOTTOMRIGHT', 0, 20)
+		GameTooltip:SetText(iEET:getTooltipForEncounter(iEET:getNextPrevEncounter(1)))
+	end)
+	iEET.nextEncounter:SetScript('OnLeave', function()
+		GameTooltip:ClearLines()
+		GameTooltip:Hide()
+	end)
+	iEET.nextEncounter:EnableMouse(true)
+	iEET.nextEncounter:SetFrameStrata('HIGH')
+	iEET.nextEncounter:SetFrameLevel(2)
+	iEET.nextEncounter:Show()
+	iEET.nextEncounter.text = iEET.nextEncounter:CreateFontString()
+	iEET.nextEncounter.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+	iEET.nextEncounter.text:SetPoint('CENTER', iEET.nextEncounter, 'CENTER', 0,1)
+	iEET.nextEncounter.text:SetText('>')
+	iEET.nextEncounter.text:Show()
 	iEET.detailtop = CreateFrame('FRAME', nil, iEET.frame)
 	iEET.detailtop:SetSize(433, 25)
 	iEET.detailtop:SetPoint('RIGHT', iEET.top, 'LEFT', 1, 0)
@@ -2768,6 +2824,70 @@ function iEET:CreateMainFrame()
 	--fill window
 	iEET:loopData()
 	iEET.frame:Show()
+	-- Check if fight is already saved, if its enable prev/next buttons, else hide
+	if iEET.encounterInfoData then
+		if iEET:getNextPrevEncounter(1) then
+			iEET.prevEncounter:Show()
+			iEET.nextEncounter:Show()
+		else
+			iEET.prevEncounter:Hide()
+			iEET.nextEncounter:Hide()
+		end
+	else
+		iEET.prevEncounter:Hide()
+		iEET.nextEncounter:Hide()
+	end
+end
+function iEET:getNextPrevEncounter(prevNext)
+	local encounters = {}
+	local currentEncounterString = iEET:getEncounterString()
+	if currentEncounterString then
+		for key,dataString in pairs(iEET_Data) do
+			if key:find('{d='..iEET.encounterInfoData.d..'}') and key:find('{eI='..iEET.encounterInfoData.eI..'}') then
+				local year,month,day,hour,mins = key:match('{pT=(%d+).(%d+).(%d+) (%d+):(%d+)}')
+				encounters[key] = tonumber(year..month..day..hour..mins)
+			end
+		end
+		local sortedEncounters = {}
+		local currentPos
+		for key,pullTime in spairs(encounters, function(t,a,b) return t[b] > t[a] end) do -- Sorted by date
+			table.insert(sortedEncounters, key)
+			if key == currentEncounterString then
+				currentPos = #sortedEncounters
+			end
+		end
+		if #sortedEncounters > 1 then
+			if currentPos + prevNext > #sortedEncounters then -- Return first
+				return sortedEncounters[1]
+			elseif currentPos + prevNext == 0 then -- Return last
+				return sortedEncounters[#sortedEncounters]
+			else -- continue
+				return sortedEncounters[currentPos+prevNext]
+			end
+		else
+			return false
+		end
+	else
+		return false
+	end
+end
+function iEET:getTooltipForEncounter(key)
+	local temp = {}
+		for k,v in string.gmatch(key, '{(.-)=(.-)}') do
+		temp[k] = v
+	end
+	return string.format('%s(%s)\n%s%s\n%s', temp.eN,string.sub(GetDifficultyInfo(temp.d),1,1),(temp.k == 1 and '+' or '-'),temp.fT, temp.pT)
+end
+function iEET:getEncounterString()
+	local currentEncounterString = ''
+	if iEET.encounterInfoData.eI then
+		for k,v in spairs(iEET.encounterInfoData) do
+			currentEncounterString = currentEncounterString .. '{' .. k .. '=' .. v .. '}'
+		end
+		return currentEncounterString
+	else
+		return false
+	end
 end
 function iEET:massDelete(data)
 	local specificEncounter = tonumber(data.encounter)
@@ -2802,10 +2922,10 @@ function iEET:massDelete(data)
 		for key, _ in pairs(encounters) do
 			if key:find('{k=1}') then
 				local eID = key:match('{eI=(%d+)}')
-				if not eID then
-					iEET:print('found old reports, please use "/ieet convert" to continue')
-					break
-				end
+				--if not eID then
+				--	iEET:print('found old reports, please use "/ieet convert" to continue')
+				--	break
+				--end
 				if not encountersByID[eID] then
 					encountersByID[eID] = {}
 				end
@@ -3472,12 +3592,34 @@ end
 function iEET:Toggle(show)
 	if not InCombatLockdown() then
 		if not iEET.frame then
+			for key, _ in pairs(iEET_Data) do
+				if not key:find('{eI=(%d+)}') then
+					iEET:ConvertOldReports()
+					break
+				end
+			end
 			iEET:CreateMainFrame()
 		elseif iEET.frame:IsShown() and not show then
 			iEET.frame:Hide()
 		else
 			iEET.frame:Show()
 			iEET:updateEncounterListMenu()
+			-- Check if fight is already saved, if its enable prev/next buttons, else hide
+			if iEET.encounterInfoData then
+				if iEET:getNextPrevEncounter(1) then
+					print('show')
+					iEET.prevEncounter:Show()
+					iEET.nextEncounter:Show()
+				else
+					print('not saved; hide')
+					iEET.prevEncounter:Hide()
+					iEET.nextEncounter:Hide()
+				end
+			else
+				print('not found; hide')
+				iEET.prevEncounter:Hide()
+				iEET.nextEncounter:Hide()
+			end
 		end
 	elseif iEET.frame and not show then
 		iEET.frame:Hide()
@@ -3575,7 +3717,7 @@ function iEET:ExportData(auto)
 			end
 		end
 		local encounterString = ''
-		for k,v in pairs(iEET.encounterInfoData) do
+		for k,v in spairs(iEET.encounterInfoData) do
 			encounterString = encounterString .. '{' .. k .. '=' .. v .. '}'
 		end
 		local dataString = ''
@@ -3594,7 +3736,7 @@ function iEET:ExportData(auto)
 		iEET:print((iEET.encounterInfoData.eN and iEET.encounterInfoData.eN or 'Unknown').." exported."..(auto and ' (autosave)' or ''))
 	end
 end
-function iEET:ImportData(dataKey)
+function iEET:ImportData(dataKey, prevNext)
 	iEET.data = {}
 	iEET.encounterInfoData = {}
 	for eK,eV in string.gmatch(dataKey, '{(.-)=(.-)}') do
@@ -3674,18 +3816,29 @@ function iEET:ConvertOldReports() -- XXX remove at some point
 					targetData = dV
 				end
 				if targetData and eventData then
-					return '{eI='..tonumber(targetData)..'}'
+					return targetData
 				end
 			end
 		end
-		return
+		return 0
 	end
 	local newDataTable = {}
 	local count = 0
 	for key, dataString in pairs(iEET_Data) do
 		if not key:find('eI=') then
-			local eI = getEncounterStartData(dataString)
-			newDataTable[key .. (eI or '{eI=0}')] = dataString
+			--convert string to table; sort it; convert it back to string
+			local temp = {}
+			for k,v in string.gmatch(key, '{(.-)=(.-)}') do
+				temp[k] = v
+			end
+			-- add encounterID
+			temp.eI = getEncounterStartData(dataString)
+			-- convert back to string in right order
+			local encounterString = ''
+			for k,v in spairs(temp) do
+				encounterString = encounterString .. '{' .. k .. '=' .. v .. '}'
+			end
+			newDataTable[encounterString] = dataString
 			count = count + 1
 		else
 			newDataTable[key] = dataString
@@ -3803,6 +3956,7 @@ function iEET:Force(start, name)
 			['rS'] = GetNumGroupMembers(),
 			['k'] = 1,
 			['v'] = iEET.version,
+			['eI'] = 0, 
 		}
 		--register events and start recording
 	else
@@ -3827,6 +3981,7 @@ function iEET:Force(start, name)
 			['rS'] = GetNumGroupMembers(),
 			['k'] = 1,
 			['v'] = iEET.version,
+			['eI'] = 0,
 			}
 		end
 		iEET:print(string.format('Stopped recording: %s (%s)', iEET.encounterInfoData.eN, iEET.encounterInfoData.fT))
