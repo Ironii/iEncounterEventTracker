@@ -14,9 +14,6 @@ hp	Health		number	USCS only
 --]]--------------------------------------------------------------
 --[[TO DO:--
 compare
-add:
-CHAT_MSG_RAID_BOSS_EMOTE
-RAID_BOSS_EMOTE
 --]]
 local _, iEET = ...
 iEET.data = {}
@@ -39,7 +36,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.543
+iEET.version = 1.6
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -460,7 +457,6 @@ function addon:PLAYER_LOGOUT()
 	end
 end
 function addon:ENCOUNTER_START(encounterID, encounterName, ...)
-	print('iEET debug:', encounterID, encounterName, ...)
 	if not iEET.forceRecording then
 		local mapID = select(8, GetInstanceInfo())
 		iEET:StartRecording()
@@ -480,7 +476,6 @@ function addon:ENCOUNTER_START(encounterID, encounterName, ...)
 	table.insert(iEET.data, {['e'] = 27, ['t'] = GetTime(), ['cN'] = encounterName, ['tN'] = encounterID})
 end
 function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize, kill,...)
-	print('iEET debug:', EncounterID, encounterName, difficultyID, raidSize, kill,...)
 	table.insert(iEET.data, {['e'] = 28, ['t'] = GetTime() ,['cN'] = kill == 1 and 'Victory!' or 'Wipe'})
 	if not iEET.forceRecording then
 		if iEET.encounterInfoData then
@@ -1401,7 +1396,7 @@ function iEET:addSpellDetails(hyperlink, linkData)
 	end
 	iEETDetailInfo:SetText(hyperlink)
 end
-function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID,intervall,count,sourceGUID, hp, extraData)
+function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID,intervall,count,sourceGUID, hp, extraData, destGUID)
 	local color = iEET:getColor(event, sourceGUID, spellID)
 	iEET:addMessages(1, 1, timestamp, color, '\124HiEETtime:' .. timestamp ..'\124h%s\124h')
 	iEET:addMessages(1, 2, intervall, color, intervall and ('\124HiEETtime:' .. intervall ..'\124h%s\124h') or nil)
@@ -1434,7 +1429,11 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 				npcID = 'NONE'
 			end
 			--iEET.content4:AddMessage('\124HiEETcustomspell:' .. event .. ':' .. spellID .. ':' .. spellName .. ':' .. (npcID and npcID or 'NONE').. '!' .. (spawnID and spawnID or '') ..'\124h' .. spellnametoShow .. '\124h', unpack(iEET:getColor(event, sourceGUID, spellID))) -- NEEDS CHANGING
-			iEET:addMessages(1, 4, spellName, color, '\124HiEETcustomspell:' .. event .. ':' .. spellID .. ':' .. spellName .. ':' .. (npcID and npcID or 'NONE') .. '!' .. (spawnID and spawnID or '') .. '\124h%s\124h')
+			iEET:addMessages(1, 4, spellName, color, '\124HiEETcustomspell:' .. event .. 
+				':' .. spellID .. ':' .. spellName .. 
+				':' .. (npcID and (npcID .. '!' .. (spawnID and spawnID or '')) or 'NONE')
+				.. ((destGUID and destGUID:len() > 0) and (':'.. destGUID) or '')
+				..'\124h%s\124h')
 		end
 	else
 		iEET.content4:AddMessage(' ')
@@ -1677,7 +1676,7 @@ function iEET:loopData(msg)
 				end
 			end
 			if iEETConfig.tracking[iEET.events.fromID[v.e].l] or v.e == 27 or v.e == 28 then -- ENCOUNTER_START & ENCOUNTER_END
-				iEET:addToContent(timestamp,v.e,v.cN,v.tN,v.sN,v.sI,intervall,count,v.sG,v.hp,v.eD)
+				iEET:addToContent(timestamp,v.e,v.cN,v.tN,v.sN,v.sI,intervall,count,v.sG,v.hp,v.eD, v.dG)
 			end
 		end
 	end
@@ -1837,14 +1836,17 @@ function iEET:Hyperlinks(linkData, link)
 		GameTooltip:SetText(text)
 		--iEET_content4:AddMessage('\124HiEETcustomspell:' .. event .. ':' .. spellID .. ':' .. spellname ..'\124h' .. spellName .. '\124h', unpack(getColor(event, sourceGUID, spellID)))
 	elseif linkType == 'iEETcustomspell' then
-		local _, event, spellID, spellName, npcID = strsplit(':',linkData)
+		local _, event, spellID, spellName, npcID, destGUID = strsplit(':',linkData)
 		if spellID == 'NONE' then
 			return
 		end
 		local hyperlink = '\124Hspell:' .. tonumber(spellID)
 		GameTooltip:SetHyperlink('spell:' .. tonumber(spellID))
 		GameTooltip:AddLine('spellID:' .. spellID)
-		GameTooltip:AddLine('npcID:' .. npcID)
+		GameTooltip:AddLine('npc:' .. npcID)
+		if destGUID then
+			GameTooltip:AddLine('destGUID:' .. destGUID)
+		end
 	elseif linkType == 'iEETtime' then
 		local _, txt = strsplit(':',linkData)
 		GameTooltip:SetText(txt)
@@ -3607,16 +3609,13 @@ function iEET:Toggle(show)
 			-- Check if fight is already saved, if its enable prev/next buttons, else hide
 			if iEET.encounterInfoData then
 				if iEET:getNextPrevEncounter(1) then
-					print('show')
 					iEET.prevEncounter:Show()
 					iEET.nextEncounter:Show()
 				else
-					print('not saved; hide')
 					iEET.prevEncounter:Hide()
 					iEET.nextEncounter:Hide()
 				end
 			else
-				print('not found; hide')
 				iEET.prevEncounter:Hide()
 				iEET.nextEncounter:Hide()
 			end
