@@ -39,4 +39,7 @@ iEET.dispels = {
 	--Warlock
 	[89808] = 1,	--Singe Magic (Imp)
 	[115276] = 1,	--Sear Magic (Fel Imp)
+	
+	-- Warrior
+	[107574] = 1,	--Avatar
 }

@@ -38,6 +38,7 @@ iEET.npcIgnoreList = {
 	[103268] = true,	--Dire Beast
 	[104493] = true,	--Spitting Cobra
 	[113344] = true,	--Beast
+	[113346] = true,	--Beast
 	[113347] = true,	--Dire Beast
 
 --Mage
