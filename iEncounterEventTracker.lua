@@ -2858,7 +2858,7 @@ function iEET:getNextPrevEncounter(prevNext)
 				currentPos = #sortedEncounters
 			end
 		end
-		if #sortedEncounters > 1 then
+		if #sortedEncounters > 1 and currentPos then
 			if currentPos + prevNext > #sortedEncounters then -- Return first
 				return sortedEncounters[1]
 			elseif currentPos + prevNext == 0 then -- Return last
