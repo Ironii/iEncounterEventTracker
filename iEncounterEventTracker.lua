@@ -476,7 +476,7 @@ function addon:ENCOUNTER_START(encounterID, encounterName, ...)
 	table.insert(iEET.data, {['e'] = 27, ['t'] = GetTime(), ['cN'] = encounterName, ['tN'] = encounterID})
 end
 function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize, kill,...)
-	table.insert(iEET.data, {['e'] = 28, ['t'] = GetTime() ,['cN'] = kill == 1 and 'Victory!' or 'Wipe'})
+	table.insert(iEET.data, {['e'] = 28, ['t'] = GetTime() ,['cN'] = kill == 1 and 'Victory!' or 'Wipe', ['tN'] = encounterID})
 	if not iEET.forceRecording then
 		if iEET.encounterInfoData then
 			iEET.encounterInfoData.fT = iEET.encounterInfoData.s and date('%M:%S', (GetTime() - iEET.encounterInfoData.s)) or '00:00' -- if we are missing start time for some reason
@@ -3758,7 +3758,14 @@ function iEET:ImportData(dataKey, prevNext)
 		end
 		table.insert(iEET.data, tempTable)
 	end
-	iEET:loopData()
+	local msg
+	if iEET.editbox:GetText() ~= 'Search' then
+		local txt = iEET.editbox:GetText()
+		if string.len(txt) > 1 then
+			msg = string.lower(txt)
+		end
+	end
+	iEET:loopData(msg)
 	iEET:print(string.format('Imported %s on %s (%s), %sman (%s), Time: %s.',iEET.encounterInfoData.eN,GetDifficultyInfo(iEET.encounterInfoData.d),iEET.encounterInfoData.fT, iEET.encounterInfoData.rS, (iEET.encounterInfoData.k == 1 and 'kill' or 'wipe'), iEET.encounterInfoData.pT))
 end
 function iEET:ConvertOldReports() -- XXX remove at some point
