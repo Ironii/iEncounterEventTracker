@@ -1,0 +1,15 @@
+## Interface: 70200
+## Title: iEncounterEventTracker
+## Notes: Ironi's Encounter Event Tracker
+## Author: Ironi
+## Version: 1.603
+## DefaultState: enabled
+## SavedVariables: iEETConfig, iEET_Data, iEET_ExportFromWTF
+
+iEncounterEventTracker.lua
+approvedSpells.lua
+ignoredSpells.lua
+npcIgnoreList.lua
+dispels.lua
+interrupts.lua
+taunts.lua

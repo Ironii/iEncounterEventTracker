@@ -1,0 +1,30 @@
+tag a6b7a6a018d45e3fd3adc3f06bc01cca4e60ab2d 1.601
+Author:	Ironi <jessemanelius@gmail.com>
+Date:	Sat Jan 21 01:00:32 2017 +0200
+
+tagging as 1.601
+
+commit 878efdbc984dd2c62c3074f69f6c35f6f9a0b161
+Author: Ironi <jessemanelius@gmail.com>
+Date:   Sat Jan 21 00:59:58 2017 +0200
+
+    update ignore lists
+
+commit a9735dcb9dd2fc7620e1c7f6f55f6fae21eca5bd
+Author: Ironi <jessemanelius@gmail.com>
+Date:   Sat Jan 21 00:54:06 2017 +0200
+
+    fix typo inside ENCOUNTER_END function, should now actually record encounterID & show it as targetName
+
+commit 36947b8431c3ef7228617feda1023f8937e1f630
+Author: Ironi <jessemanelius@gmail.com>
+Date:   Sat Jan 21 00:51:41 2017 +0200
+
+    add nil check to quick switch buttons
+
+commit 18f5a7879998303a5415b5f09eadf5f4883dcacf
+Author: Ironi <jessemanelius@gmail.com>
+Date:   Sat Jan 21 00:48:10 2017 +0200
+
+    use filters from editbox when importing
+
