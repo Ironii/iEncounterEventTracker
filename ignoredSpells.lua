@@ -11,8 +11,8 @@ iEET.ignoredSpells = {
 	[216099] = true,	--Aw, Nuts!
 	[222278] = true,	--Grim Resolve
 	[222294] = true,	--Tranquil Presence
-	
-	
+
+
 
 --Death Knight
 	[145629] = true,	--Anti-Magic Zone
@@ -30,7 +30,8 @@ iEET.ignoredSpells = {
 
 --Shaman
 	[157384] = true,	--Eye of the Storm
-
+--Warrior
+	[227847] = true,	--Bladestorm
 --Encounter Specific
 
 --T17

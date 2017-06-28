@@ -36,7 +36,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.603
+iEET.version = 1.604
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -1441,7 +1441,7 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 			end
 			--iEET.content4:AddMessage('\124HiEETcustomspell:' .. event .. ':' .. spellID .. ':' .. spellName .. ':' .. (npcID and npcID or 'NONE').. '!' .. (spawnID and spawnID or '') ..'\124h' .. spellnametoShow .. '\124h', unpack(iEET:getColor(event, sourceGUID, spellID))) -- NEEDS CHANGING
 			iEET:addMessages(1, 4, spellName, color, '\124HiEETcustomspell:' .. event ..
-				':' .. spellID .. ':' .. spellName ..
+				':' .. spellID .. ':' .. string.gsub(spellName, '%%', '%%%%') ..
 				':' .. (npcID and (npcID .. '!' .. (spawnID and spawnID or '')) or 'NONE')
 				.. ((destGUID and destGUID:len() > 0) and (':'.. destGUID) or '')
 				..'\124h%s\124h')
