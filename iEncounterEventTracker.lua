@@ -36,7 +36,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.604
+iEET.version = 1.606
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -452,6 +452,7 @@ end
 function addon:ADDON_LOADED(addonName)
 	if addonName == 'iEncounterEventTracker' then
 		iEETConfig = iEETConfig or {}
+		iEET_Data = iEET_Data or {}
 		--if not iEETConfig.version or not iEETConfig.tracking or iEETConfig.version < 1.503 then -- Last version with db changes
 		iEET:LoadDefaults()
 		--else
@@ -920,7 +921,6 @@ function iEET:TrimWS(str)
 	return str:gsub('^%s*(.-)%s*$', '%1')
 end
 function iEET:ShowColorPicker(frame)
---function iEET:ShowColorPicker(r,g,b,a,callback)
 	iEET.colorToChange = frame
 	local r,g,b,a
 	if frame == 'mainBG' then
@@ -1860,7 +1860,11 @@ function iEET:Hyperlinks(linkData, link)
 		end
 	elseif linkType == 'iEETtime' then
 		local _, txt = strsplit(':',linkData)
-		GameTooltip:SetText(txt)
+		local ntxt = tonumber(txt)
+		local m = math.floor(ntxt/60)
+		local s = ntxt%60
+		local ms = (s-math.floor(s))*1000
+		GameTooltip:SetText(string.format('%s\n%02d:%02d.%03d',txt,m,s,ms))
 	elseif linkType == 'iEETNpcList' then
 		local _, txt = strsplit(':',linkData)
 		GameTooltip:SetText(txt)
