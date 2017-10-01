@@ -14,6 +14,7 @@ hp	Health		number	USCS only
 --]]--------------------------------------------------------------
 --[[TO DO:--
 compare
+better fight selecting
 --]]
 local _, iEET = ...
 iEET.data = {}
@@ -36,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.606
+iEET.version = 1.610
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -436,6 +437,7 @@ function iEET:LoadDefaults()
 			},
 		},
 		['classColors'] = false,
+		['cInfo'] = true,
 	}
 	for k,v in pairs(defaults) do
 		if iEETConfig[k] == nil then
@@ -892,13 +894,14 @@ function addon:CHAT_MSG_MONSTER_YELL(msg, sourceName)
 		['sG'] = sourceName,
 	});
 end
-function addon:RAID_BOSS_EMOTE(msg, sourceName)
+function addon:RAID_BOSS_EMOTE(msg, sourceName_,_,destName)
 	table.insert(iEET.data, {
 		['e'] = 43,
 		['t'] = GetTime(),
 		['sI'] = msg,
 		['cN'] = sourceName or UNKNOWN,
 		['sG'] = sourceName or UNKNOWN,
+		['tN'] = destName,
 	})
 end
 function addon:RAID_BOSS_WHISPER(msg, sourceName) -- im not sure if there is sourceName, needs testing
@@ -1312,6 +1315,13 @@ function iEET:addSpellDetails(hyperlink, linkData)
 	--local linkType, eventToFind, spellIDToFind, spellNametoFind = strsplit(':',linkData)
 	local linkType, eventToFind, spellIDToFind, spellNametoFind = strsplit(':',linkData)
 	eventToFind = tonumber(eventToFind)
+	if eventToFind == 43 or eventToFind == 44 then -- RAID_BOSS_EMOTE, RAID_BOSS_WHISPER
+		spellIDToFind = spellIDToFind:match('spell;;(%d+)')
+		iEETDetailInfo:SetText(iEET.events.fromID[eventToFind].s ..':'..GetSpellInfo(spellIDToFind))
+		spellIDToFind = 'spell:'..spellIDToFind
+	else
+		iEETDetailInfo:SetText(iEET.events.fromID[eventToFind].s ..':'..hyperlink)
+	end
 	if linkType == 'iEETcustomspell' then
 		spellIDToFind = tonumber(spellIDToFind)
 	end
@@ -1343,7 +1353,11 @@ function iEET:addSpellDetails(hyperlink, linkData)
 					found = true
 				end
 			elseif v.sI then
-				if v.sI == spellIDToFind and v.e == eventToFind then
+				if (v.e == eventToFind) and (eventToFind == 43 or eventToFind == 44) then -- RAID_BOSS_EMOTE, RAID_BOSS_WHISPER
+					if v.sI:find(spellIDToFind) then
+						found = true
+					end
+				elseif v.sI == spellIDToFind and v.e == eventToFind then
 					found = true
 				end
 			end
@@ -1405,7 +1419,6 @@ function iEET:addSpellDetails(hyperlink, linkData)
 			end
 		end
 	end
-	iEETDetailInfo:SetText(hyperlink)
 end
 function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID,intervall,count,sourceGUID, hp, extraData, destGUID)
 	local color = iEET:getColor(event, sourceGUID, spellID)
@@ -1426,7 +1439,18 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 			msg = string.gsub(msg, '%%', '%%%%')
 			msg = string.gsub(msg, ':', ';;')
 		end
-		iEET:addMessages(1, 4, 'Message', color, '\124HiEETcustomyell:' .. event .. ':' .. msg .. '\124h%s\124h') -- NEEDS CHANGING
+		if event == 43 or event == 44 then
+			local sID = msg:match('spell;;(%d+)')
+			if sID then
+				local s = 'Message'
+				local sN = GetSpellInfo(sID) or 'Message'
+				iEET:addMessages(1, 4, sN, color, '\124HiEETcustomyell:' .. event .. ':' .. msg .. '\124h%s\124h')
+			else
+				iEET:addMessages(1, 4, 'Message', color, '\124HiEETcustomyell:' .. event .. ':' .. msg .. '\124h%s\124h') -- NEEDS CHANGING
+			end
+		else
+			iEET:addMessages(1, 4, 'Message', color, '\124HiEETcustomyell:' .. event .. ':' .. msg .. '\124h%s\124h') -- NEEDS CHANGING
+		end
 	elseif spellID then
 		if spellID == 133217 then -- INSTANCE_ENCOUNTER_ENGAGE_UNIT
 			iEET:addMessages(1, 4, spellName, color,'\124HiEETNpcList:' .. sourceGUID .. '\124h%s\124h')
@@ -1843,9 +1867,13 @@ function iEET:Hyperlinks(linkData, link)
 	local linkType = strsplit(':', linkData)
 	if linkType == 'iEETcustomyell' then
 		local _, event, spellID, spellName = strsplit(':',linkData)
+		local sID = spellID:match('spell;;(%d+)')
 		local text = spellID:gsub(';;', ':')
-		GameTooltip:SetText(text)
-		--iEET_content4:AddMessage('\124HiEETcustomspell:' .. event .. ':' .. spellID .. ':' .. spellname ..'\124h' .. spellName .. '\124h', unpack(getColor(event, sourceGUID, spellID)))
+		if GetSpellInfo(sID) then -- PTR/LIVE nil check
+			local spellInfo = GetSpellDescription(sID)
+			text = text..'\n\n'..spellInfo
+		end
+		GameTooltip:AddLine(text, nil,nil,nil,true) -- Force wrapping
 	elseif linkType == 'iEETcustomspell' then
 		local _, event, spellID, spellName, npcID, destGUID = strsplit(':',linkData)
 		if spellID == 'NONE' then
@@ -2854,6 +2882,11 @@ function iEET:CreateMainFrame()
 		iEET.prevEncounter:Hide()
 		iEET.nextEncounter:Hide()
 	end
+	--Contact information on first run
+	if iEETConfig.cInfo then
+		iEETConfig.cInfo = false
+		iEET:print("This is one time only message with authors contact information, feel free to use any of them if you run into any problems.\nBnet:\n    Ironi#2880 (EU)\nDiscord:\n    Ironi#2097\n    https://discord.gg/stY2nyj")
+	end
 end
 function iEET:getNextPrevEncounter(prevNext)
 	local encounters = {}
@@ -3096,47 +3129,11 @@ to require every from/to combo use: requireAll (not case sensitive)
 REMEMBER TO CLICK 'Save' IF YOU WANT TO SAVE YOUR FILTERS, CLICKING 'Cancel' WILL ERASE YOUR EDITS
 
 Event names/values:
-1/SPELL_CAST_START/SC_START
-2/SPELL_CAST_SUCCESS/SC_SUCCESS
-3/SPELL_AURA_APPLIED/+SAURA
-4/SPELL_AURA_REMOVED/-SAURA
-5/SPELL_AURA_APPLIED_DOSE/+SA_DOSE
-6/SPELL_AURA_REMOVED_DOSE/-SA_DOSE
-7/SPELL_AURA_REFRESH/SAURA_R
-8/SPELL_CAST_FAILED/SC_FAILED
-9/SPELL_CREATE
-10/SPELL_SUMMON
-11/SPELL_HEAL
-12/SPELL_DISPEL
-13/SPELL_INTERRUPT/S_INTERRUPT
-14/SPELL_PERIODIC_CAST_START/SPC_START
-15/SPELL_PERIODIC_CAST_SUCCESS/SPC_SUCCESS
-16/SPELL_PERIODIC_AURA_APPLIED/+SPAURA
-17/SPELL_PERIODIC_AURA_REMOVED/-SPAURA
-18/SPELL_PERIODIC_AURA_APPLIED_DOSE/+SPA_DOSE
-19/SPELL_PERIODIC_AURA_REMOVED_DOSE/-SPA_DOSE
-20/SPELL_PERIODIC_AURA_REFRESH/SPAURA_R
-21/SPELL_PERIODIC_CAST_FAILED/SPC_FAILED
-22/SPELL_PERIODIC_CREATE/SP_CREATE
-23/SPELL_PERIODIC_SUMMON/SP_SUMMON
-24/SPELL_PERIODIC_HEAL/SP_HEAL
-25/UNIT_DIED
-26/UNIT_SPELLCAST_SUCCEEDED/USC_SUCCEEDED
-27/ENCOUNTER_START
-28/ENCOUNTER_END
-29/MONSTER_EMOTE
-30/MONSTER_SAY
-31/MONSTER_YELL
-32/UNIT_TARGET
-33/INSTANCE_ENCOUNTER_ENGAGE_UNIT/IEEU
-34/UNIT_POWER
-35/PLAYER_REGEN_DISABLED/COMBAT_START
-36/PLAYER_REGEN_ENABLED/COMBAT_END
-37/MANUAL_LOGGING_START/MANUAL_START
-38/MANUAL_LOGGING_END/MANUAL_END
-39/UNIT_SPELLCAST_START/USC_START
-40/UNIT_SPELLCAST_CHANNEL_START/USC_C_START]]
+]]
 
+			for i = 1, #iEET.events.fromID do
+				infoText = infoText..string.format('\n%d - %s - %s', i, iEET.events.fromID[i].l, iEET.events.fromID[i].s)
+			end
 			iEET.infoFrame.text:SetText(infoText)
 			iEET.infoFrame.text:Show()
 			iEET.infoFrame:SetSize(iEET.infoFrame.text:GetStringWidth()+4,iEET.infoFrame.text:GetStringHeight()+4)
@@ -4110,6 +4107,8 @@ SlashCmdList["IEET"] = function(realMsg)
 		iEET:print(iEETConfig.version)
 	elseif msg == 'wtf' then
 		iEET:ExportFightsToWTF()
+	elseif msg == 'contact' then
+		iEET:print("\nBnet:\n    Ironi#2880 (EU)\nDiscord:\n    Ironi#2097\n    https://discord.gg/stY2nyj")
 	else
 		iEET:print(string.format('Command "%s" not found, read the readme.txt.', msg))
 	end
@@ -4144,5 +4143,11 @@ function iEET_Advanced_Delete(dif, encounter, fightTime) -- Usage: iEET_Advanced
 	--example: iEET_Advanced_Delete(false, true, 60), would delete any fights under 60 seconds
 	if encounter and fightTime then
 		iEET:massDelete({['dif'] = dif, ['encounter'] = encounter, ['del'] = fightTime})
+	end
+end
+addon:RegisterEvent('CHAT_MSG_ADDON')
+function addon:CHAT_MSG_ADDON(prefix, msg,msgType,sender)
+	if prefix == 'yourPrefix' then
+		addon:CHAT_MSG_MONSTER_EMOTE(msg, sender)
 	end
 end

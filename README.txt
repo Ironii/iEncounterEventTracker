@@ -1,13 +1,11 @@
 ---------------------------
 --Contact-Info-------------
 ---------------------------
-irc:
-	Ironi@Quakenet
-	Ironii@Freenode
-bnet:
+Bnet:
 	Ironi#2880 (EU)
-discord:
+Discord:
 	Ironi#2097
+	https://discord.gg/stY2nyj
 
 ---------------------------
 --General------------------
@@ -33,12 +31,13 @@ writing: 125261, will search 125261 from every table key and values
 
 /ieet			toggle window (keybinding available)
 /ieet X:
-	copy 			copy current data to an editbox where you can copy it to spreadsheet (only those that you can see in the main window, so if you have filtered somethign out, it won't show)
+	copy 			copy current data to an editbox where you can copy it to spreadsheet (only those that you can see in the main window, so if you have filtered something out, it won't show)
 	filters 		open filtering options window
 	clear			wipe all fights
 	autosave		toggle autosave
 	autodiscard X	x = seconds, auto discards fights shorter than X (when autosave is on)
 	colorreset		resets colors to default
+	contact			show author's contact information
 
 ---------------------------
 --Colums-------------------

@@ -1,8 +1,8 @@
-## Interface: 70200
+## Interface: 70300
 ## Title: iEncounterEventTracker
 ## Notes: Ironi's Encounter Event Tracker
 ## Author: Ironi
-## Version: 1.606
+## Version: 1.610
 ## DefaultState: enabled
 ## SavedVariables: iEETConfig, iEET_Data, iEET_ExportFromWTF
 
