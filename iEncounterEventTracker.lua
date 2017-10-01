@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.611
+iEET.version = 1.620
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -142,6 +142,9 @@ iEET.events = {
 
 		['RAID_BOSS_EMOTE'] = 43,
 		['RAID_BOSS_WHISPER'] = 44,
+
+		['CHAT_MSG_RAID_BOSS_WHISPER'] = 45,
+		['CHAT_MSG_RAID_BOSS_EMOTE'] = 46,
 	},
 	['fromID'] = {
 		[1] = {
@@ -320,6 +323,14 @@ iEET.events = {
 			l = 'RAID_BOSS_WHISPER',
 			s = 'RB_WHISPER',
 		},
+		[45] = {
+			l = 'CHAT_MSG_RAID_BOSS_WHISPER',
+			s = 'CMRB_WHISPER',
+		},
+		[46] = {
+			l = 'CHAT_MSG_RAID_BOSS_EMOTE',
+			s = 'CMRB_EMOTE',
+		},
 	},
 }
 iEET.ignoreList = {  -- Ignore list for 'Ignore Spell's menu, use event ignore to hide these if you want (they are fake spells)
@@ -416,6 +427,9 @@ function iEET:LoadDefaults()
 
 			['RAID_BOSS_EMOTE'] = true,
 			['RAID_BOSS_WHISPER'] = true,
+
+			['CHAT_MSG_RAID_BOSS_EMOTE'] = true,
+			['CHAT_MSG_RAID_BOSS_WHISPER'] = true,
 		},
 		['version'] = iEET.version,
 		['autoSave'] = true,
@@ -903,7 +917,7 @@ function addon:RAID_BOSS_EMOTE(msg, sourceName,_,_,destName)
 		['sI'] = msg,
 		['cN'] = sourceName or UNKNOWN,
 		['sG'] = sourceName or UNKNOWN,
-		['tN'] = destName,
+		['tN'] = destName and destName or nil,
 	})
 end
 function addon:RAID_BOSS_WHISPER(msg, sourceName) -- im not sure if there is sourceName, needs testing
@@ -914,6 +928,26 @@ function addon:RAID_BOSS_WHISPER(msg, sourceName) -- im not sure if there is sou
 		['cN'] = sourceName or UNKNOWN,
 		['sG'] = sourceName or UNKNOWN,
 		['tN'] = 'player', -- meh
+	})
+end
+function addon:CHAT_MSG_RAID_BOSS_EMOTE(msg, sourceName,_,_,destName)
+	table.insert(iEET.data, {
+		['e'] = 45,
+		['t'] = GetTime(),
+		['sI'] = msg,
+		['cN'] = sourceName or UNKNOWN,
+		['sG'] = sourceName or UNKNOWN,
+		['tN'] = destName and destName or nil,
+	})
+end
+function addon:CHAT_MSG_RAID_BOSS_WHISPER(msg, sourceName)
+	table.insert(iEET.data, {
+		['e'] = 46,
+		['t'] = GetTime(),
+		['sI'] = msg,
+		['cN'] = sourceName or UNKNOWN,
+		['sG'] = sourceName or UNKNOWN,
+		['tN'] = 'player',
 	})
 end
 function addon:PLAYER_REGEN_DISABLED()
@@ -1317,7 +1351,7 @@ function iEET:addSpellDetails(hyperlink, linkData)
 	--local linkType, eventToFind, spellIDToFind, spellNametoFind = strsplit(':',linkData)
 	local linkType, eventToFind, spellIDToFind, spellNametoFind = strsplit(':',linkData)
 	eventToFind = tonumber(eventToFind)
-	if eventToFind == 43 or eventToFind == 44 then -- RAID_BOSS_EMOTE, RAID_BOSS_WHISPER
+	if eventToFind == 43 or eventToFind == 44 or eventToFind == 45 or eventToFind == 46 then -- RAID_BOSS_EMOTE, RAID_BOSS_WHISPER
 		spellIDToFind = spellIDToFind:match('spell;;(%d+)')
 		iEETDetailInfo:SetText(iEET.events.fromID[eventToFind].s ..':'..GetSpellInfo(spellIDToFind))
 		spellIDToFind = 'spell:'..spellIDToFind
@@ -1355,7 +1389,7 @@ function iEET:addSpellDetails(hyperlink, linkData)
 					found = true
 				end
 			elseif v.sI then
-				if (v.e == eventToFind) and (eventToFind == 43 or eventToFind == 44) then -- RAID_BOSS_EMOTE, RAID_BOSS_WHISPER
+				if (v.e == eventToFind) and (eventToFind == 43 or eventToFind == 44 or eventToFind == 45 or eventToFind == 46) then -- RAID_BOSS_EMOTE, RAID_BOSS_WHISPER
 					if v.sI:find(spellIDToFind) then
 						found = true
 					end
@@ -1427,9 +1461,9 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 	iEET:addMessages(1, 1, timestamp, color, '\124HiEETtime:' .. timestamp ..'\124h%s\124h')
 	iEET:addMessages(1, 2, intervall, color, intervall and ('\124HiEETtime:' .. intervall ..'\124h%s\124h') or nil)
 	iEET:addMessages(1, 3, iEET.events.fromID[event].s, color)
-	if event == 29 or event == 30 or event == 31 or event == 43 or event == 44 then -- MONSTER_EMOTE = 29, MOSNTER_SAY = 30, MONSTER_YELL = 31, RAID_BOSS_EMOTE = 43, RAID_BOSS_WHISPER = 44
+	if event == 29 or event == 30 or event == 31 or event == 43 or event == 44 or event == 45 or event == 46 then -- MONSTER_EMOTE = 29, MOSNTER_SAY = 30, MONSTER_YELL = 31, RAID_BOSS_EMOTE = 43, RAID_BOSS_WHISPER = 44
 		local msg = spellID
-		if event == 29 or event == 43 or event == 44 then --trying to fix monster emotes, MONSTER_EMOTE
+		if event == 29 or event == 43 or event == 44 or event == 45 or event == 46 then --trying to fix monster emotes, MONSTER_EMOTE
 			--"|TInterface\\Icons\\spell_fel_elementaldevastation.blp:20|tVerestriona's |cFFFF0000|Hspell:182008|h[Latent Energy]|h|r reacts violently as they step into the |cFFFF0000|Hspell:179582|h[Rumbling Fissure]|h|r!}|D|"
 			--TODO: Better solution
 			msg = string.gsub(spellID, "|T.+|t", "") -- Textures
@@ -1441,7 +1475,7 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 			msg = string.gsub(msg, '%%', '%%%%')
 			msg = string.gsub(msg, ':', ';;')
 		end
-		if event == 43 or event == 44 then
+		if event == 43 or event == 44 or event == 45 or event == 46 then
 			local sID = msg:match('spell;;(%d+)')
 			if sID then
 				local s = 'Message'
@@ -3939,6 +3973,8 @@ function iEET:StopRecording(force)
 	addon:UnregisterEvent('UNIT_SPELLCAST_NOT_INTERRUPTIBLE')
 	addon:UnregisterEvent('RAID_BOSS_EMOTE')
 	addon:UnregisterEvent('RAID_BOSS_WHISPER')
+	addon:UnregisterEvent('CHAT_MSG_RAID_BOSS_EMOTE')
+	addon:UnregisterEvent('CHAT_MSG_RAID_BOSS_WHISPER')
 	if force then
 		addon:UnregisterEvent('PLAYER_REGEN_DISABLED')
 		addon:UnregisterEvent('PLAYER_REGEN_ENABLED')
