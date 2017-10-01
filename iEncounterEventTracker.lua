@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.610
+iEET.version = 1.611
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -468,7 +468,7 @@ function addon:PLAYER_LOGOUT()
 		iEET:Force()
 	end
 end
-function addon:ENCOUNTER_START(encounterID, encounterName, ...)
+function addon:ENCOUNTER_START(encounterID, encounterName, difficultyID, raidSize,...)
 	if not iEET.forceRecording then
 		local mapID = select(8, GetInstanceInfo())
 		iEET:StartRecording()
@@ -483,6 +483,8 @@ function addon:ENCOUNTER_START(encounterID, encounterName, ...)
 			['zI'] = mapID,
 			['v'] = iEET.version,
 			['eI'] = encounterID,
+			['d'] = difficultyID,
+			['rs'] = raidSize,
 		}
 	end
 	table.insert(iEET.data, {['e'] = 27, ['t'] = GetTime(), ['cN'] = encounterName, ['tN'] = encounterID})
@@ -894,7 +896,7 @@ function addon:CHAT_MSG_MONSTER_YELL(msg, sourceName)
 		['sG'] = sourceName,
 	});
 end
-function addon:RAID_BOSS_EMOTE(msg, sourceName_,_,destName)
+function addon:RAID_BOSS_EMOTE(msg, sourceName,_,_,destName)
 	table.insert(iEET.data, {
 		['e'] = 43,
 		['t'] = GetTime(),
@@ -3735,6 +3737,9 @@ function iEET:ExportData(auto)
 		for k,v in ipairs(iEET.data) do
 			local t = ''
 			for a,b in pairs(v) do
+				if type(b) == 'boolean' then
+					print(a)
+				end
 				t = t .. '{' .. a .. '=' .. b .. '}'
 			end
 			dataString = dataString .. '|D|' .. t .. '|D|'
@@ -4143,11 +4148,5 @@ function iEET_Advanced_Delete(dif, encounter, fightTime) -- Usage: iEET_Advanced
 	--example: iEET_Advanced_Delete(false, true, 60), would delete any fights under 60 seconds
 	if encounter and fightTime then
 		iEET:massDelete({['dif'] = dif, ['encounter'] = encounter, ['del'] = fightTime})
-	end
-end
-addon:RegisterEvent('CHAT_MSG_ADDON')
-function addon:CHAT_MSG_ADDON(prefix, msg,msgType,sender)
-	if prefix == 'yourPrefix' then
-		addon:CHAT_MSG_MONSTER_EMOTE(msg, sender)
 	end
 end
