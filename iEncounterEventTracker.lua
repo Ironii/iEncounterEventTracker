@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.620
+iEET.version = 1.621
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -3953,6 +3953,8 @@ function iEET:StartRecording(force)
 	addon:RegisterEvent('UNIT_SPELLCAST_NOT_INTERRUPTIBLE')
 	addon:RegisterEvent('RAID_BOSS_EMOTE')
 	addon:RegisterEvent('RAID_BOSS_WHISPER')
+	addon:RegisterEvent('CHAT_MSG_RAID_BOSS_EMOTE')
+	addon:RegisterEvent('CHAT_MSG_RAID_BOSS_WHISPER')
 	if force then
 		addon:RegisterEvent('PLAYER_REGEN_DISABLED')
 		addon:RegisterEvent('PLAYER_REGEN_ENABLED')
