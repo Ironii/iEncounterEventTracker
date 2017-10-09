@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.621
+iEET.version = 1.622
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -932,7 +932,7 @@ function addon:RAID_BOSS_WHISPER(msg, sourceName) -- im not sure if there is sou
 end
 function addon:CHAT_MSG_RAID_BOSS_EMOTE(msg, sourceName,_,_,destName)
 	table.insert(iEET.data, {
-		['e'] = 45,
+		['e'] = 46,
 		['t'] = GetTime(),
 		['sI'] = msg,
 		['cN'] = sourceName or UNKNOWN,
@@ -942,7 +942,7 @@ function addon:CHAT_MSG_RAID_BOSS_EMOTE(msg, sourceName,_,_,destName)
 end
 function addon:CHAT_MSG_RAID_BOSS_WHISPER(msg, sourceName)
 	table.insert(iEET.data, {
-		['e'] = 46,
+		['e'] = 45,
 		['t'] = GetTime(),
 		['sI'] = msg,
 		['cN'] = sourceName or UNKNOWN,

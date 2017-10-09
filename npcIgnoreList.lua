@@ -38,10 +38,12 @@ iEET.npcIgnoreList = {
 	[103268] = true,	--Dire Beast
 	[104493] = true,	--Spitting Cobra
 	[106551] = true,	--Hati
+	[106548] = true,	--Hati
 	[113344] = true,	--Beast
 	[113346] = true,	--Beast
 	[113347] = true,	--Dire Beast
 	[121661] = true,	--Sneaky Snake
+	[128751] = true,	--Beast
 
 --Mage
 	[31216] = true,		--Mirror Image
@@ -98,6 +100,7 @@ iEET.npcIgnoreList = {
 	[61245] = true,		--Capacitor Totem
 	[77936] = true,		--Greater Storm Elemental
 	[77942] = true,		--Primal Storm Elemental
+	[78001] = true,		--Cloudburst totem
 	[95061] = true,		--Greater Fire Elemental
 	[95072] = true,		--Greater Earth Elemental
 	[95255] = true,		--Earthquake Totem
@@ -115,6 +118,7 @@ iEET.npcIgnoreList = {
 	[106321] = true,	--Tailwind Totem
 
 --Warlock
+	[89] = true,		--Infernal 
 	[416] = true,		--Imp
 	[417] = true,		--Felhunter
 	[1860] = true,		--Voidwalker
@@ -136,7 +140,9 @@ iEET.npcIgnoreList = {
 	[98035] = true,		--Dreadstalker
 	[99737] = true,		--Wild Imp
 	[103673] = true,	--Beholder
+	[108452] = true,	--Infernal,
 	[121643] = true,	--Flame Rift
+
 
 --Warrior
 }
