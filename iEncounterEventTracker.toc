@@ -2,7 +2,7 @@
 ## Title: iEncounterEventTracker
 ## Notes: Ironi's Encounter Event Tracker
 ## Author: Ironi
-## Version: 1.622
+## Version: 1.630
 ## DefaultState: enabled
 ## SavedVariables: iEETConfig, iEET_Data, iEET_ExportFromWTF
 

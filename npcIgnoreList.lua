@@ -1,6 +1,7 @@
 local _, iEET = ...
 iEET.npcIgnoreList = {
 --General
+	[29238] = true,		--Scourge Haunt (item)
 	[35642] = true,		--Jeeves
 	[77789] = true,		--Blingtron 5000
 	[92993] = true,		--Burning Blade Banner
@@ -118,7 +119,7 @@ iEET.npcIgnoreList = {
 	[106321] = true,	--Tailwind Totem
 
 --Warlock
-	[89] = true,		--Infernal 
+	[89] = true,		--Infernal
 	[416] = true,		--Imp
 	[417] = true,		--Felhunter
 	[1860] = true,		--Voidwalker
@@ -139,8 +140,10 @@ iEET.npcIgnoreList = {
 	[95469] = true,		--T18 Demo (Visicous Hellhound)
 	[98035] = true,		--Dreadstalker
 	[99737] = true,		--Wild Imp
+	[99887] = true,		--Shadowy Tear
 	[103673] = true,	--Beholder
-	[108452] = true,	--Infernal,
+	[108452] = true,	--Infernal
+	[108493] = true,	--Chaos Tear
 	[121643] = true,	--Flame Rift
 
 

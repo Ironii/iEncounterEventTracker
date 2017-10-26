@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.622
+iEET.version = 1.630
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -145,6 +145,13 @@ iEET.events = {
 
 		['CHAT_MSG_RAID_BOSS_WHISPER'] = 45,
 		['CHAT_MSG_RAID_BOSS_EMOTE'] = 46,
+
+		['BigWigs_BarCreated'] = 47,
+		['BigWigs_Message'] = 48,
+		['BigWigs_PauseBar'] = 49,
+		['BigWigs_ResumeBar'] = 50,
+		['BigWigs_StopBar'] = 51,
+		['BigWigs_StopBars'] = 52,
 	},
 	['fromID'] = {
 		[1] = {
@@ -331,6 +338,30 @@ iEET.events = {
 			l = 'CHAT_MSG_RAID_BOSS_EMOTE',
 			s = 'CMRB_EMOTE',
 		},
+		[47] = {
+			l = 'BigWigs_BarCreated',
+			s = 'BW_BarCreated',
+		},
+		[48] = {
+			l = 'BigWigs_Message',
+			s = 'BW_Message',
+		},
+		[49] = {
+			l = 'BigWigs_PauseBar',
+			s = 'BW_PauseBar',
+		},
+		[50] = {
+			l = 'BigWigs_ResumeBar',
+			s = 'BW_ResumeBar',
+		},
+		[51] = {
+			l = 'BigWigs_StopBar',
+			s = 'BW_StopBar',
+		},
+		[52] = {
+			l = 'BigWigs_StopBars',
+			s = 'BW_StopBars',
+		},
 	},
 }
 iEET.ignoreList = {  -- Ignore list for 'Ignore Spell's menu, use event ignore to hide these if you want (they are fake spells)
@@ -430,6 +461,13 @@ function iEET:LoadDefaults()
 
 			['CHAT_MSG_RAID_BOSS_EMOTE'] = true,
 			['CHAT_MSG_RAID_BOSS_WHISPER'] = true,
+
+			['BigWigs_BarCreated'] = true,
+			['BigWigs_Message'] = true,
+			['BigWigs_PauseBar'] = true,
+			['BigWigs_ResumeBar'] = true,
+			['BigWigs_StopBar'] = true,
+			['BigWigs_StopBars'] = true,
 		},
 		['version'] = iEET.version,
 		['autoSave'] = true,
@@ -955,6 +993,98 @@ function addon:PLAYER_REGEN_DISABLED()
 end
 function addon:PLAYER_REGEN_ENABLED()
 	table.insert(iEET.data, {['e'] = 36, ['t'] = GetTime() ,['cN'] = '-Combat'})
+end
+function iEET:BigWigsData(event,...)
+	if event == 'BigWigs_BarCreated' then
+		local key, text, time, cd = ...
+		table.insert(iEET.data, {
+			['e'] = 47,
+			['t'] = GetTime(),
+			['sG'] = 'BigWigs',
+			['cN'] = time,
+			['tN'] = key,
+			['sN'] = text,
+			['sI'] = key or text, -- nil check for pull timers etc
+			['hp'] = cd and 'CD' or nil,
+		})
+	elseif event == 'BigWigs_Message' then
+		local key,text = ...
+		table.insert(iEET.data, {
+			['e'] = 48,
+			['t'] = GetTime(),
+			['sG'] = 'BigWigs',
+			['tN'] = key,
+			['sN'] = text,
+			['sI'] = key or text, -- nil check for pull timers etc
+		})
+	elseif event == 'BigWigs_PauseBar' then
+		local text = ...
+		table.insert(iEET.data, {
+			['e'] = 49,
+			['t'] = GetTime(),
+			['sG'] = 'BigWigs',
+			['sN'] = text,
+			['sI'] = text,
+		})
+	elseif event == 'BigWigs_ResumeBar' then
+		local text = ...
+		table.insert(iEET.data, {
+			['e'] = 50,
+			['t'] = GetTime(),
+			['sG'] = 'BigWigs',
+			['sN'] = text,
+			['sI'] = text,
+		})
+	elseif event == 'BigWigs_StopBar' then
+		local text = ...
+		table.insert(iEET.data, {
+			['e'] = 51,
+			['t'] = GetTime(),
+			['sG'] = 'BigWigs',
+			['sN'] = text,
+			['sI'] = text,
+		})
+	elseif event == 'BigWigs_StopBars' then
+		table.insert(iEET.data, {
+			['e'] = 52,
+			['t'] = GetTime(),
+			['sG'] = 'BigWigs',
+			['sN'] = 'Stop all bars',
+			['sI'] = 'BWStopAllBars',
+		})
+	end
+end
+function iEET:BWRecording(start)
+	if not BigWigsLoader then
+		return
+	end
+	if start then
+    	BigWigsLoader.RegisterMessage('iEncounterEventTracker', 'BigWigs_BarCreated', function(event,_,_,_, key, text, time,_, cd)
+        	iEET:BigWigsData(event, key, text, time, cd)
+    	end)
+		BigWigsLoader.RegisterMessage('iEncounterEventTracker', 'BigWigs_Message', function(event, _, key, text)
+        	iEET:BigWigsData(event, key, text)
+    	end)
+		BigWigsLoader.RegisterMessage('iEncounterEventTracker', 'BigWigs_PauseBar', function(_, _, text)
+			iEET:BigWigsData('BigWigs_PauseBar', text)
+		end)
+		BigWigsLoader.RegisterMessage('iEncounterEventTracker', 'BigWigs_ResumeBar', function(_, _, text)
+			iEET:BigWigsData('BigWigs_ResumeBar', text)
+		end)
+		BigWigsLoader.RegisterMessage('iEncounterEventTracker', 'BigWigs_StopBar', function(_, _, text)
+			iEET:BigWigsData('BigWigs_StopBar', text)
+		end)
+		BigWigsLoader.RegisterMessage('iEncounterEventTracker', 'BigWigs_StopBars', function()
+			iEET:BigWigsData('BigWigs_StopBars')
+		end)
+	else
+		BigWigsLoader.UnregisterMessage('iEncounterEventTracker', 'BigWigs_BarCreated')
+		BigWigsLoader.UnregisterMessage('iEncounterEventTracker', 'BigWigs_Message')
+		BigWigsLoader.UnregisterMessage('iEncounterEventTracker', 'BigWigs_PauseBar')
+		BigWigsLoader.UnregisterMessage('iEncounterEventTracker', 'BigWigs_ResumeBar')
+		BigWigsLoader.UnregisterMessage('iEncounterEventTracker', 'BigWigs_StopBar')
+		BigWigsLoader.UnregisterMessage('iEncounterEventTracker', 'BigWigs_StopBars')
+	end
 end
 function iEET:TrimWS(str)
 	return str:gsub('^%s*(.-)%s*$', '%1')
@@ -1487,6 +1617,34 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 		else
 			iEET:addMessages(1, 4, 'Message', color, '\124HiEETcustomyell:' .. event .. ':' .. msg .. '\124h%s\124h') -- NEEDS CHANGING
 		end
+	elseif event == 47 or event == 48 or event == 49 or event == 50 or event == 51 or event == 52 then -- BigWigs
+		spellName = spellName:gsub(':', ';;')
+		spellName = spellName:gsub('|c........', '') -- Colors
+		spellName = spellName:gsub('|r', '') -- Colors
+		if event == 52 then -- BigWigs_StopBars
+			iEET:addMessages(1, 4, spellName, color)
+		elseif event == 47 or event == 48 then -- BigWigs_BarCreated, BigWigs_Message
+			local sn
+			if tonumber(spellID) then
+				spellID = tonumber(spellID)
+				if spellID > 0 then -- spellID
+					sn = GetSpellInfo(spellID)
+					if not sn then -- PTR nil check
+						sn = spellID
+					end
+				else -- Encounter journal section ID
+					sn = EJ_GetSectionInfo(-spellID)
+					if not sn then -- PTR nil check
+						sn = spellID
+					end
+				end
+			else
+				sn = spellID
+			end
+			iEET:addMessages(1, 4, sn, color, '\124HiEETBW:' .. event .. ':' .. spellName .. '\124h%s\124h')
+		else -- BigWigs_PauseBar, BigWigs_ResumeBar, BigWigs_StopBar
+			iEET:addMessages(1, 4, spellName, color, '\124HiEETBW_NOKEY:' .. event .. ':' .. spellName .. '\124h%s\124h')
+		end
 	elseif spellID then
 		if spellID == 133217 then -- INSTANCE_ENCOUNTER_ENGAGE_UNIT
 			iEET:addMessages(1, 4, spellName, color,'\124HiEETNpcList:' .. sourceGUID .. '\124h%s\124h')
@@ -1668,7 +1826,7 @@ function iEET:loopData(msg)
 			elseif v.tN and not iEET.collector.encounterNPCs[v.tN] then
 				iEET.collector.encounterNPCs[v.tN] = true
 			end
-		elseif v.cN and v.sI and not iEET.collector.encounterNPCs[v.cN] and v.e ~= 27 and v.e ~= 28 then -- Collect npc names, 27 = ENCOUNTER_START, 28 = ENCOUNTER_END
+		elseif v.cN and v.sI and not iEET.collector.encounterNPCs[v.cN] and not (v.e == 27 or v.e == 28 or v.e == 47 or v.e == 48 or v.e == 49 or v.e == 50 or v.e == 51 or v.e == 52) then -- Collect npc names, 27 = ENCOUNTER_START, 28 = ENCOUNTER_END, 47-52 BigWigs events
 			if iEET.interrupts[v.sI] then
 				if not iEET.collector.encounterNPCs.Interrupters then
 					iEET.collector.encounterNPCs.Interrupters = true
@@ -1679,7 +1837,7 @@ function iEET:loopData(msg)
 				iEET.collector.encounterNPCs[v.cN] = true
 			end
 		end
-		if v.sI and v.sN and not iEET.collector.encounterSpells[v.sI] and v.e ~= 27 and v.e ~= 28 then -- Collect spells, 27 = ENCOUNTER_START, 28 = ENCOUNTER_END
+		if v.sI and v.sN and not iEET.collector.encounterSpells[v.sI] and not (v.e == 27 or v.e == 28 or v.e == 47 or v.e == 48 or v.e == 49 or v.e == 50 or v.e == 51 or v.e == 52) then -- Collect npc names, 27 = ENCOUNTER_START, 28 = ENCOUNTER_END, 47-52 BigWigs events
 			if iEET.interrupts[v.sI] then
 				if not iEET.collector.encounterSpells[0.1] then
 					iEET.collector.encounterSpells[0.1] = 'Interrupts'
@@ -1937,6 +2095,14 @@ function iEET:Hyperlinks(linkData, link)
 		for _,v in pairs({strsplit(';',linkData)}) do
 			GameTooltip:AddLine(v)
 		end
+	elseif linkType == 'iEETBW' then
+		local event, text = linkData:match('iEETBW:(%d-):(.+)')
+		text = text:gsub(';;', ':')
+		GameTooltip:AddLine(text)
+	elseif linkType == 'iEETBW_NOKEY' then
+		local event,  text = linkData:match('iEETBW_NOKEY:(%d-):(.+)')
+		text = text:gsub(';;', ':')
+		GameTooltip:AddLine(text)
 	else
 		GameTooltip:SetHyperlink(link)
 	end
@@ -3939,6 +4105,7 @@ function iEET:StartRecording(force)
 			['role'] = 'Unknown', -- Combat Role, DAMAGER/HEALER/TANK
 		}
 	end
+	iEET:BWRecording(true)
 	addon:RegisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
 	addon:RegisterEvent('CHAT_MSG_MONSTER_SAY')
 	addon:RegisterEvent('CHAT_MSG_MONSTER_EMOTE')
@@ -3961,6 +4128,7 @@ function iEET:StartRecording(force)
 	end
 end
 function iEET:StopRecording(force)
+	iEET:BWRecording()
 	addon:UnregisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
 	addon:UnregisterEvent('CHAT_MSG_MONSTER_SAY')
 	addon:UnregisterEvent('CHAT_MSG_MONSTER_EMOTE')
