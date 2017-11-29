@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.630
+iEET.version = 1.632
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -83,6 +83,7 @@ iEET.maxScrollRange = 0
 iEET.fakeSpells = {
 
 }
+iEET.savedPowers = {}
 iEET.events = {
 	['toID'] = {
 		['SPELL_CAST_START'] = 1,
@@ -774,14 +775,23 @@ function addon:UNIT_TARGET(unitID)
 	end
 end
 function addon:UNIT_POWER(unitID, powerType)
-	if string.find(unitID, 'boss') then
+	if unitID:find('boss') then
 		if UnitExists(unitID) then --didn't just disappear
-			local powerNumber = getglobal('SPELL_POWER_'..powerType)
-			if not powerNumber then
-				powerNumber = UnitPowerType(unitID)
+			if not iEET.savedPowers[powerType] then
+				local powerNumber = _G['SPELL_POWER_'..powerType]
+				if not powerNumber then
+					powerNumber = _G['SPELL_POWER_'..powerType..'_POWER']
+					if not powerNumber then
+						powerNumber = UnitPowerType(unitID)
+					end
+				end
+				iEET.savedPowers[powerType] = {
+					i = powerNumber,
+					n = _G[powerType] or powerType,
+				}
 			end
 			local sourceGUID = UnitGUID(unitID)
-			local currentPower = UnitPower(unitID, powerNumber)
+			local currentPower = UnitPower(unitID, 	iEET.savedPowers[powerType].i)
 			local change = 0
 			if iEET.unitPowerUnits[sourceGUID] then -- unit exists, update or add new powerType
 				local prev = iEET.unitPowerUnits[sourceGUID][powerType] or 0
@@ -803,13 +813,12 @@ function addon:UNIT_POWER(unitID, powerType)
 			if change > 0 then
 				change = '+' .. change
 			end
-			local maxPower = UnitPowerMax(unitID, powerNumber)
+			local maxPower = UnitPowerMax(unitID,iEET.savedPowers[powerType].i)
 			local pUP = 0
 			if currentPower and maxPower then
 				pUP = math.floor(currentPower/maxPower*1000+0.5)/10
 			end
-			local powerName = getglobal(powerType) or powerType
-			local tooltipText = string.format('%s %s%%;%s/%s;%s',powerName, pUP, currentPower, maxPower, change) --PowerName 50%;50/100;+20
+			local tooltipText = string.format('%s %s%%;%s/%s;%s',iEET.savedPowers[powerType].n, pUP, currentPower, maxPower, change) --PowerName 50%;50/100;+20
 			--/dump string.format('%s %s%%;%s/%s;%s','Rage', 50, 50,100, 20)
 			table.insert(iEET.data, {
 			['e'] = 34,
@@ -817,7 +826,7 @@ function addon:UNIT_POWER(unitID, powerType)
 			['sG'] = unitID,
 			['cN'] = sourceName or unitID,
 			['tN'] = pUP .. '%',
-			['sN'] = powerName .. ' Update',
+			['sN'] = iEET.savedPowers[powerType].n .. ' Update',
 			['sI'] = 143409, -- Power Regen
 			['hp'] = php,
 			['eD'] = tooltipText, --eD = extraData
@@ -897,6 +906,8 @@ function addon:INSTANCE_ENCOUNTER_ENGAGE_UNIT()
 				table.insert(newUnits, {sourceName, 'boss' .. i})
 			end
 			unitNames[i] = sourceName
+		else
+			break
 		end
 	end
 	local sourceName,npcNames,unitID
@@ -1444,6 +1455,19 @@ function iEET:ShouldShow(eventData,e_time, msg) -- TESTING, msg is a temporary f
 		return false
 	end
 end
+function iEET:removeExtras(str, hyperlink)
+	str = str:gsub('|c........', '') -- Colors
+	str = str:gsub('|r', '') -- Colors
+	str = str:gsub('|T.+|t', '') -- Textures
+	str = str:gsub('^%s*(.-)%s*$', '%1') -- Whitespace
+	str = str:gsub(':', ';;')
+	str = str:gsub('%%', '%%%%')
+	if hyperlink then
+		str = str:gsub('|h', '') -- Spells
+		str = str:gsub('|H', '') -- Spells
+	end
+	return str
+end
 function iEET:FillFilters()
 	iEET.optionsFrameFilterTexts:Clear()
 	--from/to filters:
@@ -1596,14 +1620,14 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 		if event == 29 or event == 43 or event == 44 or event == 45 or event == 46 then --trying to fix monster emotes, MONSTER_EMOTE
 			--"|TInterface\\Icons\\spell_fel_elementaldevastation.blp:20|tVerestriona's |cFFFF0000|Hspell:182008|h[Latent Energy]|h|r reacts violently as they step into the |cFFFF0000|Hspell:179582|h[Rumbling Fissure]|h|r!}|D|"
 			--TODO: Better solution
-			msg = string.gsub(spellID, "|T.+|t", "") -- Textures
-			msg = string.gsub(msg, "|h", "") -- Spells
-			msg = string.gsub(msg, "|H", "") -- Spells
-			msg = string.gsub(msg, "|c........", "") -- Colors
-			msg = string.gsub(msg, "|r", "") -- Colors
-			--msg = string.gsub(msg, '|', '\n') -- replace | with ^ to indicate there is a hyperlink but without messing up the tooltips
-			msg = string.gsub(msg, '%%', '%%%%')
-			msg = string.gsub(msg, ':', ';;')
+			msg = iEET:removeExtras(spellID, true)
+			--msg = string.gsub(spellID, "|T.+|t", "") -- Textures
+			--msg = string.gsub(msg, "|h", "") -- Spells
+			--msg = string.gsub(msg, "|H", "") -- Spells
+			--msg = string.gsub(msg, "|c........", "") -- Colors
+			--msg = string.gsub(msg, "|r", "") -- Colors
+			--msg = string.gsub(msg, '%%', '%%%%')
+			--msg = string.gsub(msg, ':', ';;')
 		end
 		if event == 43 or event == 44 or event == 45 or event == 46 then
 			local sID = msg:match('spell;;(%d+)')
@@ -1618,9 +1642,13 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 			iEET:addMessages(1, 4, 'Message', color, '\124HiEETcustomyell:' .. event .. ':' .. msg .. '\124h%s\124h') -- NEEDS CHANGING
 		end
 	elseif event == 47 or event == 48 or event == 49 or event == 50 or event == 51 or event == 52 then -- BigWigs
-		spellName = spellName:gsub(':', ';;')
-		spellName = spellName:gsub('|c........', '') -- Colors
-		spellName = spellName:gsub('|r', '') -- Colors
+		--spellName = spellName:gsub(':', ';;')
+		--spellName = spellName:gsub('|c........', '') -- Colors
+		--spellName = spellName:gsub('|r', '') -- Colors
+		--spellName = spellName:gsub('|T.+|t', '') -- Textures
+		--spellName = iEET:TrimWS(spellName)
+		--spellName = spellName:gsub('%%', '%%%%')
+		spellName = iEET:removeExtras(spellName)
 		if event == 52 then -- BigWigs_StopBars
 			iEET:addMessages(1, 4, spellName, color)
 		elseif event == 47 or event == 48 then -- BigWigs_BarCreated, BigWigs_Message
@@ -1643,7 +1671,7 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 			end
 			iEET:addMessages(1, 4, sn, color, '\124HiEETBW:' .. event .. ':' .. spellName .. '\124h%s\124h')
 		else -- BigWigs_PauseBar, BigWigs_ResumeBar, BigWigs_StopBar
-			iEET:addMessages(1, 4, spellName, color, '\124HiEETBW_NOKEY:' .. event .. ':' .. spellName .. '\124h%s\124h')
+			iEET:addMessages(1, 4, spellName:gsub(';;', ':'), color, '\124HiEETBW_NOKEY:' .. event .. ':' .. spellName .. '\124h%s\124h')
 		end
 	elseif spellID then
 		if spellID == 133217 then -- INSTANCE_ENCOUNTER_ENGAGE_UNIT
