@@ -45,6 +45,7 @@ iEET.npcIgnoreList = {
 	[113347] = true,	--Dire Beast
 	[121661] = true,	--Sneaky Snake
 	[128751] = true,	--Beast
+	[128752] = true,	--Beast
 
 --Mage
 	[31216] = true,		--Mirror Image
