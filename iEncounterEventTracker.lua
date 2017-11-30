@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.632
+iEET.version = 1.633
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -67,6 +67,13 @@ local eventsToTrack = {
 	['SPELL_PERIODIC_HEAL'] = 'SP_HEAL',
 
 	['UNIT_DIED'] = 'UNIT_DIED',
+}
+iEET.auraEvents = {
+	['SPELL_AURA_APPLIED'] = true,
+	['SPELL_AURA_REMOVED'] = true,
+	['SPELL_AURA_APPLIED_DOSE'] = true,
+	['SPELL_AURA_REMOVED_DOSE'] = true,
+	['SPELL_AURA_REFRESH'] = true,
 }
 local addon = CreateFrame('frame')
 addon:RegisterEvent('ENCOUNTER_START')
@@ -834,7 +841,7 @@ function addon:UNIT_POWER(unitID, powerType)
 		end
 	end
 end
-function addon:COMBAT_LOG_EVENT_UNFILTERED(timestamp,event,hideCaster,sourceGUID,sourceName,sourceFlags,sourceRaidFlags,destGUID,destName,destFlags,destRaidFlags,spellID, spellName,...)
+function addon:COMBAT_LOG_EVENT_UNFILTERED(timestamp,event,hideCaster,sourceGUID,sourceName,sourceFlags,sourceRaidFlags,destGUID,destName,destFlags,destRaidFlags,spellID, spellName,spellSchool,auraType,...)
 	if eventsToTrack[event] then
 		local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
 		if sourceGUID then -- fix for arena id's
@@ -888,6 +895,7 @@ function addon:COMBAT_LOG_EVENT_UNFILTERED(timestamp,event,hideCaster,sourceGUID
 						['sN'] = spellName or 'NONE',
 						['sI'] = spellID or 'NONE',
 						['eD']= eD,
+						['hp']= iEET.auraEvents[event] and (auraType == 'DEBUFF' and '-' or '+') or nil,
 					})
 				--end
 			--end
