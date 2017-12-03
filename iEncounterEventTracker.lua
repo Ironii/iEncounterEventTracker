@@ -1718,6 +1718,12 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 				.. ((destGUID and destGUID:len() > 0) and (':'.. destGUID) or '')
 				..'\124h%s\124h')
 		end
+	elseif event == 27 or event == 28 then -- ENCOUNTER_START, ENCOUNTER_END
+		if spellName then -- nil check for older logs
+			iEET:addMessages(1, 4, spellName, color)
+		else
+			iEET.content4:AddMessage(' ')
+		end
 	else
 		iEET.content4:AddMessage(' ')
 	end
