@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.633
+iEET.version = 1.640
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -378,6 +378,7 @@ iEET.ignoreList = {  -- Ignore list for 'Ignore Spell's menu, use event ignore t
 	[133217] = true, -- Spawn NPCs
 	[143409] = true, -- Power Update
 }
+iEET.addonUsers = {}
 local function spairs(t, order)
     -- collect the keys
     local keys = {}
@@ -513,6 +514,8 @@ function iEET:LoadDefaults()
 end
 function addon:ADDON_LOADED(addonName)
 	if addonName == 'iEncounterEventTracker' then
+		RegisterAddonMessagePrefix('iEET')
+		addon:RegisterEvent('CHAT_MSG_ADDON')
 		iEETConfig = iEETConfig or {}
 		iEET_Data = iEET_Data or {}
 		--if not iEETConfig.version or not iEETConfig.tracking or iEETConfig.version < 1.503 then -- Last version with db changes
@@ -521,6 +524,21 @@ function addon:ADDON_LOADED(addonName)
 		iEETConfig.version = iEET.version
 		--end
 		addon:UnregisterEvent('ADDON_LOADED')
+	end
+end
+function addon:CHAT_MSG_ADDON(prefix,msg,chatType,sender)
+	if prefix == 'iEET' then
+		if msg == 'userCheck' then
+			SendAddonMessage('iEET', string.format('userCheckReply;;%s;;%s',  iEETConfig.version, (iEETConfig.autoSave and '1' or '0')), chatType)
+		elseif msg:find('userCheckReply') then -- unnecessary check for now, but use it so it will also work in future
+			local v,s = msg:match('userCheckReply;;(%d%.%d%d%d);;(%d)')
+			if v and s then -- nil check to filter out idiots
+				iEET.addonUsers[sender] = {
+					version = v,
+					autoSave = s,
+				}
+			end
+		end
 	end
 end
 function addon:PLAYER_LOGOUT()
@@ -547,10 +565,10 @@ function addon:ENCOUNTER_START(encounterID, encounterName, difficultyID, raidSiz
 			['rs'] = raidSize,
 		}
 	end
-	table.insert(iEET.data, {['e'] = 27, ['t'] = GetTime(), ['cN'] = encounterName, ['tN'] = encounterID})
+	table.insert(iEET.data, {['e'] = 27, ['t'] = GetTime(), ['cN'] = encounterName, ['tN'] = encounterID, ['sN'] = 'Logger: '..UnitName('player')})
 end
 function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize, kill,...)
-	table.insert(iEET.data, {['e'] = 28, ['t'] = GetTime() ,['cN'] = kill == 1 and 'Victory!' or 'Wipe', ['tN'] = EncounterID})
+	table.insert(iEET.data, {['e'] = 28, ['t'] = GetTime() ,['cN'] = kill == 1 and 'Victory!' or 'Wipe', ['tN'] = EncounterID,  ['sN'] = 'Logger: '..UnitName('player')})
 	if not iEET.forceRecording then
 		if iEET.encounterInfoData then
 			iEET.encounterInfoData.fT = iEET.encounterInfoData.s and date('%M:%S', (GetTime() - iEET.encounterInfoData.s)) or '00:00' -- if we are missing start time for some reason
@@ -2747,33 +2765,6 @@ function iEET:CreateMainFrame()
 			iEET['content' .. i]:SetScript("OnHyperlinkEnter", function(self, linkData, link)
 				GameTooltip:SetOwner(iEET.frame, "ANCHOR_TOPRIGHT", 0-iEET.frame:GetWidth(), 0-iEET.frame:GetHeight())
 				iEET:Hyperlinks(linkData, link)
-				--[[
-				GameTooltip:ClearLines()
-				local linkType = strsplit(':', linkData)
-				if linkType == 'iEETcustomyell' then
-					local _, event, spellID, spellName = strsplit(':',linkData)
-					GameTooltip:SetText(spellID)
-					--iEET_content4:AddMessage('\124HiEETcustomspell:' .. event .. ':' .. spellID .. ':' .. spellname ..'\124h' .. spellName .. '\124h', unpack(getColor(event, sourceGUID, spellID)))
-				elseif linkType == 'iEETcustomspell' then
-					local _, event, spellID, spellName, npcID = strsplit(':',linkData)
-					if spellID == 'NONE' then
-						return
-					end
-					local hyperlink = '\124Hspell:' .. tonumber(spellID)
-					GameTooltip:SetHyperlink('spell:' .. tonumber(spellID))
-					GameTooltip:AddLine('spellID:' .. spellID)
-					GameTooltip:AddLine('npcID:' .. npcID)
-				elseif linkType == 'iEETtime' then
-					local _, txt = strsplit(':',linkData)
-					GameTooltip:SetText(txt)
-				elseif linkType == 'iEETNpcList' then
-					local _, txt = strsplit(':',linkData)
-					GameTooltip:SetText(txt)
-				else
-					GameTooltip:SetHyperlink(link)
-				end
-				GameTooltip:Show()
-				--]]
 			end)
 			iEET['content' .. i]:SetScript("OnHyperlinkLeave", function()
 				GameTooltip:Hide()
@@ -2845,12 +2836,6 @@ function iEET:CreateMainFrame()
 			iEET['detailContent' .. i]:SetScript('OnHyperlinkEnter', function(self, linkData, link)
 				GameTooltip:SetOwner(iEET.frame, "ANCHOR_TOPRIGHT", 0-iEET.frame:GetWidth(), 0-iEET.frame:GetHeight())
 				iEET:Hyperlinks(linkData)
-				--[[
-				GameTooltip:ClearLines()
-				local _, txt = strsplit(':',linkData)
-				GameTooltip:SetText(txt)
-				GameTooltip:Show()
-				--]]
 			end)
 			iEET['detailContent' .. i]:SetScript("OnHyperlinkLeave", function()
 				GameTooltip:Hide()
@@ -2859,7 +2844,6 @@ function iEET:CreateMainFrame()
 		iEET['detailContent' .. i]:EnableMouse(true)
 		iEET['detailContent' .. i]:SetFrameStrata('HIGH')
 		iEET['detailContent' .. i]:SetFrameLevel(2)
-		--smf:SetFrameStrata('HIGH')
 	end
 	end
 	--SPELL LISTING--
@@ -3009,17 +2993,6 @@ function iEET:CreateMainFrame()
 			if string.lower(txt) == 'clear' then
 				iEET:ClearFilteringArgs()
 				iEET.editbox:SetText('')
-			--[[
-			elseif string.match(txt, '^from:(%d-) to:(%d+)') then
-				from, to = string.match(txt, '^from:(%d-) to:(%d+)')
-				table.insert(iEETConfig.filtering.timeBasedFiltering, {['from'] = {['t'] = tonumber(from)}, ['to'] = {['t'] = tonumber(to)}})
-			elseif string.match(txt, '^from:(%d+)') then
-				from = string.match(txt, '^from:(%d+)')
-				table.insert(iEETConfig.filtering.timeBasedFiltering, {['from'] = {['t'] = tonumber(from)}})
-			elseif string.match(txt, '^to:(%d+)') then
-				to = string.match(txt, '^to:(%d+)')
-				table.insert(iEETConfig.filtering.timeBasedFiltering, {['to'] = {['t'] = tonumber(to)}})
-			--]]
 			elseif string.len(txt) > 1 then
 				msg = string.lower(txt)
 			end
@@ -4356,6 +4329,33 @@ SlashCmdList["IEET"] = function(realMsg)
 		iEET:ExportFightsToWTF()
 	elseif msg == 'contact' then
 		iEET:print("\nBnet:\n    Ironi#2880 (EU)\nDiscord:\n    Ironi#2097\n    https://discord.gg/stY2nyj")
+	elseif msg == 'users' then
+		iEET.addonUsers = {}
+		local chatType
+		if IsInRaid() then
+			chatType = 'RAID'
+		elseif IsInGroup() then
+			chatType = 'PARTY'
+		else
+			chatType = 'GUILD'
+			iEET:print('You are not in raid group or in a party, checking users in guild.')
+		end
+		SendAddonMessage('iEET', 'userCheck', chatType)
+		C_Timer.After(1, function()
+			local str
+			for k,v in pairs(iEET.addonUsers) do
+				local char, server = k:match('(%a-)-(%a+)')
+				if server ~= GetRealmName() then
+					char = k
+				end
+				if not str then
+					str = string.format('%s%s\124r(%s)', (v.autoSave == '1' and '\124cff00ff00' or '\124cffff1a1a'), char, v.version)
+				else
+					str = str .. string.format(', %s%s\124r(%s)', (v.autoSave == '1' and '\124cff00ff00' or '\124cffff1a1a'), char, v.version)
+				end
+			end
+			iEET:print('\n' .. str)
+		end)
 	else
 		iEET:print(string.format('Command "%s" not found, read the readme.txt.', msg))
 	end
