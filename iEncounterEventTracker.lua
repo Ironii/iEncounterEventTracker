@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.640
+iEET.version = 1.641
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -531,7 +531,7 @@ function addon:CHAT_MSG_ADDON(prefix,msg,chatType,sender)
 		if msg == 'userCheck' then
 			SendAddonMessage('iEET', string.format('userCheckReply;;%s;;%s',  iEETConfig.version, (iEETConfig.autoSave and '1' or '0')), chatType)
 		elseif msg:find('userCheckReply') then -- unnecessary check for now, but use it so it will also work in future
-			local v,s = msg:match('userCheckReply;;(%d%.%d%d%d);;(%d)')
+			local v,s = msg:match('userCheckReply;;(%d%.%d+);;(%d)')
 			if v and s then -- nil check to filter out idiots
 				iEET.addonUsers[sender] = {
 					version = v,
