@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.641
+iEET.version = 1.700
 local colors = {}
 local eventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
@@ -402,7 +402,7 @@ local function spairs(t, order)
     end
 end
 function iEET:shouldTrack(event, unitType, npcID, spellID, sourceGUID, hideCaster)
-	if (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and (iEET.approvedSpells[spellID] or iEET.taunts[spellID])) or not sourceGUID or hideCaster or event == 'SPELL_INTERRUPT' or event == 'SPELL_DISPEL' then
+	if (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and (iEET.approvedSpells[spellID] or iEET.taunts[spellID] or iEETConfig.CustomWhitelist[spellID])) or not sourceGUID or hideCaster or event == 'SPELL_INTERRUPT' or event == 'SPELL_DISPEL' then
 		if spellID and not iEET.ignoredSpells[spellID] then
 			if not iEET.npcIgnoreList[tonumber(npcID)] then
 				return true
@@ -499,6 +499,7 @@ function iEET:LoadDefaults()
 		},
 		['classColors'] = false,
 		['cInfo'] = true,
+		['CustomWhitelist'] = {},
 	}
 	for k,v in pairs(defaults) do
 		if iEETConfig[k] == nil then
@@ -518,11 +519,19 @@ function addon:ADDON_LOADED(addonName)
 		addon:RegisterEvent('CHAT_MSG_ADDON')
 		iEETConfig = iEETConfig or {}
 		iEET_Data = iEET_Data or {}
-		--if not iEETConfig.version or not iEETConfig.tracking or iEETConfig.version < 1.503 then -- Last version with db changes
 		iEET:LoadDefaults()
-		--else
+		--Remove extra spells from CustomWhiteList (spells that have been added to iEET.approvedSpells)
+		local WLDelete = {}
+		for spellID,_ in pairs(iEETConfig.CustomWhitelist) do
+			if iEET.approvedSpells[spellID] then
+				WLDelete[spellID] = true
+			end
+		end
+		for spellID,_ in pairs(WLDelete) do
+			iEETConfig.CustomWhitelist = nil
+		end
+		WLDelete = nil
 		iEETConfig.version = iEET.version
-		--end
 		addon:UnregisterEvent('ADDON_LOADED')
 	end
 end
@@ -1078,8 +1087,8 @@ function iEET:BigWigsData(event,...)
 			['e'] = 51,
 			['t'] = GetTime(),
 			['sG'] = 'BigWigs',
-			['sN'] = text,
-			['sI'] = text,
+			['sN'] = text or 'Stop bar: no key',
+			['sI'] = text or 'BWStopBarNoKey',
 		})
 	elseif event == 'BigWigs_StopBars' then
 		table.insert(iEET.data, {
@@ -1636,9 +1645,9 @@ function iEET:addSpellDetails(hyperlink, linkData)
 		end
 	end
 end
-function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID,intervall,count,sourceGUID, hp, extraData, destGUID)
+function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID,intervall,count,sourceGUID, hp, extraData, destGUID, realTimeStamp)
 	local color = iEET:getColor(event, sourceGUID, spellID)
-	iEET:addMessages(1, 1, timestamp, color, '\124HiEETtime:' .. timestamp ..'\124h%s\124h')
+	iEET:addMessages(1, 1, timestamp, color, '\124HiEETTotaltime:' .. timestamp..':'..realTimeStamp..'\124h%s\124h')
 	iEET:addMessages(1, 2, intervall, color, intervall and ('\124HiEETtime:' .. intervall ..'\124h%s\124h') or nil)
 	iEET:addMessages(1, 3, iEET.events.fromID[event].s, color)
 	if event == 29 or event == 30 or event == 31 or event == 43 or event == 44 or event == 45 or event == 46 then -- MONSTER_EMOTE = 29, MOSNTER_SAY = 30, MONSTER_YELL = 31, RAID_BOSS_EMOTE = 43, RAID_BOSS_WHISPER = 44
@@ -1965,7 +1974,7 @@ function iEET:loopData(msg)
 				end
 			end
 			if iEETConfig.tracking[iEET.events.fromID[v.e].l] or v.e == 27 or v.e == 28 then -- ENCOUNTER_START & ENCOUNTER_END
-				iEET:addToContent(timestamp,v.e,v.cN,v.tN,v.sN,v.sI,intervall,count,v.sG,v.hp,v.eD, v.dG)
+				iEET:addToContent(timestamp,v.e,v.cN,v.tN,v.sN,v.sI,intervall,count,v.sG,v.hp,v.eD, v.dG, v.t)
 			end
 		end
 	end
@@ -2147,6 +2156,13 @@ function iEET:Hyperlinks(linkData, link)
 		local s = ntxt%60
 		local ms = (s-math.floor(s))*1000
 		GameTooltip:SetText(string.format('%s\n%02d:%02d.%03d',txt,m,s,ms))
+	elseif linkType == 'iEETTotaltime' then
+		local _, txt, realTimeStamp = strsplit(':',linkData)
+		local ntxt = tonumber(txt)
+		local m = math.floor(ntxt/60)
+		local s = ntxt%60
+		local ms = (s-math.floor(s))*1000
+		GameTooltip:SetText(string.format('%s\n%02d:%02d.%03d\n%s',txt,m,s,ms, realTimeStamp))
 	elseif linkType == 'iEETNpcList' then
 		local _, txt = strsplit(':',linkData)
 		GameTooltip:SetText(txt)
@@ -3102,7 +3118,7 @@ function iEET:CreateMainFrame()
 	--Contact information on first run
 	if iEETConfig.cInfo then
 		iEETConfig.cInfo = false
-		iEET:print("This is one time only message with authors contact information, feel free to use any of them if you run into any problems.\nBnet:\n    Ironi#2880 (EU)\nDiscord:\n    Ironi#2097\n    https://discord.gg/stY2nyj")
+		iEET:print("This is one time only message with authors contact information, feel free to use any of them if you run into any problems.\nBnet:\n    Ironi#2880 (EU)\nDiscord:\n    Ironi#2880\n    https://discord.gg/stY2nyj")
 	end
 end
 function iEET:getNextPrevEncounter(prevNext)
@@ -3185,50 +3201,53 @@ function iEET:massDelete(data)
 			end
 		end
 	elseif data.del == 'saveLastKill' or data.del == 'saveShortestKill' or tonumber(data.del)then -- need to sort by encounterID
-		local encountersByID = {}
+		local fights = {}
+		--local encountersByID = {}
 		for key, _ in pairs(encounters) do
 			if key:find('{k=1}') then
 				local eID = key:match('{eI=(%d+)}')
-				--if not eID then
-				--	iEET:print('found old reports, please use "/ieet convert" to continue')
-				--	break
-				--end
-				if not encountersByID[eID] then
-					encountersByID[eID] = {}
+				local dif = key:match('{d=(%d+)}')
+				if not fights[dif] then
+					fights[dif] = {}
+				end
+				if not fights[dif][eID] then
+					fights[dif][eID] = {}
 				end
 				local year,month,day,hour,mins = key:match('{pT=(%d+).(%d+).(%d+) (%d+):(%d+)}')
 				local ftH, ftM = key:match('{fT=(%d+):(%d+)}')
-				encountersByID[eID][key] = {
+				fights[dif][eID][key] = {
 					['killDate'] = tonumber(year..month..day..hour..mins),
 					['fightTime'] = tonumber(ftH)*60+tonumber(ftM),
 				}
 			end
 		end
-		local key = ''
-		local compare
-		for encounterID, encounterData in pairs(encountersByID) do
-			for encounterKey, eData in pairs(encounterData) do
-				if data.del == 'saveLastKill' then
-					if not compare then
-						compare = eData.killDate
-						key = encounterKey
-					elseif eData.killDate > compare then
-						compare = eData.killDate
-						key = encounterKey
-					end
-				else -- Save shortest
-					if not compare then
-						key = encounterKey
-						compare = eData.fightTime
-					elseif eData.fightTime < compare then
-						key = encounterKey
-						compare = eData.fightTime
+		for raidDifficulty, encountersByID in pairs(fights) do
+			local key = ''
+			local compare
+			for encounterID, encounterData in pairs(encountersByID) do
+				for encounterKey, eData in pairs(encounterData) do
+					if data.del == 'saveLastKill' then
+						if not compare then
+							compare = eData.killDate
+							key = encounterKey
+						elseif eData.killDate > compare then
+							compare = eData.killDate
+							key = encounterKey
+						end
+					else -- Save shortest
+						if not compare then
+							key = encounterKey
+							compare = eData.fightTime
+						elseif eData.fightTime < compare then
+							key = encounterKey
+							compare = eData.fightTime
+						end
 					end
 				end
-			end
-			if compare then -- Shouldn't be needed, but its there for safety
-				encounters[key] = true
-				compare = nil
+				if compare then -- Shouldn't be needed, but its there for safety
+					encounters[key] = true
+					compare = nil
+				end
 			end
 		end
 	end
@@ -4334,7 +4353,7 @@ SlashCmdList["IEET"] = function(realMsg)
 	elseif msg == 'wtf' then
 		iEET:ExportFightsToWTF()
 	elseif msg == 'contact' then
-		iEET:print("\nBnet:\n    Ironi#2880 (EU)\nDiscord:\n    Ironi#2097\n    https://discord.gg/stY2nyj")
+		iEET:print("\nBnet:\n    Ironi#2880 (EU)\nDiscord:\n    Ironi#2088\n    https://discord.gg/stY2nyj")
 	elseif msg == 'users' then
 		iEET.addonUsers = {}
 		local chatType
@@ -4362,6 +4381,22 @@ SlashCmdList["IEET"] = function(realMsg)
 			end
 			iEET:print('\n' .. str)
 		end)
+	elseif msg:match('^whitelist ([-]?%d*)') then
+		local spellID = tonumber(msg:match('^whitelist ([-]?%d*)'))
+		if spellID < 0 then -- Remove
+			spellID = math.abs(spellID)
+			if iEETConfig.CustomWhitelist[spellID] then
+				iEETConfig.CustomWhitelist[spellID] = nil
+				iEET:print('Removed '..spellID..' from whitelist.')
+			else
+				iEET:print(math.abs(spellID).." Isn't currently whitelisted.")
+			end
+			return
+		end
+		local spellName = GetSpellInfo(spellID)
+		if not spellName then spellName = true end -- adding spell that doesn't exists in current game version
+		iEETConfig.CustomWhitelist[spellID] = spellName -- spellname only works as a comment, doesn't really matter what it is as long as it isn't nil or false
+		iEET:print('Added '..spellID..' to the whitelist.')
 	else
 		iEET:print(string.format('Command "%s" not found, read the readme.txt.', msg))
 	end

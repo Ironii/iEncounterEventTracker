@@ -38,6 +38,7 @@ writing: 125261, will search 125261 from every table key and values
 	autodiscard X	x = seconds, auto discards fights shorter than X (when autosave is on)
 	colorreset		resets colors to default
 	contact			show author's contact information
+	whitelist spellid	add spell to whitelist (-spellid to remove)
 
 ---------------------------
 --Colums-------------------
