@@ -104,10 +104,10 @@ function iEET:OnscreenAddMessages(data)
 		else
 			local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
       if data.sG then
-        if string.find(data.sG, 'boss') then
-          npcID = data.sG
-        else
+        if data.sG:find('-') then
           unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", data.sG)
+        else
+          npcID = data.sG
         end
 			else
 				npcID = 'NONE'

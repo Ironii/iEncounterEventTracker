@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.800
+iEET.version = 1.810
 local colors = {}
 
 iEET.auraEvents = {
@@ -1016,16 +1016,7 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 	if event == 29 or event == 30 or event == 31 or event == 43 or event == 44 or event == 45 or event == 46 then -- MONSTER_EMOTE = 29, MOSNTER_SAY = 30, MONSTER_YELL = 31, RAID_BOSS_EMOTE = 43, RAID_BOSS_WHISPER = 44
 		local msg = spellID
 		if event == 29 or event == 43 or event == 44 or event == 45 or event == 46 then --trying to fix monster emotes, MONSTER_EMOTE
-			--"|TInterface\\Icons\\spell_fel_elementaldevastation.blp:20|tVerestriona's |cFFFF0000|Hspell:182008|h[Latent Energy]|h|r reacts violently as they step into the |cFFFF0000|Hspell:179582|h[Rumbling Fissure]|h|r!}|D|"
-			--TODO: Better solution
 			msg = iEET:removeExtras(spellID, true)
-			--msg = string.gsub(spellID, "|T.+|t", "") -- Textures
-			--msg = string.gsub(msg, "|h", "") -- Spells
-			--msg = string.gsub(msg, "|H", "") -- Spells
-			--msg = string.gsub(msg, "|c........", "") -- Colors
-			--msg = string.gsub(msg, "|r", "") -- Colors
-			--msg = string.gsub(msg, '%%', '%%%%')
-			--msg = string.gsub(msg, ':', ';;')
 		end
 		if event == 43 or event == 44 or event == 45 or event == 46 then
 			local sID = msg:match('spell;;(%d+)')
@@ -1040,12 +1031,6 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 			iEET:addMessages(1, 4, 'Message', color, '\124HiEETcustomyell:' .. event .. ':' .. msg .. '\124h%s\124h') -- NEEDS CHANGING
 		end
 	elseif event == 47 or event == 48 or event == 49 or event == 50 or event == 51 or event == 52 then -- BigWigs
-		--spellName = spellName:gsub(':', ';;')
-		--spellName = spellName:gsub('|c........', '') -- Colors
-		--spellName = spellName:gsub('|r', '') -- Colors
-		--spellName = spellName:gsub('|T.+|t', '') -- Textures
-		--spellName = iEET:TrimWS(spellName)
-		--spellName = spellName:gsub('%%', '%%%%')
 		spellName = iEET:removeExtras(spellName)
 		if event == 52 then -- BigWigs_StopBars
 			iEET:addMessages(1, 4, spellName, color)
@@ -1081,15 +1066,14 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 		else
 			local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
 			if sourceGUID then
-				if string.find(sourceGUID, 'boss') then
-					npcID = sourceGUID
-				else
+				if sourceGUID:find('-') then
 					unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
+				else
+					npcID = sourceGUID
 				end
 			else
 				npcID = 'NONE'
 			end
-			--iEET.content4:AddMessage('\124HiEETcustomspell:' .. event .. ':' .. spellID .. ':' .. spellName .. ':' .. (npcID and npcID or 'NONE').. '!' .. (spawnID and spawnID or '') ..'\124h' .. spellnametoShow .. '\124h', unpack(iEET:getColor(event, sourceGUID, spellID))) -- NEEDS CHANGING
 			iEET:addMessages(1, 4, spellName, color, '\124HiEETcustomspell:' .. event ..
 				':' .. spellID .. ':' .. string.gsub(spellName, '%%', '%%%%') ..
 				':' .. (npcID and (npcID .. (spawnID and ('!' .. spawnID) or '')) or 'NONE')
@@ -1559,8 +1543,6 @@ function iEET:Hyperlinks(linkData, link)
 	end
 	GameTooltip:Show()
 end
-
-
 function iEET:getNextPrevEncounter(prevNext)
 	local encounters = {}
 	local currentEncounterString = iEET:getEncounterString()
@@ -1701,9 +1683,6 @@ function iEET:massDelete(data)
 	iEET:print(counter .. ' fights deleted.')
 	encounters = nil
 end
-
-
-
 function iEET:copyCurrent(formatStyle)
 	local totalData = ''
 	for line = 1, iEET.content1:GetNumMessages() do
@@ -1897,7 +1876,6 @@ function iEET:ConvertOldReports() -- XXX remove at some point
 	iEET_Data = newDataTable
 	iEET:print('Converted ' .. count .. ' old reports to new format.')
 end
-
 function iEET:ExportFightsToWTF()
 	iEET_ExportFromWTF = {}
 	local fightCount = 0
@@ -1914,7 +1892,7 @@ function iEET:ExportFightsToWTF()
 		local dif = GetDifficultyInfo(temp.d) or 1
 		local zone = ''
 		if temp.zI then
-			zone = GetRealZoneText(temp.zI)
+			zone = temp.zI == -1 and "Custom" or GetRealZoneText(temp.zI)
 		else
 			zone = UNKNOWN
 		end

@@ -93,14 +93,12 @@ function addon:ENCOUNTER_START(encounterID, encounterName, difficultyID, raidSiz
 			['eN'] = encounterName,
 			['pT'] = date('%y.%m.%d %H:%M'), -- y.m.d instead of d.m.y for easier sorting
 			['fT'] = '00:00',
-			['d']= 0,
-			['rS'] = 0,
+			['rS'] = raidSize,
 			['k'] = 0,
 			['zI'] = mapID,
 			['v'] = iEET.version,
 			['eI'] = encounterID,
 			['d'] = difficultyID,
-			['rs'] = raidSize,
 			['lN'] = UnitName('player')
 		}
 	end
@@ -780,6 +778,7 @@ function iEET:Force(start, name)
 			['d']= dID,
 			['rS'] = GetNumGroupMembers(),
 			['k'] = 1,
+			['zI'] = -1,
 			['v'] = iEET.version,
 			['eI'] = 0,
 			['lN'] = UnitName('player')
@@ -811,6 +810,7 @@ function iEET:Force(start, name)
 			['d']= dID,
 			['rS'] = GetNumGroupMembers(),
 			['k'] = 1,
+			['zI'] = -1,
 			['v'] = iEET.version,
 			['eI'] = 0,
 			['lN'] = UnitName('player')

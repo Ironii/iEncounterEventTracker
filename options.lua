@@ -371,7 +371,7 @@ function iEET:updateEncounterListMenu()
 			--end
 			temp.dataKey = k
 			if temp.zI then
-				local zone = GetRealZoneText(temp.zI)
+				local zone = temp.zI == -1 and "Custom" or GetRealZoneText(temp.zI)
 				temp.zoneName = zone
 				if not zonesTemp[zone] then
 					zonesTemp[zone] = {text = zone, hasArrow = true, notCheckable = true, menuList = {}}

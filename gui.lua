@@ -196,7 +196,7 @@ function iEET:CreateMainFrame()
 	iEET.top:SetFrameLevel(1)
 	--Encounter Info background & fontstring
 	iEET.encounterInfo = CreateFrame('FRAME', nil, iEET.frame)
-	iEET.encounterInfo:SetSize(370, 18)
+	iEET.encounterInfo:SetSize(470, 18)
 	iEET.encounterInfo:SetPoint('BOTTOM', iEET.top, 'TOP', 0, -1)
 	iEET.encounterInfo:SetBackdrop(iEET.backdrop);
 	iEET.encounterInfo:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
@@ -1088,7 +1088,7 @@ function iEET:toggleDeleteOptions()
 			end
 			local errorText
 			if not  deleteOptionsVars.encounter then
-				errorText = 'Error: EncounterID has to be number, use "" or "*" to select all encounters.'
+				errorText = 'Error: EncounterID has to be number, use "" or "*" to select all encounters. Use "0" to delete custom (force started) encounters.'
 			end
 			if not deleteOptionsVars.del then
 				if errorText then
@@ -1266,7 +1266,7 @@ function iEET:toggleDeleteOptions()
 		iEET.deleteOptions.deleteButton.text:Show()
 
 		iEET.deleteOptions.errorText = iEET.deleteOptions.mainFrame:CreateFontString()
-		iEET.deleteOptions.errorText:SetFont(iEET.font, iEET.fontsize+2, 'OUTLINE')
+		iEET.deleteOptions.errorText:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
 		iEET.deleteOptions.errorText:SetPoint('BOTTOM', iEET.deleteOptions.deleteButton, 'TOP', 0,3)
 		iEET.deleteOptions.errorText:SetPoint('TOP', iEET.deleteOptions.chooseEncounter, 'BOTTOM', 0,-3)
 		iEET.deleteOptions.errorText:SetWidth(width-20)
@@ -1650,6 +1650,8 @@ function iEET:StartRecordingWithoutFiltersPopup()
 		iEET.noFiltersPopup.errorText:SetText('')
 		iEET.noFiltersPopup.errorText:SetTextColor(1,0,0,1)
 	else
+		iEET.noFiltersPopup.name:SetText('')
 		iEET.noFiltersPopup.mainFrame:Show()
+
 	end
 end
