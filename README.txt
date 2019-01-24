@@ -4,7 +4,7 @@
 Bnet:
 	Ironi#2880 (EU)
 Discord:
-	Ironi#2097
+	Ironi#2880
 	https://discord.gg/stY2nyj
 
 ---------------------------
