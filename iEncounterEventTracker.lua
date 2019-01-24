@@ -1059,7 +1059,9 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 					end
 				else -- Encounter journal section ID
 					sn = C_EncounterJournal.GetSectionInfo(-spellID)
-					if not sn then -- PTR nil check
+					if sn then
+						sn = sn.title
+					else -- PTR nil check
 						sn = spellID
 					end
 				end
@@ -1179,7 +1181,7 @@ function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink)
 		--elseif string.len(value) > 20 then
 		--	value = string.sub(value, 1, 20)
 		--end
-		if string.len(value) > 20 then
+		if value and string.len(value) > 20 then
 			value = string.sub(value, 1, 20)
 		end
 		if hyperlink then
