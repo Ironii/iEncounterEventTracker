@@ -45,7 +45,7 @@ function addon:ADDON_LOADED(addonName)
 		addon:RegisterEvent('CHAT_MSG_ADDON')
 		iEETConfig = iEETConfig or {}
 		iEET_Data = iEET_Data or {}
-		if iEETConfig.version < 1.8 then
+		if iEETConfig.version and iEETConfig.version < 1.8 then
 			iEETConfig.tracking = nil
 		end
 		iEET:LoadDefaults()
