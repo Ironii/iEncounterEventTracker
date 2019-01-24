@@ -471,7 +471,7 @@ function iEET:CreateMainFrame()
 		--Slider
 		iEET.mainFrameSlider = CreateFrame('Slider', nil, iEET.frame)
 		iEET.mainFrameSlider:SetSize(8,834)
-		iEET.mainFrameSlider:SetThumbTexture('Interface\\AddOns\\iTargetingFrames\\media\\thumb')
+		iEET.mainFrameSlider:SetThumbTexture('Interface\\AddOns\\iEncounterEventTracker\\media\\thumb')
 		iEET.mainFrameSlider:SetBackdrop(bd)
 		iEET.mainFrameSlider:SetBackdropColor(0.1,0.1,0.1,0.9)
 		iEET.mainFrameSlider:SetBackdropBorderColor(0,0,0,1)
