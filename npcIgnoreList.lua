@@ -146,7 +146,11 @@ iEET.npcIgnoreList = {
 	[108452] = true,	--Infernal
 	[108493] = true,	--Chaos Tear
 	[121643] = true,	--Flame Rift
-
+	[135002] = true, -- Demonic Tyrant
+	[135816] = true, -- Vilefiend
+	[136404] = true, -- Bilescourge
+	[136403] = true, -- Void Terror
+	[143622] = true, -- Wild Imp
 
 --Warrior
 }
