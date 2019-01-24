@@ -5,7 +5,8 @@ iEET.taunts = {
 	[49576] = true, --Death Grip
 
 	--Demon Hunter
-	[185245] = true, --Torment
+	[185245] = true, --Torment (Vengeance)
+	[281854] = true, -- Torment (Havoc)
 
 	--Druid
 	[6795] = true, --Growl

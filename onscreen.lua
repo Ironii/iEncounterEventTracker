@@ -83,12 +83,14 @@ function iEET:OnscreenAddMessages(data)
 					end
 				else -- Encounter journal section ID
 					sn = C_EncounterJournal.GetSectionInfo(-spellID)
-					if not sn then -- PTR nil check, shouldn't be needed but copy-paste ftw, maybe change it later
+          if sn then
+            sn = sn.title
+          else -- PTR nil check, shouldn't be needed but copy-paste ftw, maybe change it later
 						sn = spellID
 					end
 				end
 			else
-				sn = spellID
+				sn = data.sI
 			end
 			iEET:addMessages(3, 4, sn, color, '\124HiEETBW:' .. data.e .. ':' .. spellName .. '\124h%s\124h')
 		else -- BigWigs_PauseBar, BigWigs_ResumeBar, BigWigs_StopBar
@@ -101,14 +103,18 @@ function iEET:OnscreenAddMessages(data)
 			iEET:addMessages(3, 4, data.sN, color,'\124HiEETList:' .. (data.eD and string.gsub(data.eD, '%%', '%%%%') or 'Empty List;Contact Ironi') .. '\124h%s\124h')
 		else
 			local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
-			if data.sG then
-				unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", data.sG)
+      if data.sG then
+        if string.find(data.sG, 'boss') then
+          npcID = data.sG
+        else
+          unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", data.sG)
+        end
 			else
 				npcID = 'NONE'
 			end
 			iEET:addMessages(3, 4, data.sN, color, '\124HiEETcustomspell:' .. data.e ..
 				':' .. data.sI .. ':' .. string.gsub(data.sN, '%%', '%%%%') ..
-				':' .. (npcID and (npcID .. '!' .. (spawnID and spawnID or '')) or 'NONE')
+				':' .. (npcID and (npcID .. (spawnID and ('!' .. spawnID) or '')) or 'NONE')
 				.. ((data.dG and data.dG:len() > 0) and (':'.. data.dG) or '')
 				..'\124h%s\124h')
 		end

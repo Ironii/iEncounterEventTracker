@@ -935,7 +935,7 @@ function iEET:addSpellDetails(hyperlink, linkData)
 					found = true
 				end
 			elseif linkType == 'iEETNpcList' then
-				if v.sI and v.sI == 133217 then -- Spawn NPCs
+				if v.sI and v.sI == iEET.fakeSpells.SpawnNPCs.spellID then -- Spawn NPCs
 					hyperlinkToShow = '\124HiEETNpcList:' .. v.sG .. '\124h%s\124h'
 					found = true
 				end
@@ -1073,21 +1073,25 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 			iEET:addMessages(1, 4, spellName:gsub(';;', ':'), color, '\124HiEETBW_NOKEY:' .. event .. ':' .. spellName .. '\124h%s\124h')
 		end
 	elseif spellID then
-		if spellID == 133217 then -- INSTANCE_ENCOUNTER_ENGAGE_UNIT
+		if spellID == iEET.fakeSpells.SpawnNPCs.spellID then -- INSTANCE_ENCOUNTER_ENGAGE_UNIT
 			iEET:addMessages(1, 4, spellName, color,'\124HiEETNpcList:' .. sourceGUID .. '\124h%s\124h')
 		elseif event and event == 34 then -- UNIT_POWER
 			iEET:addMessages(1, 4, spellName, color,'\124HiEETList:' .. (extraData and string.gsub(extraData, '%%', '%%%%') or 'Empty List;Contact Ironi') .. '\124h%s\124h')
 		else
 			local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
 			if sourceGUID then
-				unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
+				if string.find(sourceGUID, 'boss') then
+					npcID = sourceGUID
+				else
+					unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
+				end
 			else
 				npcID = 'NONE'
 			end
 			--iEET.content4:AddMessage('\124HiEETcustomspell:' .. event .. ':' .. spellID .. ':' .. spellName .. ':' .. (npcID and npcID or 'NONE').. '!' .. (spawnID and spawnID or '') ..'\124h' .. spellnametoShow .. '\124h', unpack(iEET:getColor(event, sourceGUID, spellID))) -- NEEDS CHANGING
 			iEET:addMessages(1, 4, spellName, color, '\124HiEETcustomspell:' .. event ..
 				':' .. spellID .. ':' .. string.gsub(spellName, '%%', '%%%%') ..
-				':' .. (npcID and (npcID .. '!' .. (spawnID and spawnID or '')) or 'NONE')
+				':' .. (npcID and (npcID .. (spawnID and ('!' .. spawnID) or '')) or 'NONE')
 				.. ((destGUID and destGUID:len() > 0) and (':'.. destGUID) or '')
 				..'\124h%s\124h')
 		end
@@ -1149,7 +1153,7 @@ function iEET:addToEncounterAbilities(spellID, spellName)
 		spellID = tonumber(spellID)
 		local color = {1,1,1}
 
-		if spellID == 103528 or spellID == 133217 or spellID == 98391 or spellID == 143409 then -- Target Selection, Spawn Boss Emote(Spawn NPCs), Death, Power Regen
+		if spellID == iEET.fakeSpells.UnitTargetChanged.spellID or spellID == iEET.fakeSpells.SpawnNPCs.spellID or spellID == iEET.fakeSpells.Death.spellID or spellID == iEET.fakeSpells.PowerUpdate.spellID then -- Target Selection, Spawn Boss Emote(Spawn NPCs), Death, Power Regen
 			color = {0.5,0.5,0.5}
 		end
 		iEET.encounterAbilitiesContent:AddMessage('\124Hspell:' .. spellID .. '\124h[' .. spellName .. ']\124h\124r', unpack(color))
@@ -1282,7 +1286,7 @@ function iEET:loopData(msg)
 					iEET.collector.encounterSpells[0.2] = 'Dispels'
 				end
 			else
-				if v.sI == 143409 then -- Power Update
+				if v.sI == iEET.fakeSpells.PowerUpdate.spellID then -- Power Update
 					iEET.collector.encounterSpells[v.sI] = 'Power Update'
 					iEET:addToEncounterAbilities(v.sI, 'Power Update')
 				else -- ignore fake spells
