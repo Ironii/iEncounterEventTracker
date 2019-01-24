@@ -3,6 +3,9 @@ local _, iEET = ...
 -- 2 = Offensive
 -- 3 = Both
 iEET.dispels = {
+	--General
+	[50613] = 2, -- Arcane Torrent
+
 	--Druid
 	[2782] = 1,		--Remove Corruption
 	[2908] = 2,		--Soothe
@@ -39,7 +42,7 @@ iEET.dispels = {
 	--Warlock
 	[89808] = 1,	--Singe Magic (Imp)
 	[115276] = 1,	--Sear Magic (Fel Imp)
-	
+
 	-- Warrior
 	[107574] = 1,	--Avatar
 }
