@@ -1,5 +1,4 @@
 local _, iEET = ...
-
 local cleuEventsToTrack = {
 	['SPELL_CAST_START'] = 'SC_START',
 	['SPELL_CAST_SUCCESS'] = 'SC_SUCCESS',
@@ -37,6 +36,8 @@ addon:RegisterEvent('PLAYER_LOGOUT')
 addon:SetScript('OnEvent', function(self, event, ...)
 	self[event](self, ...)
 end)
+iEET.ignoreFilters = false
+local ignoreFiltersTimer
 
 function addon:ADDON_LOADED(addonName)
 	if addonName == 'iEncounterEventTracker' then
@@ -63,7 +64,6 @@ function addon:ADDON_LOADED(addonName)
 		addon:UnregisterEvent('ADDON_LOADED')
 	end
 end
-
 function addon:CHAT_MSG_ADDON(prefix,msg,chatType,sender)
 	if prefix == 'iEET' then
 		if msg == 'userCheck' then
@@ -79,13 +79,11 @@ function addon:CHAT_MSG_ADDON(prefix,msg,chatType,sender)
 		end
 	end
 end
-
 function addon:PLAYER_LOGOUT()
 	if iEET.forceRecording then
 		iEET:Force()
 	end
 end
-
 function addon:ENCOUNTER_START(encounterID, encounterName, difficultyID, raidSize,...)
 	if not iEET.forceRecording then
 		local mapID = select(8, GetInstanceInfo())
@@ -110,7 +108,6 @@ function addon:ENCOUNTER_START(encounterID, encounterName, difficultyID, raidSiz
 	table.insert(iEET.data, t)
 	iEET:OnscreenAddMessages(t)
 end
-
 function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize, kill,...)
 	local t = {['e'] = 28, ['t'] = GetTime() ,['cN'] = kill == 1 and 'Victory!' or 'Wipe', ['tN'] = EncounterID,  ['sN'] = 'Logger: '..UnitName('player')}
 	table.insert(iEET.data, t)
@@ -140,14 +137,13 @@ function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize,
 	end
 	iEET:OnscreenAddMessages(t)
 end
-
 function addon:UNIT_SPELLCAST_SUCCEEDED(unitID, arg2,spellID)
 	local sourceGUID = UnitGUID(unitID)
 	local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
 	if sourceGUID then -- fix for arena id's
 		unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
 	end
-	if (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and (iEET.approvedSpells[spellID] or iEET.taunts[spellID])) or not sourceGUID then
+	if iEET.ignoreFilters or (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and (iEET.approvedSpells[spellID] or iEET.taunts[spellID])) or not sourceGUID then
 		local sourceName = UnitName(unitID)
 		local chp = UnitHealth(unitID)
 		local maxhp = UnitHealthMax(unitID)
@@ -180,14 +176,13 @@ function addon:UNIT_SPELLCAST_SUCCEEDED(unitID, arg2,spellID)
 		end
 	end
 end
-
 function addon:UNIT_SPELLCAST_START(unitID, arg2,spellID)
 	local sourceGUID = UnitGUID(unitID)
 	local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
 	if sourceGUID then -- fix for arena id's
 		unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
 	end
-	if (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and iEET.approvedSpells[spellID]) or not sourceGUID then
+	if iEET.ignoreFilters or (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and iEET.approvedSpells[spellID]) or not sourceGUID then
 		local sourceName = UnitName(unitID)
 		local chp = UnitHealth(unitID)
 		local maxhp = UnitHealthMax(unitID)
@@ -213,14 +208,13 @@ function addon:UNIT_SPELLCAST_START(unitID, arg2,spellID)
 		end
 	end
 end
-
 function addon:UNIT_SPELLCAST_CHANNEL_START(unitID, arg2,spellID)
 	local sourceGUID = UnitGUID(unitID)
 	local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
 	if sourceGUID then -- fix for arena id's
 		unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
 	end
-	if (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and iEET.approvedSpells[spellID]) or not sourceGUID then
+	if iEET.ignoreFilters or (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and iEET.approvedSpells[spellID]) or not sourceGUID then
 		local sourceName = UnitName(unitID)
 		local chp = UnitHealth(unitID)
 		local maxhp = UnitHealthMax(unitID)
@@ -253,14 +247,13 @@ function addon:UNIT_SPELLCAST_CHANNEL_START(unitID, arg2,spellID)
 		end
 	end
 end
-
 function addon:UNIT_SPELLCAST_INTERRUPTIBLE(unitID)
 	local sourceGUID = UnitGUID(unitID)
 	local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
 	if sourceGUID then -- fix for arena id's
 		unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
 	end
-	if (unitType == 'Creature') or (unitType == 'Vehicle') or not sourceGUID then
+	if iEET.ignoreFilters or (unitType == 'Creature') or (unitType == 'Vehicle') or not sourceGUID then
 		local sourceName = UnitName(unitID)
 		local chp = UnitHealth(unitID)
 		local maxhp = UnitHealthMax(unitID)
@@ -286,14 +279,13 @@ function addon:UNIT_SPELLCAST_INTERRUPTIBLE(unitID)
 		end
 	end
 end
-
 function addon:UNIT_SPELLCAST_NOT_INTERRUPTIBLE(unitID)
 	local sourceGUID = UnitGUID(unitID)
 	local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
 	if sourceGUID then -- fix for arena id's
 		unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
 	end
-	if (unitType == 'Creature') or (unitType == 'Vehicle') or not sourceGUID then
+	if iEET.ignoreFilters or (unitType == 'Creature') or (unitType == 'Vehicle') or not sourceGUID then
 		local sourceName = UnitName(unitID)
 		local chp = UnitHealth(unitID)
 		local maxhp = UnitHealthMax(unitID)
@@ -319,9 +311,8 @@ function addon:UNIT_SPELLCAST_NOT_INTERRUPTIBLE(unitID)
 		end
 	end
 end
-
 function addon:UNIT_TARGET(unitID)
-	if string.find(unitID, 'boss') then
+	if iEET.ignoreFilters or string.find(unitID, 'boss') then
 		if UnitExists(unitID) then --didn't just disappear
 			local sourceGUID = UnitGUID(unitID)
 			local sourceName = UnitName(unitID)
@@ -347,9 +338,8 @@ function addon:UNIT_TARGET(unitID)
 		end
 	end
 end
-
 function addon:UNIT_POWER_UPDATE(unitID, powerType)
-	if unitID:find('boss') then
+	if iEET.ignoreFilters or unitID:find('boss') then
 		if UnitExists(unitID) then --didn't just disappear
 			if not iEET.savedPowers[powerType] then
 				-- Get power type ID
@@ -411,7 +401,6 @@ function addon:UNIT_POWER_UPDATE(unitID, powerType)
 		end
 	end
 end
-
 function addon:COMBAT_LOG_EVENT_UNFILTERED()
 	local args = {CombatLogGetCurrentEventInfo()}
 	-- args[2] = sub event
@@ -422,8 +411,8 @@ function addon:COMBAT_LOG_EVENT_UNFILTERED()
 		end
 		if args[2] == 'UNIT_DIED' then
 			unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", args[8]) -- destGUID
-			if (unitType == 'Creature') or (unitType == 'Vehicle') or (unitType == 'Player') then
-				if not iEET.npcIgnoreList[tonumber(npcID)] then
+			if iEET.ignoreFilters or (unitType == 'Creature') or (unitType == 'Vehicle') or (unitType == 'Player') then
+				if iEET.ignoreFilters or not iEET.npcIgnoreList[tonumber(npcID)] then
 					local t = {
 						['e'] = 25,
 						['t'] = GetTime(),
@@ -765,7 +754,6 @@ function iEET:StopRecording(force)
 		end
 	end
 end
-
 function iEET:Force(start, name)
 	local t
 	if start then
@@ -799,6 +787,10 @@ function iEET:Force(start, name)
 		--register events and start recording
 	else
 		--unregister events and stop recording
+		if iEET.ignoreFilters then
+			iEET.ignoreFilters = false
+			iEET:print("Filters are no longer ignored.")
+		end
 		iEET.forceRecording = false
 		t = {['e'] = 38, ['t'] = GetTime() ,['cN'] = 'End Logging'}
 		table.insert(iEET.data, t)
@@ -828,4 +820,17 @@ function iEET:Force(start, name)
 		iEET:StopRecording(true)
 	end
 	if t then iEET:OnscreenAddMessages(t) end
+end
+
+function iEET:ForceStartWithoutFilters(time, name)
+	iEET.ignoreFilters = true
+	if ignoreFiltersTimer then
+		ignoreFiltersTimer:Cancel()
+	end
+	ignoreFiltersTimer = C_Timer.NewTimer(time, function()
+		if iEET.forceRecording then
+			iEET:Force() -- Stop manual recording
+		end
+	end)
+	iEET:Force(true, name .. " (Full logging)")
 end

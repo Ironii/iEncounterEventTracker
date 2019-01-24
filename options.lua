@@ -185,6 +185,7 @@ function iEET:updateOptionsMenu()
 		iEET_ExportFromWTF = {}
 		iEET:print('Export variable cleared.')
 	end})
+	table.insert(iEET.optionsMenu, { text = 'Start recording without filters', notCheckable = true, func = function () iEET:StartRecordingWithoutFiltersPopup() end})
 	table.insert(iEET.optionsMenu, { text = 'Close', notCheckable = true, func = function () CloseDropDownMenus(); end})
 end
 

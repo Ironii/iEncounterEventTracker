@@ -422,8 +422,9 @@ function iEET:getColor(event, sourceGUID, spellID)
 	end
 end
 function iEET:shouldTrack(event, unitType, npcID, spellID, sourceGUID, hideCaster)
+	if iEET.ignoreFilters then return true end
 	if (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and (iEET.approvedSpells[spellID] or iEET.taunts[spellID] or iEETConfig.CustomWhitelist[spellID])) or not sourceGUID or hideCaster or event == 'SPELL_INTERRUPT' or event == 'SPELL_DISPEL' then
-		if spellID and not iEET.ignoredSpells[spellID] then
+		if (spellID and not iEET.ignoredSpells[spellID]) then
 			if not iEET.npcIgnoreList[tonumber(npcID)] then
 				return true
 			end

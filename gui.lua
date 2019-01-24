@@ -153,7 +153,6 @@ function iEET:ScrollOnscreen(delta)
 		end
 	end
 end
-
 function iEET:CreateMainFrame()
 	iEET.frame = CreateFrame("Frame", "iEETFrame", UIParent)
 	iEET.frame:SetSize(598,834)
@@ -1479,4 +1478,178 @@ function iEET:OnscreenDisplayUpdatePos()
 	if not iEET.onscreen then return end
 	iEET.onscreen:ClearAllPoints()
 	iEET.onscreen:SetPoint(iEETConfig.onscreen.position.from, UIParent, iEETConfig.onscreen.position.to, iEETConfig.onscreen.position.x,iEETConfig.onscreen.position.y)
+end
+function iEET:StartRecordingWithoutFiltersPopup()
+	if not iEET.noFiltersPopup then
+			--Delete options main frame
+		local width = 310
+		iEET.noFiltersPopup = {}
+		iEET.noFiltersPopup.mainFrame = CreateFrame('Frame', 'iEETnoFiltersPopup', UIParent)
+		iEET.noFiltersPopup.mainFrame:SetSize(width,110)
+		iEET.noFiltersPopup.mainFrame:SetPoint('CENTER', UIParent, 'CENTER', 0,0)
+		iEET.noFiltersPopup.mainFrame:SetBackdrop(iEET.backdrop);
+		iEET.noFiltersPopup.mainFrame:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
+		iEET.noFiltersPopup.mainFrame:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
+		iEET.noFiltersPopup.mainFrame:Show()
+		iEET.noFiltersPopup.mainFrame:SetFrameStrata('DIALOG')
+		iEET.noFiltersPopup.mainFrame:SetFrameLevel(1)
+		iEET.noFiltersPopup.mainFrame:EnableMouse(true)
+		iEET.noFiltersPopup.mainFrame:SetMovable(true)
+		-- Options title frame
+		iEET.noFiltersPopup.top = CreateFrame('FRAME', nil, iEET.noFiltersPopup.mainFrame)
+		iEET.noFiltersPopup.top:SetSize(width, 15)
+		iEET.noFiltersPopup.top:SetPoint('BOTTOMRIGHT', iEET.noFiltersPopup.mainFrame, 'TOPRIGHT', 0, -1)
+		iEET.noFiltersPopup.top:SetBackdrop(iEET.backdrop)
+		iEET.noFiltersPopup.top:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
+		iEET.noFiltersPopup.top:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
+		iEET.noFiltersPopup.top:SetScript('OnMouseDown', function(self,button)
+			iEET.noFiltersPopup.mainFrame:ClearAllPoints()
+			iEET.noFiltersPopup.mainFrame:StartMoving()
+		end)
+		iEET.noFiltersPopup.top:SetScript('OnMouseUp', function(self, button)
+			iEET.noFiltersPopup.mainFrame:StopMovingOrSizing()
+		end)
+		iEET.noFiltersPopup.top:EnableMouse(true)
+		iEET.noFiltersPopup.top:Show()
+		iEET.noFiltersPopup.top:SetFrameStrata('DIALOG')
+		iEET.noFiltersPopup.top:SetFrameLevel(1)
+		-- Options title text
+		iEET.noFiltersPopup.top.text = iEET.noFiltersPopup.top:CreateFontString()
+		iEET.noFiltersPopup.top.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+		iEET.noFiltersPopup.top.text:SetPoint('CENTER', iEET.noFiltersPopup.top, 'CENTER', 0,0)
+		iEET.noFiltersPopup.top.text:SetText('Start logging without filters')
+		iEET.noFiltersPopup.top.text:Show()
+
+		iEET.noFiltersPopup.top.exitButton = CreateFrame('FRAME', nil, iEET.noFiltersPopup.mainFrame)
+		iEET.noFiltersPopup.top.exitButton:SetSize(15, 15)
+		iEET.noFiltersPopup.top.exitButton:SetPoint('TOPRIGHT', iEET.noFiltersPopup.top, 'TOPRIGHT', 0, 0)
+		iEET.noFiltersPopup.top.exitButton:SetBackdrop(iEET.backdrop)
+		iEET.noFiltersPopup.top.exitButton:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
+		iEET.noFiltersPopup.top.exitButton:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
+		iEET.noFiltersPopup.top.exitButton:SetScript('OnMouseDown', function(self,button)
+			iEET.noFiltersPopup.mainFrame:Hide()
+		end)
+		iEET.noFiltersPopup.top.exitButton:EnableMouse(true)
+		iEET.noFiltersPopup.top.exitButton:Show()
+		iEET.noFiltersPopup.top.exitButton:SetFrameStrata('DIALOG')
+		iEET.noFiltersPopup.top.exitButton:SetFrameLevel(2)
+		iEET.noFiltersPopup.top.exitButton.text = iEET.noFiltersPopup.top.exitButton:CreateFontString()
+		iEET.noFiltersPopup.top.exitButton.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+		iEET.noFiltersPopup.top.exitButton.text:SetPoint('CENTER', iEET.noFiltersPopup.top.exitButton, 'CENTER', 0,0)
+		iEET.noFiltersPopup.top.exitButton.text:SetText('X')
+		iEET.noFiltersPopup.top.exitButton.text:Show()
+
+
+		local noFiltersPopupVars = {
+			timer = false,
+			name = false,
+		}
+		local function setErrorText(check)
+			if check then
+				local timer = tonumber(noFiltersPopupVars.timer)
+				if (timer and timer > 0) and (noFiltersPopupVars.name and noFiltersPopupVars.name:len() > 2) then
+					return true
+				else
+					return false
+				end
+			end
+			local errorText
+			if not tonumber(noFiltersPopupVars.timer) then
+				errorText = 'Error: Timer has to be number.'
+			end
+			if not noFiltersPopupVars.name or noFiltersPopupVars.name:len() <= 2 then
+				if errorText then
+					errorText = errorText .. "\nError: Name has to be at least 2 characters long."
+				else
+					errorText = "Error: Name has to be at least 2 characters long."
+				end
+			end
+			if errorText then
+				iEET.noFiltersPopup.errorText:SetText(errorText)
+				iEET.noFiltersPopup.errorText:Show()
+			else
+				iEET.noFiltersPopup.errorText:SetText('')
+				iEET.noFiltersPopup.errorText:Hide()
+			end
+		end
+		iEET.noFiltersPopup.timer = CreateFrame('editbox', nil, iEET.noFiltersPopup.mainFrame)
+		iEET.noFiltersPopup.timer:SetSize(101,20)
+		iEET.noFiltersPopup.timer:SetAutoFocus(false)
+		iEET.noFiltersPopup.timer:SetTextInsets(2, 2, 1, 0)
+		iEET.noFiltersPopup.timer:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+		iEET.noFiltersPopup.timer:SetBackdrop(iEET.backdrop)
+		iEET.noFiltersPopup.timer:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
+		iEET.noFiltersPopup.timer:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
+		iEET.noFiltersPopup.timer:SetPoint('TOPLEFT', iEET.noFiltersPopup.mainFrame, 'TOPLEFT', 3,-18)
+		iEET.noFiltersPopup.timer:SetScript('OnTextChanged', function(self)
+			local text = self:GetText()
+				noFiltersPopupVars.timer = text
+				setErrorText()
+		end)
+		iEET.noFiltersPopup.timer:SetScript('OnEnterPressed', function(self)
+			self:ClearFocus()
+		end)
+		iEET.noFiltersPopup.timer:SetText('60')
+		iEET.noFiltersPopup.timer.text = iEET.noFiltersPopup.timer:CreateFontString()
+		iEET.noFiltersPopup.timer.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+		iEET.noFiltersPopup.timer.text:SetPoint('BOTTOM', iEET.noFiltersPopup.timer, 'TOP', 0,3)
+		iEET.noFiltersPopup.timer.text:SetText('Timer (sec)')
+
+		iEET.noFiltersPopup.name = CreateFrame('editbox', nil, iEET.noFiltersPopup.mainFrame)
+		iEET.noFiltersPopup.name:SetSize(201,20)
+		iEET.noFiltersPopup.name:SetAutoFocus(false)
+		iEET.noFiltersPopup.name:SetTextInsets(2, 2, 1, 0)
+		iEET.noFiltersPopup.name:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+		iEET.noFiltersPopup.name:SetBackdrop(iEET.backdrop)
+		iEET.noFiltersPopup.name:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
+		iEET.noFiltersPopup.name:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
+		iEET.noFiltersPopup.name:SetPoint('TOPRIGHT', iEET.noFiltersPopup.mainFrame, 'TOPRIGHT', -3,-18)
+		iEET.noFiltersPopup.name:SetScript('OnTextChanged', function(self)
+			local text = self:GetText()
+				noFiltersPopupVars.name = text
+				setErrorText()
+		end)
+		iEET.noFiltersPopup.name:SetScript('OnEnterPressed', function(self)
+			self:ClearFocus()
+		end)
+		iEET.noFiltersPopup.name:SetText('')
+		iEET.noFiltersPopup.name.text = iEET.noFiltersPopup.timer:CreateFontString()
+		iEET.noFiltersPopup.name.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+		iEET.noFiltersPopup.name.text:SetPoint('BOTTOM', iEET.noFiltersPopup.name, 'TOP', 0,3)
+		iEET.noFiltersPopup.name.text:SetText('Log name')
+
+
+		iEET.noFiltersPopup.startButton = CreateFrame('FRAME', nil, iEET.noFiltersPopup.mainFrame)
+		iEET.noFiltersPopup.startButton:SetSize(width-6, 25)
+		iEET.noFiltersPopup.startButton:SetPoint('BOTTOM', iEET.noFiltersPopup.mainFrame, 'BOTTOM', 0, 3)
+		iEET.noFiltersPopup.startButton:SetBackdrop(iEET.backdrop)
+		iEET.noFiltersPopup.startButton:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
+		iEET.noFiltersPopup.startButton:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
+		iEET.noFiltersPopup.startButton:SetScript('OnMouseDown', function(self,button)
+			if setErrorText(true) then
+				iEET:ForceStartWithoutFilters(noFiltersPopupVars.timer,noFiltersPopupVars.name)
+				iEET.noFiltersPopup.mainFrame:Hide()
+			end
+		end)
+		iEET.noFiltersPopup.startButton:EnableMouse(true)
+		iEET.noFiltersPopup.startButton:Show()
+		iEET.noFiltersPopup.startButton:SetFrameStrata('DIALOG')
+		iEET.noFiltersPopup.startButton:SetFrameLevel(2)
+		iEET.noFiltersPopup.startButton.text = iEET.noFiltersPopup.startButton:CreateFontString()
+		iEET.noFiltersPopup.startButton.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+		iEET.noFiltersPopup.startButton.text:SetPoint('CENTER', iEET.noFiltersPopup.startButton, 'CENTER', 0,0)
+		iEET.noFiltersPopup.startButton.text:SetText('Start')
+		iEET.noFiltersPopup.startButton.text:Show()
+
+		iEET.noFiltersPopup.errorText = iEET.noFiltersPopup.mainFrame:CreateFontString()
+		iEET.noFiltersPopup.errorText:SetFont(iEET.font, iEET.fontsize+2, 'OUTLINE')
+		iEET.noFiltersPopup.errorText:SetPoint('BOTTOM', iEET.noFiltersPopup.startButton, 'TOP', 0,3)
+		iEET.noFiltersPopup.errorText:SetPoint('TOPLEFT', iEET.noFiltersPopup.timer, 'BOTTOMLEFT', 0,-3)
+		iEET.noFiltersPopup.errorText:SetWidth(width-20)
+		iEET.noFiltersPopup.errorText:SetJustifyV('MIDDLE')
+		iEET.noFiltersPopup.errorText:SetText('')
+		iEET.noFiltersPopup.errorText:SetTextColor(1,0,0,1)
+	else
+		iEET.noFiltersPopup.mainFrame:Show()
+	end
 end
