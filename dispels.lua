@@ -4,7 +4,11 @@ local _, iEET = ...
 -- 3 = Both
 iEET.dispels = {
 	--General
-	[50613] = 2, -- Arcane Torrent
+	[50613] = 2, -- Arcane Torrent (DK?)
+	[202719] = 2, -- Arcane Torrent (DH)
+
+	--Demon Hunter
+	[278326] = 2, -- Consume Magic
 
 	--Druid
 	[2782] = 1,		--Remove Corruption
