@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.811
+iEET.version = 1.812
 local colors = {}
 
 iEET.auraEvents = {
@@ -603,6 +603,11 @@ function iEET:LoadDefaults()
 		['classColors'] = false,
 		['cInfo'] = true,
 		['CustomWhitelist'] = {},
+		['scales'] = {
+			['main'] = false,
+			['filters'] = false,
+			['onscreen'] = false,
+		}
 	}
 	for k,v in pairs(defaults) do
 		if iEETConfig[k] == nil then
@@ -2020,6 +2025,31 @@ SlashCmdList["IEET"] = function(realMsg)
 		end
 		iEETConfig.CustomWhitelist[spellID] = Spell:CreateFromSpellID(spellID):GetSpellName() or true -- spellname only works as a comment, doesn't really matter what it is as long as it isn't nil or false
 		iEET:print('Added '..spellID..' to the whitelist.')
+	elseif msg:match("^scale (.*) (.*)") then
+		--scales
+		local frame, value = msg:match("^scale (.*) (.*)")
+		value = tonumber(value)
+		if value and value <= 0 then
+			value = false
+		end
+		if frame == "main" then
+			iEETConfig.scales.main = value and value or false
+			if iEET.frame then
+				iEET.frame:SetScale(iEETConfig.scales.main and iEETConfig.scales.main or 1)
+			end
+		elseif frame == "filters" then
+			iEETConfig.scales.filters = value and value or false
+			if iEET.optionsFrame then
+				iEET.optionsFrame:SetScale(iEETConfig.scales.filters and iEETConfig.scales.filters or 1)
+			end
+		elseif frame == "onscreen" then
+			iEETConfig.scales.onscreen = value and value or false
+			if iEET.onscreen then
+				iEET.onscreen:SetScale(iEETConfig.scales.onscreen and iEETConfig.scales.onscreen or 1)
+			end
+		else
+			iEET:print('Frame not found, possible values are "main", "filters" or "onscreen".')
+		end
 	else
 		iEET:print(string.format('Command "%s" not found, read the readme.txt.', msg))
 	end

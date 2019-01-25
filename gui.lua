@@ -157,6 +157,9 @@ function iEET:CreateMainFrame()
 	iEET.frame = CreateFrame("Frame", "iEETFrame", UIParent)
 	iEET.frame:SetSize(598,834)
 	iEET.frame:SetPoint('CENTER', UIParent, 'CENTER', 0,0)
+	if iEETConfig.scales.main then
+		iEET.frame:SetScale(iEETConfig.scales.main)
+	end
 	iEET.frame:SetScript('OnMouseDown', function(self,button)
 		iEET.frame:ClearAllPoints()
 		iEET.frame:StartMoving()
@@ -723,6 +726,9 @@ function iEET:CreateOptionsFrame()
 	iEET.optionsFrame = CreateFrame('Frame', 'iEETOptionsFrame', UIParent)
 	iEET.optionsFrame:SetSize(650,500)
 	iEET.optionsFrame:SetPoint('CENTER', UIParent, 'CENTER', 0,0)
+	if iEETConfig.scales.filters then
+		iEET.optionsFrame:SetScale(iEETConfig.scales.filters)
+	end
 	iEET.optionsFrame:SetBackdrop(iEET.backdrop);
 	iEET.optionsFrame:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
 	iEET.optionsFrame:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
@@ -1373,6 +1379,9 @@ function iEET:CreateOnscreenFrame()
 	iEET.onscreen = CreateFrame("Frame", "iEETOnscreen", UIParent)
 	iEET.onscreen:SetSize(598,iEETConfig.onscreen.lines*11+2)
 	iEET.onscreen:SetPoint(iEETConfig.onscreen.position.from, UIParent, iEETConfig.onscreen.position.to, iEETConfig.onscreen.position.x,iEETConfig.onscreen.position.y)
+	if iEETConfig.scales.onscreen then
+		iEET.onscreen:SetScale(iEETConfig.scales.onscreen)
+	end
 	iEET.onscreen:SetFrameStrata('HIGH')
 	iEET.onscreen:SetFrameLevel(1)
 	local lastframe = false
