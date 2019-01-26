@@ -399,6 +399,82 @@ function addon:UNIT_POWER_UPDATE(unitID, powerType)
 		end
 	end
 end
+function addon:UNIT_ENTERING_VEHICLE(unitID, hasVehicleUI,arg3,vehicleID, destGUID, isPlayerControlled, canAim)
+	local sourceGUID = UnitGUID(unitID)
+	local sourceName = UnitName(unitID)
+	local slots = 0
+	if vehicleID and vehicleID ~= 0 then
+		local t,i = GetVehicleUIIndicator(vehicleID)
+		slots = i
+	end
+	local eD = string.format("%s:%s:%s:%s", (hasVehicleUI and 1 or 0), slots, (isPlayerControlled and 1 or 0), (canAim and 1 or 0))
+	local t = {
+		['e'] = 53,
+		['t'] = GetTime(),
+		['sG'] = sourceGUID or 'NONE',
+		['cN'] = sourceName or 'NONE',
+		['tN'] = unitID or nil,
+		['dG'] = destGUID,
+		['sN'] = iEET.fakeSpells.VehicleEntering.name,
+		['sI'] = iEET.fakeSpells.VehicleEntering.spellID,
+		['eD'] = eD,
+	}
+	table.insert(iEET.data, t);
+	iEET:OnscreenAddMessages(t)
+end
+function addon:UNIT_ENTERED_VEHICLE(unitID, hasVehicleUI,arg3,vehicleID, destGUID, isPlayerControlled, canAim)
+	local sourceGUID = UnitGUID(unitID)
+	local sourceName = UnitName(unitID)
+	local slots = 0
+	if vehicleID and vehicleID ~= 0 then
+		local t,i = GetVehicleUIIndicator(vehicleID)
+		slots = i
+	end
+	local eD = string.format("%s:%s:%s:%s", (hasVehicleUI and 1 or 0), slots, (isPlayerControlled and 1 or 0), (canAim and 1 or 0))
+	local t = {
+		['e'] = 54,
+		['t'] = GetTime(),
+		['sG'] = sourceGUID or 'NONE',
+		['cN'] = sourceName or 'NONE',
+		['tN'] = unitID or nil,
+		['dG'] = destGUID,
+		['sN'] = iEET.fakeSpells.VehicleEntered.name,
+		['sI'] = iEET.fakeSpells.VehicleEntered.spellID,
+		['eD'] = eD,
+	}
+	table.insert(iEET.data, t);
+	iEET:OnscreenAddMessages(t)
+end
+function addon:UNIT_EXITING_VEHICLE(unitID)
+	local sourceGUID = UnitGUID(unitID)
+	local sourceName = UnitName(unitID)
+	local t = {
+		['e'] = 55,
+		['t'] = GetTime(),
+		['sG'] = sourceGUID or 'NONE',
+		['cN'] = sourceName or 'NONE',
+		['tN'] = unitID or nil,
+		['sN'] = iEET.fakeSpells.VehicleExiting.name,
+		['sI'] = iEET.fakeSpells.VehicleExiting.spellID,
+	}
+	table.insert(iEET.data, t);
+	iEET:OnscreenAddMessages(t)
+end
+function addon:UNIT_EXITED_VEHICLE(unitID)
+	local sourceGUID = UnitGUID(unitID)
+	local sourceName = UnitName(unitID)
+	local t = {
+		['e'] = 56,
+		['t'] = GetTime(),
+		['sG'] = sourceGUID or 'NONE',
+		['cN'] = sourceName or 'NONE',
+		['tN'] = unitID or nil,
+		['sN'] = iEET.fakeSpells.VehicleExited.name,
+		['sI'] = iEET.fakeSpells.VehicleExited.spellID,
+	}
+	table.insert(iEET.data, t);
+	iEET:OnscreenAddMessages(t)
+end
 function addon:COMBAT_LOG_EVENT_UNFILTERED()
 	local args = {CombatLogGetCurrentEventInfo()}
 	-- args[2] = sub event
@@ -427,7 +503,7 @@ function addon:COMBAT_LOG_EVENT_UNFILTERED()
 					-- args[4] = sourceGUID, arg[8] = destGUID
 					local eD
 					if iEET.raidComp then
-						if iEET.raidComp[args[8]] or iEET.raidComp[args[4]] then --player and is in raid
+						if iEET.raidComp[args[8]] or iEET.raidComp[args[4]] then --destGUID, sourceGUID
 							local toColor = 1
 							local guidToColor = args[8]
 							if iEET.raidComp[args[8]] and iEET.raidComp[args[4]] then
@@ -458,7 +534,7 @@ function addon:COMBAT_LOG_EVENT_UNFILTERED()
 						['sN'] = args[13] or 'NONE', -- spellName
 						['sI'] = args[12] or 'NONE', -- spellID
 						['eD']= eD,
-						['hp']= iEET.auraEvents[event] and (args[15] == 'DEBUFF' and '-' or '+') or nil, -- auraType for spell_aura_*
+						['hp']= iEET.auraEvents[args[2]] and (args[15] == 'DEBUFF' and '-' or '+') or nil, -- auraType for spell_aura_*
 					}
 					table.insert(iEET.data, t)
 					iEET:OnscreenAddMessages(t)
@@ -598,6 +674,17 @@ function addon:PLAYER_REGEN_ENABLED()
 	table.insert(iEET.data, t)
 	iEET:OnscreenAddMessages(t)
 end
+function addon:PLAY_MOVIE(movieID)
+	local t = {
+		['e'] = 57,
+		['t'] = GetTime(),
+		['sN'] = iEET.fakeSpells.PlayMovie.name,
+		['sI'] = iEET.fakeSpells.PlayMovie.spellID,
+		['tN'] = movieID,
+	}
+	table.insert(iEET.data, t);
+	iEET:OnscreenAddMessages(t)
+end
 function iEET:BigWigsData(event,...)
 	local t
 	if event == 'BigWigs_BarCreated' then
@@ -714,6 +801,11 @@ function iEET:StartRecording(force)
 	addon:RegisterEvent('RAID_BOSS_WHISPER')
 	addon:RegisterEvent('CHAT_MSG_RAID_BOSS_EMOTE')
 	addon:RegisterEvent('CHAT_MSG_RAID_BOSS_WHISPER')
+	addon:RegisterEvent('UNIT_ENTERING_VEHICLE')
+	addon:RegisterEvent('UNIT_ENTERED_VEHICLE')
+	addon:RegisterEvent('UNIT_EXITING_VEHICLE')
+	addon:RegisterEvent('UNIT_EXITED_VEHICLE')
+	addon:RegisterEvent('PLAY_MOVIE')
 	if force then
 		addon:RegisterEvent('PLAYER_REGEN_DISABLED')
 		addon:RegisterEvent('PLAYER_REGEN_ENABLED')
@@ -737,6 +829,11 @@ function iEET:StopRecording(force)
 	addon:UnregisterEvent('RAID_BOSS_WHISPER')
 	addon:UnregisterEvent('CHAT_MSG_RAID_BOSS_EMOTE')
 	addon:UnregisterEvent('CHAT_MSG_RAID_BOSS_WHISPER')
+	addon:UnregisterEvent('UNIT_ENTERING_VEHICLE')
+	addon:UnregisterEvent('UNIT_ENTERED_VEHICLE')
+	addon:UnregisterEvent('UNIT_EXITING_VEHICLE')
+	addon:UnregisterEvent('UNIT_EXITED_VEHICLE')
+	addon:UnregisterEvent('PLAY_MOVIE')
 	if force then
 		addon:UnregisterEvent('PLAYER_REGEN_DISABLED')
 		addon:UnregisterEvent('PLAYER_REGEN_ENABLED')

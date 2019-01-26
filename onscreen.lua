@@ -100,7 +100,9 @@ function iEET:OnscreenAddMessages(data)
 		if data.sI == iEET.fakeSpells.SpawnNPCs.spellID then -- INSTANCE_ENCOUNTER_ENGAGE_UNIT
 			iEET:addMessages(3, 4, data.sN, color,'\124HiEETNpcList:' .. data.sG .. '\124h%s\124h')
 		elseif data.e and data.e == 34 then -- UNIT_POWER
-			iEET:addMessages(3, 4, data.sN, color,'\124HiEETList:' .. (data.eD and string.gsub(data.eD, '%%', '%%%%') or 'Empty List;Contact Ironi') .. '\124h%s\124h')
+      iEET:addMessages(3, 4, data.sN, color,'\124HiEETList:' .. (data.eD and string.gsub(data.eD, '%%', '%%%%') or 'Empty List;Contact Ironi') .. '\124h%s\124h')
+    elseif data.e == 53 or data.e == 54 then -- UNIT_ENTERING_VEHICLE, UNIT_ENTERED_VEHICLE
+			iEET:addMessages(3, 4, data.sN, color,'\124HiEETVehicle:' .. (data.eD and data.eD or 'Empty List;Contact Ironi') .. '\124h%s\124h')
 		else
 			local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
       if data.sG then

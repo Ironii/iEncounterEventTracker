@@ -5,4 +5,5 @@ iEET.approvedSpells = {
 --General
 	[181089] = true, -- Encounter Event
 --Encounter Specific
+	[284663] = true, -- Bwonsamdi's Wrath, Conclave of the Chosen (Mythic), Battle for Dazar'alor
 }

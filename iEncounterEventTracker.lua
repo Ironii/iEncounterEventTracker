@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.812
+iEET.version = 1.830
 local colors = {}
 
 iEET.auraEvents = {
@@ -54,24 +54,44 @@ iEET.encounterShortList = {}
 iEET.maxScrollRange = 0
 iEET.fakeSpells = {
 	InterruptShield = {
-		name = Spell:CreateFromSpellID(140021):GetSpellName(),
+		name = Spell:CreateFromSpellID(140021):GetSpellName() or "Interrupt Shield",
 		spellID = 140021, -- Interrupt Shield
 	},
 	UnitTargetChanged = {
-		name = Spell:CreateFromSpellID(103528):GetSpellName(),
+		name = Spell:CreateFromSpellID(103528):GetSpellName() or "Target Selection",
 		spellID = 103528, -- Target Selection
 	},
 	PowerUpdate = {
-		name = Spell:CreateFromSpellID(143409):GetSpellName(),
+		name = Spell:CreateFromSpellID(143409):GetSpellName() or "Power Regen",
 		spellID = 143409, -- Power Regen
 	},
 	Death = {
-		name = Spell:CreateFromSpellID(98391):GetSpellName(),
+		name = Spell:CreateFromSpellID(98391):GetSpellName() or "Death",
 		spellID = 98391, -- Death
 	},
 	SpawnNPCs = {
 		name = "Spawn NPCs",
 		spellID = 133217, -- Spawn Boss Emote
+	},
+	VehicleEntering = {
+		name = Spell:CreateFromSpellID(83912):GetSpellName() or "Entering Aura",
+		spellID = 83912, -- Entering Aura
+	},
+	VehicleEntered = {
+		name = Spell:CreateFromSpellID(106322):GetSpellName() or "Player Enter Vehicle",
+		spellID = 106322, -- Player Enter Vehicle
+	},
+	VehicleExiting = {
+		name = Spell:CreateFromSpellID(83913):GetSpellName() or "Leaving Aura",
+		spellID = 83913, -- Leaving Aura
+	},
+	VehicleExited = {
+		name = Spell:CreateFromSpellID(110911):GetSpellName() or "Exit Vehicle",
+		spellID = 110911, -- Exit Vehicle
+	},
+	PlayMovie = {
+		name = Spell:CreateFromSpellID(231376):GetSpellName() or "Play Movie",
+		spellID = 231376, -- Play Movie
 	},
 }
 iEET.ignoreList = {  -- Ignore list for 'Ignore Spell's menu, use event ignore to hide these if you want (they are fake spells)
@@ -150,6 +170,13 @@ iEET.events = {
 		['BigWigs_ResumeBar'] = 50,
 		['BigWigs_StopBar'] = 51,
 		['BigWigs_StopBars'] = 52,
+
+		['UNIT_ENTERING_VEHICLE'] = 53,
+		['UNIT_ENTERED_VEHICLE'] = 54,
+		['UNIT_EXITING_VEHICLE'] = 55,
+		['UNIT_EXITED_VEHICLE'] = 56,
+
+		['PLAY_MOVIE'] = 57,
 	},
 	['fromID'] = {
 		[1] = {
@@ -360,6 +387,26 @@ iEET.events = {
 			l = 'BigWigs_StopBars',
 			s = 'BW_StopBars',
 		},
+		[53] = {
+			l = 'UNIT_ENTERING_VEHICLE',
+			s =	'U_ENTERING_V',
+		},
+		[54] = {
+			l = 'UNIT_ENTERED_VEHICLE',
+			s =	'U_ENTERED_V',
+		},
+		[55] = {
+			l = 'UNIT_EXITING_VEHICLE',
+			s = 'U_EXITING_V'
+		},
+		[56] = {
+			l = 'UNIT_EXITED_VEHICLE',
+			s = 'U_EXITED_V',
+		},
+		[57] = {
+			l = 'PLAY_MOVIE',
+			s = 'PLAY_MOVIE',
+		},
 	},
 }
 iEET.addonUsers = {}
@@ -434,72 +481,6 @@ end
 function iEET:LoadDefaults()
 	local defaults = {
 		['tracking'] = {
-			--[[
-			['SPELL_CAST_START'] = true,
-			['SPELL_CAST_SUCCESS'] = true,
-			['SPELL_AURA_APPLIED'] = true,
-			['SPELL_AURA_REMOVED'] = true,
-			['SPELL_AURA_APPLIED_DOSE'] = true,
-			['SPELL_AURA_REMOVED_DOSE'] = true,
-			['SPELL_AURA_REFRESH'] = true,
-			['SPELL_CAST_FAILED'] = true,
-			['SPELL_CREATE'] = true,
-			['SPELL_SUMMON'] = true,
-			['SPELL_HEAL'] = true,
-			['SPELL_DISPEL'] = true,
-			['SPELL_INTERRUPT'] = true,
-
-			['SPELL_PERIODIC_CAST_START'] = true,
-			['SPELL_PERIODIC_CAST_SUCCESS'] = true,
-			['SPELL_PERIODIC_AURA_APPLIED'] = true,
-			['SPELL_PERIODIC_AURA_REMOVED'] = true,
-			['SPELL_PERIODIC_AURA_APPLIED_DOSE'] = true,
-			['SPELL_PERIODIC_AURA_REMOVED_DOSE'] = true,
-			['SPELL_PERIODIC_AURA_REFRESH'] = true,
-			['SPELL_PERIODIC_CAST_FAILED'] = true,
-			['SPELL_PERIODIC_CREATE'] = true,
-			['SPELL_PERIODIC_SUMMON'] = true,
-			['SPELL_PERIODIC_HEAL'] = true,
-
-			['UNIT_DIED'] = true,
-
-			['UNIT_SPELLCAST_SUCCEEDED'] = true,
-			['UNIT_SPELLCAST_START'] = true,
-			['UNIT_SPELLCAST_CHANNEL_START'] = true,
-			['UNIT_SPELLCAST_INTERRUPTIBLE'] = true,
-			['UNIT_SPELLCAST_NOT_INTERRUPTIBLE'] = true,
-
-			['MONSTER_EMOTE'] = true,
-			['MONSTER_SAY'] = true,
-			['MONSTER_YELL'] = true,
-
-			['ENCOUNTER_START'] = true,
-			['ENCOUNTER_END'] = true,
-
-			['UNIT_TARGET'] = true,
-			['INSTANCE_ENCOUNTER_ENGAGE_UNIT'] = true,
-
-			['UNIT_POWER_UPDATE'] = true,
-
-			['PLAYER_REGEN_DISABLED'] = true,
-			['PLAYER_REGEN_ENABLED'] = true,
-
-			['MANUAL_LOGGING_START'] = true,
-			['MANUAL_LOGGING_END'] = true,
-
-			['RAID_BOSS_EMOTE'] = true,
-			['RAID_BOSS_WHISPER'] = true,
-
-			['CHAT_MSG_RAID_BOSS_EMOTE'] = true,
-			['CHAT_MSG_RAID_BOSS_WHISPER'] = true,
-
-			['BigWigs_BarCreated'] = true,
-			['BigWigs_Message'] = true,
-			['BigWigs_PauseBar'] = true,
-			['BigWigs_ResumeBar'] = true,
-			['BigWigs_StopBar'] = true,
-			['BigWigs_StopBars'] = true,
-			--]]
 			[1] = true, -- SPELL_CAST_START
 			[2] = true, -- SPELL_CAST_SUCCESS
 			[3] = true, -- SPELL_AURA_APPLIED
@@ -564,6 +545,13 @@ function iEET:LoadDefaults()
 			[50] = true, -- BigWigs_ResumeBar
 			[51] = true, -- BigWigs_StopBar
 			[52] = true, -- BigWigs_StopBars
+
+			[53] = true, -- UNIT_ENTERING_VEHICLE
+			[54] = true, -- UNIT_ENTERED_VEHICLE
+			[55] = true, -- UNIT_EXITING_VEHICLE
+			[56] = true, -- UNIT_EXITED_VEHICLE
+
+			[57] = true, -- PLAY_MOVIE
 		},
 		['version'] = iEET.version,
 		['autoSave'] = true,
@@ -902,10 +890,6 @@ function iEET:FillFilters()
 	end
 end
 function iEET:addSpellDetails(hyperlink, linkData)
-	--local linkType, spellID = strsplit(':', linkData)
-	--spellID = tonumber(spellID)
-	--1-7, 4 tyhja
-	--local linkType, eventToFind, spellIDToFind, spellNametoFind = strsplit(':',linkData)
 	local linkType, eventToFind, spellIDToFind, spellNametoFind = strsplit(':',linkData)
 	eventToFind = tonumber(eventToFind)
 	if eventToFind == 43 or eventToFind == 44 or eventToFind == 45 or eventToFind == 46 then -- RAID_BOSS_EMOTE, RAID_BOSS_WHISPER
@@ -1068,6 +1052,8 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 			iEET:addMessages(1, 4, spellName, color,'\124HiEETNpcList:' .. sourceGUID .. '\124h%s\124h')
 		elseif event and event == 34 then -- UNIT_POWER
 			iEET:addMessages(1, 4, spellName, color,'\124HiEETList:' .. (extraData and string.gsub(extraData, '%%', '%%%%') or 'Empty List;Contact Ironi') .. '\124h%s\124h')
+		elseif event == 53 or event == 54 then -- UNIT_ENTERING_VEHICLE, UNIT_ENTERED_VEHICLE
+			iEET:addMessages(1, 4, spellName, color,'\124HiEETVehicle:' .. (extraData and extraData or 'Empty List;Contact Ironi') .. '\124h%s\124h')
 		else
 			local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
 			if sourceGUID then
@@ -1540,9 +1526,15 @@ function iEET:Hyperlinks(linkData, link)
 		text = text:gsub(';;', ':')
 		GameTooltip:AddLine(text)
 	elseif linkType == 'iEETBW_NOKEY' then
-		local event,  text = linkData:match('iEETBW_NOKEY:(%d-):(.+)')
+		local event, text = linkData:match('iEETBW_NOKEY:(%d-):(.+)')
 		text = text:gsub(';;', ':')
 		GameTooltip:AddLine(text)
+	elseif linkType == 'iEETVehicle' then
+		local hasVehicleUI, slots, isPlayerControlled, canAim = linkData:match('iEETVehicle:(%d-):(%d-):(%d-):(%d-)$')
+		GameTooltip:AddLine(string.format("Has vehicle UI: %s", tostring(hasVehicleUI == 1)))
+		GameTooltip:AddLine("Slots : "..slots)
+		GameTooltip:AddLine(string.format("Is player controlled: %s", tostring(isPlayerControlled == 1)))
+		GameTooltip:AddLine(string.format("Can aim: %s", tostring((canAim == 1))))
 	else
 		GameTooltip:SetHyperlink(link)
 	end

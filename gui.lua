@@ -1638,6 +1638,9 @@ function iEET:StartRecordingWithoutFiltersPopup()
 			if setErrorText(true) then
 				iEET:ForceStartWithoutFilters(noFiltersPopupVars.timer,noFiltersPopupVars.name)
 				iEET.noFiltersPopup.mainFrame:Hide()
+				if iEET.frame then -- if someone somehow manages to open up this window without opening up main frame
+					iEET.frame:Hide()
+				end
 			end
 		end)
 		iEET.noFiltersPopup.startButton:EnableMouse(true)
