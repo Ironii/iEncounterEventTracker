@@ -153,10 +153,45 @@ function iEET:ScrollOnscreen(delta)
 		end
 	end
 end
+iEET.searchMenuList = {}
+iEET.searchMenuListFrame = CreateFrame('Frame', 'iEETSearchMenuList', UIParent, 'UIDropDownMenuTemplate')
+function iEET:updateSearchMenu(key)
+	iEET.searchMenuList = nil
+	iEET.searchMenuList = {}
+	table.insert(iEET.searchMenuList, {text = 'Search using:', isTitle = true, notCheckable = true})
+	table.insert(iEET.searchMenuList, {text = 'Spell ID', notCheckable = true, func = function()
+		CloseDropDownMenus()
+		iEET:loopData(nil,{key,"sI"})
+		end})
+	table.insert(iEET.searchMenuList, {text = 'Spell name', notCheckable = true, func = function()
+		CloseDropDownMenus()
+		iEET:loopData(nil, {key, "sN"})
+		end})
+	table.insert(iEET.searchMenuList, {text = 'Source name', notCheckable = true, func = function()
+		CloseDropDownMenus()
+		iEET:loopData(nil ,{key, "cN"})
+		end})
+	table.insert(iEET.searchMenuList, {text = 'Target name', notCheckable = true, func = function()
+		CloseDropDownMenus()
+		iEET:loopData(nil, {key, "tN"})
+		end})
+	table.insert(iEET.searchMenuList, {text = 'Source GUID', notCheckable = true, func = function()
+		CloseDropDownMenus()
+		iEET:loopData(nil, {key, "sG"})
+		end})
+	table.insert(iEET.searchMenuList, {text = 'Target GUID', notCheckable = true, func = function()
+		CloseDropDownMenus()
+		iEET:loopData(nil, {key, "tG"})
+		end})
+	table.insert(iEET.searchMenuList, {text = 'Close', notCheckable = true, func = function()
+		CloseDropDownMenus()
+		end})
+
+end
 function iEET:CreateMainFrame()
 	iEET.frame = CreateFrame("Frame", "iEETFrame", UIParent)
 	iEET.frame:SetSize(598,834)
-	iEET.frame:SetPoint('CENTER', UIParent, 'CENTER', 0,0)
+	iEET.frame:SetPoint('CENTER', UIParent, 'CENTER', iEETConfig.spawnOffset,0)
 	if iEETConfig.scales.main then
 		iEET.frame:SetScale(iEETConfig.scales.main)
 	end
@@ -392,6 +427,15 @@ function iEET:CreateMainFrame()
 				GameTooltip:Hide()
 			end)
 			iEET['content' .. i]:SetScript("OnHyperlinkClick", function(self, linkData, link, button)
+				local mf = GetMouseFocus()
+				if button == "RightButton" and mf and mf.messageInfo and mf.messageInfo.extraData and mf.messageInfo.extraData[1] then
+					local key = tonumber(mf.messageInfo.extraData[1])
+					if key then
+						iEET:updateSearchMenu(key)
+						EasyMenu(iEET.searchMenuList, iEET.searchMenuListFrame, "cursor", 0 , 0, 'MENU')
+						return
+					end
+				end
 				if string.find(linkData, 'iEETtime') then
 					return
 				elseif IsShiftKeyDown() and IsInRaid() then
@@ -590,6 +634,102 @@ function iEET:CreateMainFrame()
 	iEET.encounterAbilitiesText:SetPoint("CENTER", iEET.encounterAbilities, 'CENTER', 0,0)
 	iEET.encounterAbilitiesText:SetText("Encounter spells")
 	iEET.encounterAbilitiesText:Show()
+
+	iEET.commonAbilities = CreateFrame('FRAME', nil, iEET.frame)
+	iEET.commonAbilities:SetSize(200, 25)
+	iEET.commonAbilities:SetPoint('TOPLEFT', iEET.encounterAbilitiesAnchor, 'BOTTOMLEFT', 0, 0)
+	iEET.commonAbilities:SetBackdrop({
+		bgFile = "Interface\\Buttons\\WHITE8x8",
+		edgeFile = "Interface\\Buttons\\WHITE8x8",
+		edgeSize = 1,
+		insets = {
+			left = -1,
+			right = -1,
+			top = -1,
+			bottom = -1,
+		},
+	});
+	iEET.commonAbilities:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
+	iEET.commonAbilities:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
+	iEET.commonAbilities:Show()
+	iEET.commonAbilities:SetScript("OnMouseDown", function(self,button)
+		iEET.frame:ClearAllPoints()
+		iEET.frame:StartMoving()
+	end)
+	iEET.commonAbilities:SetScript('OnMouseUp', function(self, button)
+		iEET.frame:StopMovingOrSizing()
+	end)
+	iEET.commonAbilities:SetFrameStrata('HIGH')
+	iEET.commonAbilities:SetFrameLevel(1)
+	iEET.commonAbilities:EnableMouse(true)
+	iEET.commonAbilitiesText = iEET.frame:CreateFontString('iEETCommonAbilitiesInfo')
+	iEET.commonAbilitiesText:SetFont(iEET.font, iEET.fontsize, "OUTLINE")
+	iEET.commonAbilitiesText:SetPoint("CENTER", iEET.commonAbilities, 'CENTER', 0,0)
+	iEET.commonAbilitiesText:SetText("Common spells")
+	iEET.commonAbilitiesText:Show()
+
+	iEET.commonAbilitiesAnchor = CreateFrame('FRAME', nil, iEET.frame)
+	iEET.commonAbilitiesAnchor:SetSize(200, 150)
+	iEET.commonAbilitiesAnchor:SetPoint('TOPLEFT', iEET.commonAbilities, 'BOTTOMLEFT', 0, 0)
+	iEET.commonAbilitiesAnchor:SetBackdrop({
+		bgFile = "Interface\\Buttons\\WHITE8x8",
+		edgeFile = "Interface\\Buttons\\WHITE8x8",
+		edgeSize = 1,
+		insets = {
+			left = -1,
+			right = -1,
+			top = -1,
+			bottom = -1,
+		},
+	});
+	iEET.commonAbilitiesAnchor:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
+	iEET.commonAbilitiesAnchor:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
+	---
+	iEET.commonAbilitiesContent = CreateFrame('ScrollingMessageFrame', nil, iEET.commonAbilitiesAnchor)
+	iEET.commonAbilitiesContent:SetSize(192,142)
+	iEET.commonAbilitiesContent:SetPoint('CENTER', iEET.commonAbilitiesAnchor, 'CENTER', 0, 0)
+	iEET.commonAbilitiesContent:SetFont(iEET.font, iEET.fontsize)
+	iEET.commonAbilitiesContent:SetFading(false)
+	iEET.commonAbilitiesContent:SetInsertMode('BOTTOM')
+	iEET.commonAbilitiesContent:SetJustifyH(iEET.justifyH)
+	iEET.commonAbilitiesContent:SetMaxLines(200)
+	iEET.commonAbilitiesContent:SetSpacing(iEET.spacing)
+	iEET.commonAbilitiesContent:EnableMouseWheel(true)
+	iEET.commonAbilitiesContent:SetHyperlinksEnabled(true)
+	iEET.commonAbilitiesContent:SetScript("OnMouseWheel", function(self, delta)
+		if delta == -1 then
+			if IsShiftKeyDown() then
+				iEET.commonAbilitiesContent:PageDown()
+			else
+				iEET.commonAbilitiesContent:ScrollDown()
+			end
+		else
+			if IsShiftKeyDown() then
+				iEET.commonAbilitiesContent:PageUp()
+			else
+				iEET.commonAbilitiesContent:ScrollUp()
+			end
+		end
+	end)
+	iEET.commonAbilitiesContent:SetScript("OnHyperlinkEnter", function(self, linkData, link)
+		GameTooltip:SetOwner(iEET.frame, "ANCHOR_TOPRIGHT", 0-iEET.frame:GetWidth(), 0-iEET.frame:GetHeight())
+		GameTooltip:ClearLines()
+		GameTooltip:SetHyperlink(link)
+		GameTooltip:Show()
+	end)
+	iEET.commonAbilitiesContent:SetScript("OnHyperlinkLeave", function()
+			GameTooltip:Hide()
+	end)
+	iEET.commonAbilitiesContent:SetScript("OnHyperlinkClick", function(self, linkData, link, button)
+		local spellID = tonumber(string.match(linkData, 'spell:(%d+)'))
+		if spellID then
+			iEET:loopData(spellID)
+		end
+	end)
+	iEET.commonAbilitiesContent:EnableMouse(true)
+	iEET.commonAbilitiesContent:SetFrameStrata('HIGH')
+	iEET.commonAbilitiesContent:SetFrameLevel(2)
+
 	iEET.frame:EnableMouse(true)
 	iEET.frame:SetMovable(true)
 	iEET.editbox = CreateFrame('EditBox', 'iEETEditBox', iEET.frame)
@@ -725,7 +865,7 @@ function iEET:CreateOptionsFrame()
 	-- Options main frame
 	iEET.optionsFrame = CreateFrame('Frame', 'iEETOptionsFrame', UIParent)
 	iEET.optionsFrame:SetSize(650,500)
-	iEET.optionsFrame:SetPoint('CENTER', UIParent, 'CENTER', 0,0)
+	iEET.optionsFrame:SetPoint('CENTER', UIParent, 'CENTER', iEETConfig.spawnOffset,0)
 	if iEETConfig.scales.filters then
 		iEET.optionsFrame:SetScale(iEETConfig.scales.filters)
 	end
@@ -1025,7 +1165,7 @@ function iEET:toggleDeleteOptions()
 		iEET.deleteOptions = {}
 		iEET.deleteOptions.mainFrame = CreateFrame('Frame', 'iEETDeleteFrame', UIParent)
 		iEET.deleteOptions.mainFrame:SetSize(width,110)
-		iEET.deleteOptions.mainFrame:SetPoint('CENTER', UIParent, 'CENTER', 0,0)
+		iEET.deleteOptions.mainFrame:SetPoint('CENTER', UIParent, 'CENTER', iEETConfig.spawnOffset,0)
 		iEET.deleteOptions.mainFrame:SetBackdrop(iEET.backdrop);
 		iEET.deleteOptions.mainFrame:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
 		iEET.deleteOptions.mainFrame:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
@@ -1363,7 +1503,7 @@ function iEET:toggleCopyFrame(forceShow)
 		iEET.copyFrame:SetHeight(21)
 		iEET.copyFrame:SetTextInsets(2, 2, 1, 0)
 		--iEET.copyFrame:SetMultiLine(true)
-		iEET.copyFrame:SetPoint('CENTER', UIParent, 'CENTER', 0,0)
+		iEET.copyFrame:SetPoint('CENTER', UIParent, 'CENTER', iEETConfig.spawnOffset,0)
 		iEET.copyFrame:SetFrameStrata('DIALOG')
 		iEET.copyFrame:Show()
 		iEET.copyFrame:SetFont(iEET.font, iEET.fontsize+2, 'OUTLINE')
@@ -1495,7 +1635,7 @@ function iEET:StartRecordingWithoutFiltersPopup()
 		iEET.noFiltersPopup = {}
 		iEET.noFiltersPopup.mainFrame = CreateFrame('Frame', 'iEETnoFiltersPopup', UIParent)
 		iEET.noFiltersPopup.mainFrame:SetSize(width,110)
-		iEET.noFiltersPopup.mainFrame:SetPoint('CENTER', UIParent, 'CENTER', 0,0)
+		iEET.noFiltersPopup.mainFrame:SetPoint('CENTER', UIParent, 'CENTER', iEETConfig.spawnOffset,0)
 		iEET.noFiltersPopup.mainFrame:SetBackdrop(iEET.backdrop);
 		iEET.noFiltersPopup.mainFrame:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
 		iEET.noFiltersPopup.mainFrame:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
