@@ -617,7 +617,7 @@ function iEET:CreateMainFrame()
 		iEET.encounterAbilitiesContent:SetScript("OnHyperlinkClick", function(self, linkData, link, button)
 			local spellID = tonumber(string.match(linkData, 'spell:(%d+)'))
 			if spellID then
-				iEET:loopData(spellID)
+				iEET:loopData(nil, {spellID, "sI"}, true)
 			end
 		end)
 		iEET.encounterAbilitiesContent:EnableMouse(true)

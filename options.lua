@@ -8,7 +8,7 @@ function iEET:updateOptionsMenu()
 	local onscreenIgnoredEvents = {}
 	for eventName,eventID in spairs(iEET.events.toID) do
 		table.insert(onscreenIgnoredEvents, {
-			text = eventName,
+			text = string.format("%s%s", eventName, iEET.events.fromID[eventID].c and " (CLEU)" or ""),
 			isNotRadio = true,
 			checked = iEETConfig.onscreen.ignoredEvents[eventID],
 			keepShownOnClick = true,
@@ -196,17 +196,19 @@ function iEET:updateEventMenu()
 	iEET.eventListMenu = nil
 	iEET.eventListMenu = {}
 	table.insert(iEET.eventListMenu, {text = 'Show Events', isTitle = true, notCheckable = true})
-	for k,_ in spairs(iEETConfig.tracking) do
+	for eventName,eventID in spairs(iEET.events.toID) do
+	--for k,_ in spairs(iEETConfig.tracking) do
 		table.insert(iEET.eventListMenu, {
-			text = iEET.events.fromID[k].l,
+			--text = eventName,
+			text = string.format("%s%s", eventName, iEET.events.fromID[eventID].c and " (CLEU)" or ""),
 			isNotRadio = true,
-			checked = iEETConfig.tracking[k],
+			checked = iEETConfig.tracking[eventID],
 			keepShownOnClick = true,
 			func = function()
-				if iEETConfig.tracking[k] then
-					iEETConfig.tracking[k] = false
+				if iEETConfig.tracking[eventID] then
+					iEETConfig.tracking[eventID] = false
 				else
-					iEETConfig.tracking[k] = true
+					iEETConfig.tracking[eventID] = true
 				end
 			end,
 		})

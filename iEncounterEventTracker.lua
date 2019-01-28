@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.832
+iEET.version = 1.840
 local colors = {}
 
 iEET.auraEvents = {
@@ -100,7 +100,21 @@ iEET.fakeSpells = {
 		name = Spell:CreateFromSpellID(231376):GetSpellName() or "Play Movie",
 		spellID = 231376, -- Play Movie
 	},
+	CinematicStart = {
+		name = Spell:CreateFromSpellID(291125):GetSpellName() or "Play Cinematic",
+		spellID = 291125, -- Play Cinematic
+	},
+	CinematicStop = {
+		name = Spell:CreateFromSpellID(94681):GetSpellName() or "Cancel Cinematic",
+		spellID = 94681, -- Play Movie
+	},
+	AllSpellIDs = {},
 }
+for k,v in pairs(iEET.fakeSpells) do
+	if k ~= "AllSpellIDs" then
+		iEET.fakeSpells.AllSpellIDs[v.spellID] = true
+	end
+end
 iEET.ignoreList = {  -- Ignore list for 'Ignore Spell's menu, use event ignore to hide these if you want (they are fake spells)
 	[98391] = true, -- Death
 	[103528] = true, -- Target Selection
@@ -184,107 +198,136 @@ iEET.events = {
 		['UNIT_EXITED_VEHICLE'] = 56,
 
 		['PLAY_MOVIE'] = 57,
+		['CINEMATIC_START'] = 58,
+		['CINEMATIC_STOP'] = 59,
+
+		['UNIT_SPELLCAST_CHANNEL_STOP'] = 60,
 	},
 	['fromID'] = {
 		[1] = {
 			l = 'SPELL_CAST_START',
 			s = 'SC_START',
+			c = true,
 		},
 		[2] = {
 			l = 'SPELL_CAST_SUCCESS',
 			s = 'SC_SUCCESS',
+			c = true,
 		},
 		[3] = {
 			l = 'SPELL_AURA_APPLIED',
 			s = '+SAURA',
+			c = true,
 		},
 		[4] = {
 			l = 'SPELL_AURA_REMOVED',
 			s = '-SAURA',
+			c = true,
 		},
 		[5] = {
 			l = 'SPELL_AURA_APPLIED_DOSE',
 			s = '+SA_DOSE',
+			c = true,
 		},
 		[6] = {
 			l = 'SPELL_AURA_REMOVED_DOSE',
 			s = '-SA_DOSE',
+			c = true,
 		},
 		[7] = {
 			l = 'SPELL_AURA_REFRESH',
 			s = 'SAURA_R',
+			c = true,
 		},
 		[8] = {
 			l = 'SPELL_CAST_FAILED',
 			s = 'SC_FAILED',
+			c = true,
 		},
 		[9] = {
 			l = 'SPELL_CREATE',
 			s = 'SPELL_CREATE',
+			c = true,
 		},
 		[10] = {
 			l = 'SPELL_SUMMON',
 			s = 'SPELL_SUMMON',
+			c = true,
 		},
 		[11] = {
 			l = 'SPELL_HEAL',
 			s = 'SPELL_HEAL',
+			c = true,
 		},
 		[12] = {
 			l = 'SPELL_DISPEL',
 			s = 'SPELL_DISPEL',
+			c = true,
 		},
 		[13] = {
 			l = 'SPELL_INTERRUPT',
 			s = 'S_INTERRUPT',
+			c = true,
 		},
 		[14] = {
 			l = 'SPELL_PERIODIC_CAST_START',
 			s = 'SPC_START',
+			c = true,
 		},
 		[15] = {
 			l = 'SPELL_PERIODIC_CAST_SUCCESS',
 			s = 'SPC_SUCCESS',
+			c = true,
 		},
 		[16] = {
 			l = 'SPELL_PERIODIC_AURA_APPLIED',
 			s = '+SPAURA',
+			c = true,
 		},
 		[17] = {
 			l = 'SPELL_PERIODIC_AURA_REMOVED',
 			s = '-SPAURA',
+			c = true,
 		},
 		[18] = {
 			l = 'SPELL_PERIODIC_AURA_APPLIED_DOSE',
 			s = '+SPA_DOSE',
+			c = true,
 		},
 		[19] = {
 			l = 'SPELL_PERIODIC_AURA_REMOVED_DOSE',
 			s = '-SPA_DOSE',
+			c = true,
 		},
 		[20] = {
 			l = 'SPELL_PERIODIC_AURA_REFRESH',
 			s = 'SPAURA_R',
+			c = true,
 		},
 		[21] = {
 			l = 'SPELL_PERIODIC_CAST_FAILED',
 			s = 'SPC_FAILED',
+			c = true,
 		},
 		[22] = {
 			l = 'SPELL_PERIODIC_CREATE',
 			s = 'SP_CREATE',
+			c = true,
 		},
 		[23] = {
 			l = 'SPELL_PERIODIC_SUMMON',
 			s = 'SP_SUMMON',
+			c = true,
 		},
 		[24] = {
 			l = 'SPELL_PERIODIC_HEAL',
 			s = 'SP_HEAL',
+			c = true,
 		},
 		[25] = {
 			l = 'UNIT_DIED',
 			s = 'UNIT_DIED',
+			c = true,
 		},
 		[26] = {
 			l = 'UNIT_SPELLCAST_SUCCEEDED',
@@ -414,6 +457,18 @@ iEET.events = {
 			l = 'PLAY_MOVIE',
 			s = 'PLAY_MOVIE',
 		},
+		[58] = {
+			l = 'CINEMATIC_START',
+			s = 'CINEMATIC_START',
+		},
+		[59] = {
+			l = 'CINEMATIC_STOP',
+			s = 'CINEMATIC_STOP',
+		},
+		[60] = {
+			l = 'UNIT_SPELLCAST_CHANNEL_STOP',
+			s = 'USC_C_STOP'
+		},
 	},
 }
 iEET.addonUsers = {}
@@ -446,8 +501,8 @@ function iEET:IsCommonSpell(spellID)
 	if not spellID then return false end
 	if not commonSpells then
 		commonSpells = {}
-		for k,v in pairs(iEET.fakeSpells) do -- Gather spell ids from fake spells
-			commonSpells[v.spellID] = true
+		for k,v in pairs(iEET.fakeSpells.AllSpellIDs) do -- Gather spell ids from fake spells
+			commonSpells[k] = true
 		end
 		for k,v in pairs(iEET.dispels) do -- Gather spell ids from dispels
 			commonSpells[k] = true
@@ -459,7 +514,7 @@ function iEET:IsCommonSpell(spellID)
 			commonSpells[k] = true
 		end
 	end
-	return commonSpells[spellID]
+	return commonSpells[spellID], iEET.fakeSpells.AllSpellIDs[spellID]
 end
 function iEET:getColor(event, sourceGUID, spellID)
 	if (event and event == 27) or (event and event == 37) then
@@ -580,6 +635,11 @@ function iEET:LoadDefaults()
 			[56] = true, -- UNIT_EXITED_VEHICLE
 
 			[57] = true, -- PLAY_MOVIE
+			[58] = true, -- CINEMATIC_START
+			[59] = true, -- CINEMATIC_STOP
+
+			[60] = true, -- UNIT_SPELLCAST_CHANNEL_STOP
+
 		},
 		['version'] = iEET.version,
 		['autoSave'] = true,
@@ -1158,8 +1218,13 @@ end
 function iEET:addToEncounterAbilities(spellID, spellName)
 	if spellID and tonumber(spellID) and spellName then
 		spellID = tonumber(spellID)
-		if iEET:IsCommonSpell(spellID) then
-			iEET.commonAbilitiesContent:AddMessage('\124Hspell:' .. spellID .. '\124h[' .. spellName .. ']\124h\124r', 1,1,1)
+		local common, fake = iEET:IsCommonSpell(spellID)
+		if common then
+			if fake then
+				iEET.commonAbilitiesContent:AddMessage('\124Hspell:' .. spellID .. '\124h[' .. spellName .. ']\124h\124r', .6,.6,.6)
+			else
+				iEET.commonAbilitiesContent:AddMessage('\124Hspell:' .. spellID .. '\124h[' .. spellName .. ']\124h\124r', 1,1,1)
+			end
 		else
 			iEET.encounterAbilitiesContent:AddMessage('\124Hspell:' .. spellID .. '\124h[' .. spellName .. ']\124h\124r', 1,1,1)
 		end
@@ -1225,18 +1290,20 @@ function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink, id)
 	local r,g,b = unpack(color)
 	frame:AddMessage(value and value or ' ',r,g,b,id)
 end
-function iEET:loopData(msg, specificSearch)
+function iEET:loopData(msg, specificSearch, hasRightData)
 	if specificSearch then
-		local key = specificSearch[1]
-		if iEET.data[key] and iEET.data[key][specificSearch[2]] then
-			specificSearch[1] = iEET.data[key][specificSearch[2]]
-		else
-			if not iEET.longStrings[specificSearch[2]] then
-				iEET:print(string.format("Error: Unknown search values, please contact author. (%s)", specificSearch[2]))
+		if not hasRightData then
+			local key = specificSearch[1]
+			if iEET.data[key] and iEET.data[key][specificSearch[2]] then
+				specificSearch[1] = iEET.data[key][specificSearch[2]]
 			else
-				iEET:print(string.format("Error: This event doesn't have %s to search.", iEET.longStrings[specificSearch[2]]))
+				if not iEET.longStrings[specificSearch[2]] then
+					iEET:print(string.format("Error: Unknown search values, please contact author. (%s)", specificSearch[2]))
+				else
+					iEET:print(string.format("Error: This event doesn't have %s to search.", iEET.longStrings[specificSearch[2]]))
+				end
+				specificSearch = nil
 			end
-			specificSearch = nil
 		end
 	end
 	if #iEETConfig.filtering.timeBasedFiltering > 0 or #iEETConfig.filtering.req > 0 then

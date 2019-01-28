@@ -38,7 +38,6 @@ addon:SetScript('OnEvent', function(self, event, ...)
 end)
 iEET.ignoreFilters = false
 local ignoreFiltersTimer
-
 function addon:ADDON_LOADED(addonName)
 	if addonName == 'iEncounterEventTracker' then
 		C_ChatInfo.RegisterAddonMessagePrefix('iEET')
@@ -231,6 +230,38 @@ function addon:UNIT_SPELLCAST_CHANNEL_START(unitID, arg2,spellID)
 			if not iEET.ignoredSpells[spellID] then
 				local t = {
 					['e'] = 40,
+					['t'] = GetTime(),
+					['sG'] = sourceGUID or 'NONE',
+					['cN'] = sourceName or 'NONE',
+					['tN'] = unitID or nil,
+					['sN'] = Spell:CreateFromSpellID(spellID):GetSpellName() or nil,
+					['sI'] = spellID or nil,
+					['hp'] = php or nil,
+				}
+				table.insert(iEET.data, t);
+				iEET:OnscreenAddMessages(t)
+			end
+		end
+	end
+end
+function addon:UNIT_SPELLCAST_CHANNEL_STOP(unitID, arg2,spellID)
+	local sourceGUID = UnitGUID(unitID)
+	local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
+	if sourceGUID then -- fix for arena id's
+		unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
+	end
+	if iEET.ignoreFilters or (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and iEET.approvedSpells[spellID]) or not sourceGUID then
+		local sourceName = UnitName(unitID)
+		local chp = UnitHealth(unitID)
+		local maxhp = UnitHealthMax(unitID)
+		local php = nil
+		if chp and maxhp then
+			php = math.floor(chp/maxhp*1000+0.5)/10
+		end
+		if not iEET.npcIgnoreList[tonumber(npcID)] then
+			if not iEET.ignoredSpells[spellID] then
+				local t = {
+					['e'] = 60,
 					['t'] = GetTime(),
 					['sG'] = sourceGUID or 'NONE',
 					['cN'] = sourceName or 'NONE',
@@ -685,6 +716,27 @@ function addon:PLAY_MOVIE(movieID)
 	table.insert(iEET.data, t);
 	iEET:OnscreenAddMessages(t)
 end
+function addon:CINEMATIC_START(canBeCancelled)
+	local t = {
+		['e'] = 58,
+		['t'] = GetTime(),
+		['sN'] = iEET.fakeSpells.CinematicStart.name,
+		['sI'] = iEET.fakeSpells.CinematicStart.spellID,
+		['tN'] = canBeCancelled and "true" or "false",
+	}
+	table.insert(iEET.data, t);
+	iEET:OnscreenAddMessages(t)
+end
+function addon:CINEMATIC_STOP()
+	local t = {
+		['e'] = 59,
+		['t'] = GetTime(),
+		['sN'] = iEET.fakeSpells.CinematicStop.name,
+		['sI'] = iEET.fakeSpells.CinematicStop.spellID,
+	}
+	table.insert(iEET.data, t);
+	iEET:OnscreenAddMessages(t)
+end
 function iEET:BigWigsData(event,...)
 	local t
 	if event == 'BigWigs_BarCreated' then
@@ -806,6 +858,9 @@ function iEET:StartRecording(force)
 	addon:RegisterEvent('UNIT_EXITING_VEHICLE')
 	addon:RegisterEvent('UNIT_EXITED_VEHICLE')
 	addon:RegisterEvent('PLAY_MOVIE')
+	addon:RegisterEvent('CINEMATIC_START')
+	addon:RegisterEvent('CINEMATIC_STOP')
+	addon:RegisterEvent('UNIT_SPELLCAST_CHANNEL_STOP')
 	if force then
 		addon:RegisterEvent('PLAYER_REGEN_DISABLED')
 		addon:RegisterEvent('PLAYER_REGEN_ENABLED')
@@ -834,6 +889,9 @@ function iEET:StopRecording(force)
 	addon:UnregisterEvent('UNIT_EXITING_VEHICLE')
 	addon:UnregisterEvent('UNIT_EXITED_VEHICLE')
 	addon:UnregisterEvent('PLAY_MOVIE')
+	addon:UnregisterEvent('CINEMATIC_START')
+	addon:UnregisterEvent('CINEMATIC_STOP')
+	addon:UnregisterEvent('UNIT_SPELLCAST_CHANNEL_STOP')
 	if force then
 		addon:UnregisterEvent('PLAYER_REGEN_DISABLED')
 		addon:UnregisterEvent('PLAYER_REGEN_ENABLED')
