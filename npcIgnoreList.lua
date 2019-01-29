@@ -5,6 +5,7 @@ iEET.npcIgnoreList = {
 	[35642] = true,		--Jeeves
 	[77789] = true,		--Blingtron 5000
 	[92993] = true,		--Burning Blade Banner
+	[143985] = true,	-- Absorb-o-Tron
 
 --Death Knight
 	[24207] = true, 	--Army of the Dead

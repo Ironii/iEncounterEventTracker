@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.840
+iEET.version = 1.841
 local colors = {}
 
 iEET.auraEvents = {
@@ -1145,7 +1145,7 @@ function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spell
 		elseif event and event == 34 then -- UNIT_POWER
 			iEET:addMessages(1, 4, spellName, color,'\124HiEETList:' .. (extraData and string.gsub(extraData, '%%', '%%%%') or 'Empty List;Contact Ironi') .. '\124h%s\124h', id)
 		elseif event == 53 or event == 54 then -- UNIT_ENTERING_VEHICLE, UNIT_ENTERED_VEHICLE
-			iEET:addMessages(1, 4, spellName, color,'\124HiEETVehicle:' .. (extraData and (extraData..":"..destGUID) or 'Empty List;Contact Ironi') .. '\124h%s\124h', id)
+			iEET:addMessages(1, 4, spellName, color,'\124HiEETVehicle:' .. (extraData and (extraData..":"..(destGUID and destGUID or "NONE" )) or 'Empty List;Contact Ironi') .. '\124h%s\124h', id)
 		else
 			local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
 			if sourceGUID then
