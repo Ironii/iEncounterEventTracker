@@ -205,6 +205,38 @@ function addon:UNIT_SPELLCAST_START(unitID, arg2,spellID)
 		end
 	end
 end
+function addon:UNIT_SPELLCAST_STOP(unitID, arg2, spellID)
+	local sourceGUID = UnitGUID(unitID)
+	local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
+	if sourceGUID then -- fix for arena id's
+		unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
+	end
+	if iEET.ignoreFilters or (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and iEET.approvedSpells[spellID]) or not sourceGUID then
+		local sourceName = UnitName(unitID)
+		local chp = UnitHealth(unitID)
+		local maxhp = UnitHealthMax(unitID)
+		local php = nil
+		if chp and maxhp then
+			php = math.floor(chp/maxhp*1000+0.5)/10
+		end
+		if not iEET.npcIgnoreList[tonumber(npcID)] then
+			if not iEET.ignoredSpells[spellID] then
+				local t = {
+					['e'] = 61,
+					['t'] = GetTime(),
+					['sG'] = sourceGUID or 'NONE',
+					['cN'] = sourceName or 'NONE',
+					['tN'] = unitID or nil,
+					['sN'] = Spell:CreateFromSpellID(spellID):GetSpellName() or nil,
+					['sI'] = spellID or nil,
+					['hp'] = php or nil,
+				}
+				table.insert(iEET.data, t);
+				iEET:OnscreenAddMessages(t)
+			end
+		end
+	end
+end
 function addon:UNIT_SPELLCAST_CHANNEL_START(unitID, arg2,spellID)
 	local sourceGUID = UnitGUID(unitID)
 	local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
@@ -861,6 +893,7 @@ function iEET:StartRecording(force)
 	addon:RegisterEvent('CINEMATIC_START')
 	addon:RegisterEvent('CINEMATIC_STOP')
 	addon:RegisterEvent('UNIT_SPELLCAST_CHANNEL_STOP')
+	addon:RegisterEvent('UNIT_SPELLCAST_STOP')
 	if force then
 		addon:RegisterEvent('PLAYER_REGEN_DISABLED')
 		addon:RegisterEvent('PLAYER_REGEN_ENABLED')
@@ -892,6 +925,7 @@ function iEET:StopRecording(force)
 	addon:UnregisterEvent('CINEMATIC_START')
 	addon:UnregisterEvent('CINEMATIC_STOP')
 	addon:UnregisterEvent('UNIT_SPELLCAST_CHANNEL_STOP')
+	addon:UnregisterEvent('UNIT_SPELLCAST_STOP')
 	if force then
 		addon:UnregisterEvent('PLAYER_REGEN_DISABLED')
 		addon:UnregisterEvent('PLAYER_REGEN_ENABLED')

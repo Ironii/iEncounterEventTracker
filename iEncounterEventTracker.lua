@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.841
+iEET.version = 1.850
 local colors = {}
 
 iEET.auraEvents = {
@@ -124,84 +124,76 @@ iEET.ignoreList = {  -- Ignore list for 'Ignore Spell's menu, use event ignore t
 iEET.savedPowers = {}
 iEET.events = {
 	['toID'] = {
-		['SPELL_CAST_START'] = 1,
-		['SPELL_CAST_SUCCESS'] = 2,
-		['SPELL_AURA_APPLIED'] = 3,
-		['SPELL_AURA_REMOVED'] = 4,
-		['SPELL_AURA_APPLIED_DOSE'] = 5,
-		['SPELL_AURA_REMOVED_DOSE'] = 6,
-		['SPELL_AURA_REFRESH'] = 7,
-		['SPELL_CAST_FAILED'] = 8,
-		['SPELL_CREATE'] = 9,
-		['SPELL_SUMMON'] = 10,
-		['SPELL_HEAL'] = 11,
-		['SPELL_DISPEL'] = 12,
-		['SPELL_INTERRUPT'] = 13,
-
-		['SPELL_PERIODIC_CAST_START'] = 14,
-		['SPELL_PERIODIC_CAST_SUCCESS'] = 15,
-		['SPELL_PERIODIC_AURA_APPLIED'] = 16,
-		['SPELL_PERIODIC_AURA_REMOVED'] = 17,
-		['SPELL_PERIODIC_AURA_APPLIED_DOSE'] = 18,
-		['SPELL_PERIODIC_AURA_REMOVED_DOSE'] = 19,
-		['SPELL_PERIODIC_AURA_REFRESH'] = 20,
-		['SPELL_PERIODIC_CAST_FAILED'] = 21,
-		['SPELL_PERIODIC_CREATE'] = 22,
-		['SPELL_PERIODIC_SUMMON'] = 23,
-		['SPELL_PERIODIC_HEAL'] = 24,
-
-		['UNIT_DIED'] = 25,
-
+		-- Casts
+		['SPELL_CAST_START'] = 1, -- CLEU
+		['SPELL_CAST_SUCCESS'] = 2, -- CLEU
+		['SPELL_CAST_FAILED'] = 8, -- CLEU
 		['UNIT_SPELLCAST_SUCCEEDED'] = 26,
+		['UNIT_SPELLCAST_START'] = 39,
+		['UNIT_SPELLCAST_STOP'] = 61,
+		-- Channels
+		['SPELL_PERIODIC_CAST_START'] = 14, -- CLEU
+		['SPELL_PERIODIC_CAST_SUCCESS'] = 15, -- CLEU
+		['SPELL_PERIODIC_CAST_FAILED'] = 21, -- CLEU
+		['UNIT_SPELLCAST_CHANNEL_START'] = 40,
+		['UNIT_SPELLCAST_CHANNEL_STOP'] = 60,
 
+		-- Auras
+		['SPELL_AURA_APPLIED'] = 3, -- CLEU
+		['SPELL_AURA_REMOVED'] = 4, -- CLEU
+		['SPELL_AURA_APPLIED_DOSE'] = 5, -- CLEU
+		['SPELL_AURA_REMOVED_DOSE'] = 6, -- CLEU
+		['SPELL_AURA_REFRESH'] = 7, -- CLEU
+		['SPELL_PERIODIC_AURA_APPLIED'] = 16, -- CLEU
+		['SPELL_PERIODIC_AURA_REMOVED'] = 17, -- CLEU
+		['SPELL_PERIODIC_AURA_APPLIED_DOSE'] = 18, -- CLEU
+		['SPELL_PERIODIC_AURA_REMOVED_DOSE'] = 19, -- CLEU
+		['SPELL_PERIODIC_AURA_REFRESH'] = 20, -- CLEU
+		-- Misc
+		['SPELL_HEAL'] = 11, -- CLEU
+		['SPELL_DISPEL'] = 12, -- CLEU
+		['SPELL_INTERRUPT'] = 13, -- CLEU
+		['SPELL_PERIODIC_CREATE'] = 22, -- CLEU
+		['SPELL_PERIODIC_SUMMON'] = 23, -- CLEU
+		['SPELL_PERIODIC_HEAL'] = 24, -- CLEU
+		['UNIT_DIED'] = 25, -- CLEU
 		['ENCOUNTER_START'] = 27,
 		['ENCOUNTER_END'] = 28,
-
+		['UNIT_TARGET'] = 32,
+		['INSTANCE_ENCOUNTER_ENGAGE_UNIT'] = 33,
+		['UNIT_POWER_UPDATE'] = 34,
+		['PLAYER_REGEN_DISABLED'] = 35,
+		['PLAYER_REGEN_ENABLED'] = 36,
+		['UNIT_SPELLCAST_INTERRUPTIBLE'] = 41,
+		['UNIT_SPELLCAST_NOT_INTERRUPTIBLE'] = 42,
+		['MANUAL_LOGGING_START'] = 37, -- Fake event for manual logging
+		['MANUAL_LOGGING_END'] = 38, -- Fake event for manual logging
+		['UNIT_ENTERING_VEHICLE'] = 53,
+		['UNIT_ENTERED_VEHICLE'] = 54,
+		['UNIT_EXITING_VEHICLE'] = 55,
+		['UNIT_EXITED_VEHICLE'] = 56,
+		-- Cinematic
+		['PLAY_MOVIE'] = 57,
+		['CINEMATIC_START'] = 58,
+		['CINEMATIC_STOP'] = 59,
+		-- New mobs
+		['SPELL_CREATE'] = 9, -- CLEU
+		['SPELL_SUMMON'] = 10, -- CLEU
+		-- Chat
 		['MONSTER_EMOTE'] = 29,
 		['MONSTER_SAY'] = 30,
 		['MONSTER_YELL'] = 31,
-
-		['UNIT_TARGET'] = 32,
-
-		['INSTANCE_ENCOUNTER_ENGAGE_UNIT'] = 33,
-
-		['UNIT_POWER_UPDATE'] = 34,
-
-		['PLAYER_REGEN_DISABLED'] = 35,
-		['PLAYER_REGEN_ENABLED'] = 36,
-
-		['MANUAL_LOGGING_START'] = 37, -- Fake event for manual logging
-		['MANUAL_LOGGING_END'] = 38, -- Fake event for manual logging
-
-		['UNIT_SPELLCAST_START'] = 39,
-		['UNIT_SPELLCAST_CHANNEL_START'] = 40,
-
-		['UNIT_SPELLCAST_INTERRUPTIBLE'] = 41,
-		['UNIT_SPELLCAST_NOT_INTERRUPTIBLE'] = 42,
-
 		['RAID_BOSS_EMOTE'] = 43,
 		['RAID_BOSS_WHISPER'] = 44,
-
 		['CHAT_MSG_RAID_BOSS_WHISPER'] = 45,
 		['CHAT_MSG_RAID_BOSS_EMOTE'] = 46,
-
+		--Boss mods
 		['BigWigs_BarCreated'] = 47,
 		['BigWigs_Message'] = 48,
 		['BigWigs_PauseBar'] = 49,
 		['BigWigs_ResumeBar'] = 50,
 		['BigWigs_StopBar'] = 51,
 		['BigWigs_StopBars'] = 52,
-
-		['UNIT_ENTERING_VEHICLE'] = 53,
-		['UNIT_ENTERED_VEHICLE'] = 54,
-		['UNIT_EXITING_VEHICLE'] = 55,
-		['UNIT_EXITED_VEHICLE'] = 56,
-
-		['PLAY_MOVIE'] = 57,
-		['CINEMATIC_START'] = 58,
-		['CINEMATIC_STOP'] = 59,
-
-		['UNIT_SPELLCAST_CHANNEL_STOP'] = 60,
 	},
 	['fromID'] = {
 		[1] = {
@@ -469,6 +461,10 @@ iEET.events = {
 			l = 'UNIT_SPELLCAST_CHANNEL_STOP',
 			s = 'USC_C_STOP'
 		},
+		[61] = {
+			l = 'UNIT_SPELLCAST_STOP',
+			s = 'USC_STOP'
+		},
 	},
 }
 iEET.addonUsers = {}
@@ -639,7 +635,7 @@ function iEET:LoadDefaults()
 			[59] = true, -- CINEMATIC_STOP
 
 			[60] = true, -- UNIT_SPELLCAST_CHANNEL_STOP
-
+			[61] = true, -- UNIT_SPELLCAST_STOP
 		},
 		['version'] = iEET.version,
 		['autoSave'] = true,
