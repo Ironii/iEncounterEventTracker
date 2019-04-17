@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.850
+iEET.version = 1.851
 local colors = {}
 
 iEET.auraEvents = {
@@ -1845,18 +1845,19 @@ function iEET:ExportData(auto)
 		for k,v in spairs(iEET.encounterInfoData) do
 			encounterString = encounterString .. '{' .. k .. '=' .. v .. '}'
 		end
+		local _concat = table.concat
+		local _format = string.format
+		local _insert = table.insert
 		local dataString = ''
+		local tempDataTable = {}
 		for k,v in ipairs(iEET.data) do
-			local t = ''
+			local t = {}
 			for a,b in pairs(v) do
-				if type(b) == 'boolean' then
-					print(a)
-				end
-				t = t .. '{' .. a .. '=' .. b .. '}'
+				_insert(t,_format('{%s=%s}',  a,b))
 			end
-			dataString = dataString .. '|D|' .. t .. '|D|'
-
+			_insert(tempDataTable, _format('|D|%s|D|', _concat(t)))
 		end
+		dataString = _concat(tempDataTable)
 		if not iEET_Data then
 			iEET_Data = {}
 		end

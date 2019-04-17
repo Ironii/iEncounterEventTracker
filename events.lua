@@ -28,6 +28,29 @@ local cleuEventsToTrack = {
 
 	['UNIT_DIED'] = 'UNIT_DIED',
 }
+do
+	local validUnits = {
+		boss1 = true, boss2 = true, boss3 = true, boss4 = true, boss5 = true,
+		target = true, focus = true,
+		nameplate1 = true, nameplate2 = true, nameplate3 = true, nameplate4 = true, nameplate5 = true,
+		nameplate6 = true, nameplate7 = true, nameplate8 = true, nameplate9 = true, nameplate10 = true,
+		nameplate11 = true, nameplate12 = true, nameplate13 = true, nameplate14 = true, nameplate15 = true,
+		nameplate16 = true, nameplate17 = true, nameplate18 = true, nameplate19 = true, nameplate20 = true,
+		nameplate21 = true, nameplate22 = true, nameplate23 = true, nameplate24 = true, nameplate25 = true,
+		nameplate26 = true, nameplate27 = true, nameplate28 = true, nameplate29 = true, nameplate30 = true,
+		nameplate31 = true, nameplate32 = true, nameplate33 = true, nameplate34 = true, nameplate35 = true,
+		nameplate36 = true, nameplate37 = true, nameplate38 = true, nameplate39 = true, nameplate40 = true,
+	}
+	for i = 1, 40 do
+		validUnits["nameplate"..i] = true
+	end
+	function iEET.IsValidUnit(unitID)
+		if not unitID then return end
+		if iEET.ignoreFilters or validUnits[unitID] then
+			return true
+		end
+	end
+end
 local addon = CreateFrame('frame')
 addon:RegisterEvent('ENCOUNTER_START')
 addon:RegisterEvent('ENCOUNTER_END')
@@ -38,6 +61,7 @@ addon:SetScript('OnEvent', function(self, event, ...)
 end)
 iEET.ignoreFilters = false
 local ignoreFiltersTimer
+
 function addon:ADDON_LOADED(addonName)
 	if addonName == 'iEncounterEventTracker' then
 		C_ChatInfo.RegisterAddonMessagePrefix('iEET')
@@ -373,9 +397,16 @@ function addon:UNIT_SPELLCAST_NOT_INTERRUPTIBLE(unitID)
 	end
 end
 function addon:UNIT_TARGET(unitID)
-	if iEET.ignoreFilters or string.find(unitID, 'boss') then
-		if UnitExists(unitID) then --didn't just disappear
-			local sourceGUID = UnitGUID(unitID)
+	if iEET.IsValidUnit(unitID) then
+		local sourceGUID = UnitGUID(unitID)
+		if sourceGUID or UnitExists(unitID) then --didn't just disappear
+			local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
+			if sourceGUID then -- fix for arena id's
+				unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
+			end
+			if not ((unitType == 'Creature' or unitType == 'Vehicle') and not iEET.npcIgnoreList[tonumber(npcID)]) then
+				return
+			end
 			local sourceName = UnitName(unitID)
 			local chp = UnitHealth(unitID)
 			local maxhp = UnitHealthMax(unitID)
@@ -610,9 +641,12 @@ function addon:INSTANCE_ENCOUNTER_ENGAGE_UNIT()
 	local newUnits = {}
 	local unitNames = {}
 	for i = 1, 5 do
-		if UnitExists('boss' .. i) then
-			local sourceGUID = UnitGUID('boss' .. i)
+		local sourceGUID = UnitGUID('boss' .. i)
+		if UnitExists('boss' .. i) or sourceGUID then
 			local sourceName = UnitName('boss' .. i)
+			if not sourceName then
+				sourceName = UNKNOWN
+			end
 			if not iEET.IEEUnits[sourceGUID] then
 				iEET.IEEUnits[sourceGUID] = sourceName
 				table.insert(newUnits, {sourceName, 'boss' .. i})
