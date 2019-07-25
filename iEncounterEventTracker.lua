@@ -37,7 +37,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.851
+iEET.version = 1.852
 local colors = {}
 
 iEET.auraEvents = {
@@ -180,9 +180,9 @@ iEET.events = {
 		['SPELL_CREATE'] = 9, -- CLEU
 		['SPELL_SUMMON'] = 10, -- CLEU
 		-- Chat
-		['MONSTER_EMOTE'] = 29,
-		['MONSTER_SAY'] = 30,
-		['MONSTER_YELL'] = 31,
+		['CHAT_MSG_MONSTER_EMOTE'] = 29,
+		['CHAT_MSG_MONSTER_SAY'] = 30,
+		['CHAT_MSG_MONSTER_YELL'] = 31,
 		['RAID_BOSS_EMOTE'] = 43,
 		['RAID_BOSS_WHISPER'] = 44,
 		['CHAT_MSG_RAID_BOSS_WHISPER'] = 45,
@@ -334,15 +334,15 @@ iEET.events = {
 			s = 'ENCOUNTER_END',
 		},
 		[29] = {
-			l = 'MONSTER_EMOTE',
+			l = 'CHAT_MSG_MONSTER_EMOTE',
 			s = 'MONSTER_EMOTE',
 		},
 		[30] = {
-			l = 'MONSTER_SAY',
+			l = 'CHAT_MSG_MONSTER_SAY',
 			s = 'MONSTER_SAY',
 		},
 		[31] = {
-			l = 'MONSTER_YELL',
+			l = 'CHAT_MSG_MONSTER_YELL',
 			s = 'MONSTER_YELL',
 		},
 		[32] = {

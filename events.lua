@@ -261,6 +261,7 @@ function addon:UNIT_SPELLCAST_STOP(unitID, arg2, spellID)
 		end
 	end
 end
+
 function addon:UNIT_SPELLCAST_CHANNEL_START(unitID, arg2,spellID)
 	local sourceGUID = UnitGUID(unitID)
 	local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
@@ -432,7 +433,8 @@ function addon:UNIT_TARGET(unitID)
 end
 function addon:UNIT_POWER_UPDATE(unitID, powerType)
 	if iEET.ignoreFilters or unitID:find('boss') then
-		if UnitExists(unitID) then --didn't just disappear
+		local sourceGUID = UnitGUID(unitID)
+		if sourceGUID or UnitExists(unitID) then --didn't just disappear
 			if not iEET.savedPowers[powerType] then
 				-- Get power type ID
 				local powerString = ""
@@ -448,7 +450,6 @@ function addon:UNIT_POWER_UPDATE(unitID, powerType)
 					n = _G[powerType] or powerType,
 				}
 			end
-			local sourceGUID = UnitGUID(unitID)
 			local currentPower = UnitPower(unitID, 	iEET.savedPowers[powerType].i)
 			local change = 0
 			if iEET.unitPowerUnits[sourceGUID] then -- unit exists, update or add new powerType
