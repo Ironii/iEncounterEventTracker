@@ -215,7 +215,7 @@ function iEET:CreateMainFrame()
 	end)
 	iEET.frame:SetFrameStrata('HIGH')
 	iEET.frame:SetFrameLevel(1)
-	iEET.top = CreateFrame('FRAME', nil, iEET.frame)
+	iEET.top = CreateFrame('FRAME', nil, iEET.frame, BackdropTemplateMixin and "BackdropTemplate")
 	iEET.top:SetSize(605, 25)
 	iEET.top:SetPoint('BOTTOMLEFT', iEET.frame, 'TOPLEFT', 0, -1)
 	iEET.top:SetBackdrop(iEET.backdrop);
@@ -233,7 +233,7 @@ function iEET:CreateMainFrame()
 	iEET.top:SetFrameStrata('HIGH')
 	iEET.top:SetFrameLevel(1)
 	--Encounter Info background & fontstring
-	iEET.encounterInfo = CreateFrame('FRAME', nil, iEET.frame)
+	iEET.encounterInfo = CreateFrame('FRAME', nil, iEET.frame, BackdropTemplateMixin and "BackdropTemplate")
 	iEET.encounterInfo:SetSize(470, 18)
 	iEET.encounterInfo:SetPoint('BOTTOM', iEET.top, 'TOP', 0, -1)
 	iEET.encounterInfo:SetBackdrop(iEET.backdrop);
@@ -257,7 +257,7 @@ function iEET:CreateMainFrame()
 	iEET.encounterInfo.text:Show()
 
 	-- Prev button
-	iEET.prevEncounter = CreateFrame('FRAME', nil, iEET.frame)
+	iEET.prevEncounter = CreateFrame('FRAME', nil, iEET.frame, BackdropTemplateMixin and "BackdropTemplate")
 	iEET.prevEncounter:SetSize(18, 18)
 	iEET.prevEncounter:SetPoint('BOTTOMRIGHT', iEET.encounterInfo, 'BOTTOMLEFT', 0, 0)
 	iEET.prevEncounter:SetBackdrop(iEET.backdrop);
@@ -285,7 +285,7 @@ function iEET:CreateMainFrame()
 	iEET.prevEncounter.text:Show()
 
 	-- Next button
-	iEET.nextEncounter = CreateFrame('FRAME', nil, iEET.frame)
+	iEET.nextEncounter = CreateFrame('FRAME', nil, iEET.frame, BackdropTemplateMixin and "BackdropTemplate")
 	iEET.nextEncounter:SetSize(18, 18)
 	iEET.nextEncounter:SetPoint('BOTTOMLEFT', iEET.encounterInfo, 'BOTTOMRIGHT', 0, 0)
 	iEET.nextEncounter:SetBackdrop(iEET.backdrop);
@@ -311,7 +311,7 @@ function iEET:CreateMainFrame()
 	iEET.nextEncounter.text:SetPoint('CENTER', iEET.nextEncounter, 'CENTER', 0,1)
 	iEET.nextEncounter.text:SetText('>')
 	iEET.nextEncounter.text:Show()
-	iEET.detailtop = CreateFrame('FRAME', nil, iEET.frame)
+	iEET.detailtop = CreateFrame('FRAME', nil, iEET.frame, BackdropTemplateMixin and "BackdropTemplate")
 	iEET.detailtop:SetSize(433, 25)
 	iEET.detailtop:SetPoint('RIGHT', iEET.top, 'LEFT', 1, 0)
 	iEET.detailtop:SetBackdrop({
@@ -339,7 +339,7 @@ function iEET:CreateMainFrame()
 	iEET.detailtop:SetFrameLevel(1)
 	iEET.detailtop:EnableMouse(true)
 
-	iEET.encounterAbilities = CreateFrame('FRAME', nil, iEET.frame)
+	iEET.encounterAbilities = CreateFrame('FRAME', nil, iEET.frame, BackdropTemplateMixin and "BackdropTemplate")
 	iEET.encounterAbilities:SetSize(200, 25)
 	iEET.encounterAbilities:SetPoint('LEFT', iEET.top, 'RIGHT', -1, 0)
 	iEET.encounterAbilities:SetBackdrop({
@@ -379,7 +379,7 @@ function iEET:CreateMainFrame()
 	};
 	for i=1, 8 do ---bigcontent
 		---anhorframe
-		iEET['contentAnchor' .. i] = CreateFrame('FRAME', nil , iEET.frame)
+		iEET['contentAnchor' .. i] = CreateFrame('FRAME', nil , iEET.frame, BackdropTemplateMixin and "BackdropTemplate")
 		iEET['contentAnchor' .. i]:SetSize(slices[i], 834)
 		if not lastframe then
 			iEET['contentAnchor' .. i]:SetPoint('TOPLEFT', iEET.frame, 'TOPLEFT', 0, 0)
@@ -461,7 +461,7 @@ function iEET:CreateMainFrame()
 		---anhorframe
 		if i == 4 then
 		else
-		iEET['detailAnchor' .. i] = CreateFrame('FRAME', nil, iEET.frame)
+		iEET['detailAnchor' .. i] = CreateFrame('FRAME', nil, iEET.frame, BackdropTemplateMixin and "BackdropTemplate")
 		iEET['detailAnchor' .. i]:SetSize(slices[i], 400)
 		if not lastframe then
 			iEET['detailAnchor' .. i]:SetPoint('TOPRIGHT', iEET.frame, 'TOPLEFT', 1, 0)
@@ -515,7 +515,7 @@ function iEET:CreateMainFrame()
 	--SPELL LISTING--
 	do
 		--Slider
-		iEET.mainFrameSlider = CreateFrame('Slider', nil, iEET.frame)
+		iEET.mainFrameSlider = CreateFrame('Slider', nil, iEET.frame, BackdropTemplateMixin and "BackdropTemplate")
 		iEET.mainFrameSlider:SetSize(8,834)
 		iEET.mainFrameSlider:SetThumbTexture('Interface\\AddOns\\iEncounterEventTracker\\media\\thumb')
 		iEET.mainFrameSlider:SetBackdrop(bd)
@@ -543,7 +543,7 @@ function iEET:CreateMainFrame()
 		iEET.mainFrameSlider:SetScript('OnMouseWheel', function(self, delta)
 			iEET:ScrollContent(delta)
 		end)
-		iEET.mainFrameSliderBG = CreateFrame('FRAME', nil , iEET.frame)
+		iEET.mainFrameSliderBG = CreateFrame('FRAME', nil , iEET.frame, BackdropTemplateMixin and "BackdropTemplate")
 		--iEET.contentAnchor8 = CreateFrame('FRAME', nil , iEET.frame)
 		iEET.mainFrameSliderBG:SetSize(8, 834)
 		iEET.mainFrameSliderBG:SetPoint('BOTTOMLEFT', iEET.frame, 'BOTTOMRIGHT', -1, 0)
@@ -561,7 +561,7 @@ function iEET:CreateMainFrame()
 		iEET.mainFrameSliderBG:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
 		iEET.mainFrameSliderBG:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
 
-		iEET.encounterAbilitiesAnchor = CreateFrame('FRAME', nil, iEET.frame)
+		iEET.encounterAbilitiesAnchor = CreateFrame('FRAME', nil, iEET.frame, BackdropTemplateMixin and "BackdropTemplate")
 		iEET.encounterAbilitiesAnchor:SetSize(200, 400)
 		--iEET.encounterAbilitiesAnchor:SetPoint('TOPLEFT', iEET.frame, 'TOPRIGHT', -1, 0)
 		iEET.encounterAbilitiesAnchor:SetPoint('TOPLEFT', iEET.frame, 'TOPRIGHT', 6, 0)
@@ -635,7 +635,7 @@ function iEET:CreateMainFrame()
 	iEET.encounterAbilitiesText:SetText("Encounter spells")
 	iEET.encounterAbilitiesText:Show()
 
-	iEET.commonAbilities = CreateFrame('FRAME', nil, iEET.frame)
+	iEET.commonAbilities = CreateFrame('FRAME', nil, iEET.frame, BackdropTemplateMixin and "BackdropTemplate")
 	iEET.commonAbilities:SetSize(200, 25)
 	iEET.commonAbilities:SetPoint('TOPLEFT', iEET.encounterAbilitiesAnchor, 'BOTTOMLEFT', 0, 0)
 	iEET.commonAbilities:SetBackdrop({
@@ -668,7 +668,7 @@ function iEET:CreateMainFrame()
 	iEET.commonAbilitiesText:SetText("Common spells")
 	iEET.commonAbilitiesText:Show()
 
-	iEET.commonAbilitiesAnchor = CreateFrame('FRAME', nil, iEET.frame)
+	iEET.commonAbilitiesAnchor = CreateFrame('FRAME', nil, iEET.frame, BackdropTemplateMixin and "BackdropTemplate")
 	iEET.commonAbilitiesAnchor:SetSize(200, 150)
 	iEET.commonAbilitiesAnchor:SetPoint('TOPLEFT', iEET.commonAbilities, 'BOTTOMLEFT', 0, 0)
 	iEET.commonAbilitiesAnchor:SetBackdrop({
@@ -732,7 +732,7 @@ function iEET:CreateMainFrame()
 
 	iEET.frame:EnableMouse(true)
 	iEET.frame:SetMovable(true)
-	iEET.editbox = CreateFrame('EditBox', 'iEETEditBox', iEET.frame)
+	iEET.editbox = CreateFrame('EditBox', 'iEETEditBox', iEET.frame, BackdropTemplateMixin and "BackdropTemplate")
 	iEET.editbox:SetBackdrop({
 			bgFile = "Interface\\Buttons\\WHITE8x8",
 			edgeFile = "Interface\\Buttons\\WHITE8x8",
@@ -771,7 +771,7 @@ function iEET:CreateMainFrame()
 	iEET.editbox:Show()
 	iEET.editbox:SetFont(iEET.font, iEET.fontsize+2, 'OUTLINE')
 	local function createButton(name, buttonName, width, height, buttonText,point,anchorFrame,relativePoint,xOffset,yOffset)
-		iEET[name] = CreateFrame('BUTTON', buttonName, iEET.frame)
+		iEET[name] = CreateFrame('BUTTON', buttonName, iEET.frame, BackdropTemplateMixin and "BackdropTemplate")
 		iEET[name]:SetSize(width, height)
 		iEET[name]:SetBackdrop(iEET.backdrop);
 		iEET[name]:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
@@ -863,7 +863,7 @@ function iEET:CreateMainFrame()
 end
 function iEET:CreateOptionsFrame()
 	-- Options main frame
-	iEET.optionsFrame = CreateFrame('Frame', 'iEETOptionsFrame', UIParent)
+	iEET.optionsFrame = CreateFrame('Frame', 'iEETOptionsFrame', UIParent, BackdropTemplateMixin and "BackdropTemplate")
 	iEET.optionsFrame:SetSize(650,500)
 	iEET.optionsFrame:SetPoint('CENTER', UIParent, 'CENTER', iEETConfig.spawnOffset,0)
 	if iEETConfig.scales.filters then
@@ -878,7 +878,7 @@ function iEET:CreateOptionsFrame()
 	iEET.optionsFrame:EnableMouse(true)
 	iEET.optionsFrame:SetMovable(true)
 	-- Options title frame
-	iEET.optionsFrameTop = CreateFrame('FRAME', nil, iEET.optionsFrame)
+	iEET.optionsFrameTop = CreateFrame('FRAME', nil, iEET.optionsFrame, BackdropTemplateMixin and "BackdropTemplate")
 	iEET.optionsFrameTop:SetSize(650, 25)
 	iEET.optionsFrameTop:SetPoint('BOTTOMRIGHT', iEET.optionsFrame, 'TOPRIGHT', 0, -1)
 	iEET.optionsFrameTop:SetBackdrop(iEET.backdrop);
@@ -921,7 +921,7 @@ function iEET:CreateOptionsFrame()
 				end
 			end
 		else
-			iEET.infoFrame = CreateFrame('Frame', 'iEETOptionsFrame', UIParent)
+			iEET.infoFrame = CreateFrame('Frame', 'iEETOptionsFrame', UIParent, BackdropTemplateMixin and "BackdropTemplate")
 			iEET.infoFrame:SetPoint('TOPLEFT', iEET.optionsFrameTop, 'TOPRIGHT', -1,0)
 			iEET.infoFrame:SetBackdrop(iEET.backdrop);
 			iEET.infoFrame:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
@@ -979,7 +979,7 @@ Event names/values:
 		end
 	end
 	--Info button
-	iEET.infoButton = CreateFrame('FRAME', nil, iEET.optionsFrame)
+	iEET.infoButton = CreateFrame('FRAME', nil, iEET.optionsFrame, BackdropTemplateMixin and "BackdropTemplate")
 	iEET.infoButton:SetSize(21, 21)
 	iEET.infoButton:SetPoint('TOPRIGHT', iEET.optionsFrameTop, 'TOPRIGHT', -2, -2)
 	iEET.infoButton:SetBackdrop(iEET.backdrop);
@@ -1034,7 +1034,7 @@ Event names/values:
 	iEET.optionsFrameFilterTexts:SetFrameStrata('DIALOG')
 	iEET.optionsFrameFilterTexts:SetFrameLevel(4)
 	-- Options Editbox
-	iEET.optionsFrameEditbox = CreateFrame('EditBox', 'iEETOptionsEditBox', iEET.optionsFrame)
+	iEET.optionsFrameEditbox = CreateFrame('EditBox', 'iEETOptionsEditBox', iEET.optionsFrame, BackdropTemplateMixin and "BackdropTemplate")
 	iEET.optionsFrameEditbox:SetBackdrop({
 			bgFile = "Interface\\Buttons\\WHITE8x8",
 			edgeFile = "Interface\\Buttons\\WHITE8x8",
@@ -1096,7 +1096,7 @@ Event names/values:
 	iEET.optionsFrameEditbox:SetFont(iEET.font, iEET.fontsize+2, 'OUTLINE')
 	iEET:FillFilters()
 	-- Save button
-	iEET.optionsFrameSaveButton = CreateFrame('BUTTON', nil, iEET.optionsFrame)
+	iEET.optionsFrameSaveButton = CreateFrame('BUTTON', nil, iEET.optionsFrame, BackdropTemplateMixin and "BackdropTemplate")
 	iEET.optionsFrameSaveButton:SetSize(100, 20)
 	iEET.optionsFrameSaveButton:SetBackdrop(iEET.backdrop);
 	iEET.optionsFrameSaveButton:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
@@ -1114,7 +1114,7 @@ Event names/values:
 		iEET:FillFilters()
 	end)
 	-- Save & Close
-	iEET.optionsFrameSaveAndCloseButton = CreateFrame('BUTTON', nil, iEET.optionsFrame)
+	iEET.optionsFrameSaveAndCloseButton = CreateFrame('BUTTON', nil, iEET.optionsFrame, BackdropTemplateMixin and "BackdropTemplate")
 	iEET.optionsFrameSaveAndCloseButton:SetSize(100, 20)
 	iEET.optionsFrameSaveAndCloseButton:SetBackdrop(iEET.backdrop);
 	iEET.optionsFrameSaveAndCloseButton:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
@@ -1135,7 +1135,7 @@ Event names/values:
 		iEET.optionsFrame:Hide()
 	end)
 	-- Cancel button
-	iEET.optionsFrameCancelButton = CreateFrame('BUTTON', nil, iEET.optionsFrame)
+	iEET.optionsFrameCancelButton = CreateFrame('BUTTON', nil, iEET.optionsFrame, BackdropTemplateMixin and "BackdropTemplate")
 	iEET.optionsFrameCancelButton:SetSize(100, 20)
 	iEET.optionsFrameCancelButton:SetBackdrop(iEET.backdrop);
 	iEET.optionsFrameCancelButton:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
@@ -1163,7 +1163,7 @@ function iEET:toggleDeleteOptions()
 		--Delete options main frame
 			local width = 310
 		iEET.deleteOptions = {}
-		iEET.deleteOptions.mainFrame = CreateFrame('Frame', 'iEETDeleteFrame', UIParent)
+		iEET.deleteOptions.mainFrame = CreateFrame('Frame', 'iEETDeleteFrame', UIParent, BackdropTemplateMixin and "BackdropTemplate")
 		iEET.deleteOptions.mainFrame:SetSize(width,110)
 		iEET.deleteOptions.mainFrame:SetPoint('CENTER', UIParent, 'CENTER', iEETConfig.spawnOffset,0)
 		iEET.deleteOptions.mainFrame:SetBackdrop(iEET.backdrop);
@@ -1175,7 +1175,7 @@ function iEET:toggleDeleteOptions()
 		iEET.deleteOptions.mainFrame:EnableMouse(true)
 		iEET.deleteOptions.mainFrame:SetMovable(true)
 		-- Options title frame
-		iEET.deleteOptions.top = CreateFrame('FRAME', nil, iEET.deleteOptions.mainFrame)
+		iEET.deleteOptions.top = CreateFrame('FRAME', nil, iEET.deleteOptions.mainFrame, BackdropTemplateMixin and "BackdropTemplate")
 		iEET.deleteOptions.top:SetSize(width, 15)
 		iEET.deleteOptions.top:SetPoint('BOTTOMRIGHT', iEET.deleteOptions.mainFrame, 'TOPRIGHT', 0, -1)
 		iEET.deleteOptions.top:SetBackdrop(iEET.backdrop)
@@ -1199,7 +1199,7 @@ function iEET:toggleDeleteOptions()
 		iEET.deleteOptions.top.text:SetText('Delete options')
 		iEET.deleteOptions.top.text:Show()
 
-		iEET.deleteOptions.top.exitButton = CreateFrame('FRAME', nil, iEET.deleteOptions.mainFrame)
+		iEET.deleteOptions.top.exitButton = CreateFrame('FRAME', nil, iEET.deleteOptions.mainFrame, BackdropTemplateMixin and "BackdropTemplate")
 		iEET.deleteOptions.top.exitButton:SetSize(15, 15)
 		iEET.deleteOptions.top.exitButton:SetPoint('TOPRIGHT', iEET.deleteOptions.top, 'TOPRIGHT', 0, 0)
 		iEET.deleteOptions.top.exitButton:SetBackdrop(iEET.backdrop)
@@ -1308,7 +1308,7 @@ function iEET:toggleDeleteOptions()
 			return t
 		end
 
-		iEET.deleteOptions.chooseDifficulty = CreateFrame('button', nil, iEET.deleteOptions.mainFrame)
+		iEET.deleteOptions.chooseDifficulty = CreateFrame('button', nil, iEET.deleteOptions.mainFrame, BackdropTemplateMixin and "BackdropTemplate")
 		iEET.deleteOptions.chooseDifficulty:SetBackdrop(iEET.backdrop)
 		iEET.deleteOptions.chooseDifficulty:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
 		iEET.deleteOptions.chooseDifficulty:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
@@ -1333,7 +1333,7 @@ function iEET:toggleDeleteOptions()
 			end
 			EasyMenu(getMenuTable('dif'), iEET.deleteOptions.chooseDifficulty.menu, iEET.deleteOptions.chooseDifficulty, 0 , 0)
 		end)
-		iEET.deleteOptions.chooseEncounter = CreateFrame('editbox', nil, iEET.deleteOptions.mainFrame)
+		iEET.deleteOptions.chooseEncounter = CreateFrame('editbox', nil, iEET.deleteOptions.mainFrame, BackdropTemplateMixin and "BackdropTemplate")
 		iEET.deleteOptions.chooseEncounter:SetSize(100,20)
 		iEET.deleteOptions.chooseEncounter:SetAutoFocus(false)
 		iEET.deleteOptions.chooseEncounter:SetTextInsets(2, 2, 1, 0)
@@ -1364,7 +1364,7 @@ function iEET:toggleDeleteOptions()
 		iEET.deleteOptions.chooseEncounter.text:SetPoint('BOTTOM', iEET.deleteOptions.chooseEncounter, 'TOP', 0,3)
 		iEET.deleteOptions.chooseEncounter.text:SetText('Encounter ID')
 
-		iEET.deleteOptions.chooseDeleteMode = CreateFrame('button', nil, iEET.deleteOptions.mainFrame)
+		iEET.deleteOptions.chooseDeleteMode = CreateFrame('button', nil, iEET.deleteOptions.mainFrame, BackdropTemplateMixin and "BackdropTemplate")
 		iEET.deleteOptions.chooseDeleteMode:SetBackdrop(iEET.backdrop)
 		iEET.deleteOptions.chooseDeleteMode:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
 		iEET.deleteOptions.chooseDeleteMode:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
@@ -1390,7 +1390,7 @@ function iEET:toggleDeleteOptions()
 			EasyMenu(getMenuTable(), iEET.deleteOptions.chooseDeleteMode.menu, iEET.deleteOptions.chooseDeleteMode, 0 , 0)
 		end)
 
-		iEET.deleteOptions.deleteButton = CreateFrame('FRAME', nil, iEET.deleteOptions.mainFrame)
+		iEET.deleteOptions.deleteButton = CreateFrame('FRAME', nil, iEET.deleteOptions.mainFrame, BackdropTemplateMixin and "BackdropTemplate")
 		iEET.deleteOptions.deleteButton:SetSize(width-6, 25)
 		iEET.deleteOptions.deleteButton:SetPoint('BOTTOM', iEET.deleteOptions.mainFrame, 'BOTTOM', 0, 3)
 		iEET.deleteOptions.deleteButton:SetBackdrop(iEET.backdrop)
@@ -1479,7 +1479,7 @@ end
 function iEET:toggleCopyFrame(forceShow)
 	if not iEET.frame then iEET:CreateMainFrame() end
 	if not iEET.copyFrame and not InCombatLockdown() then
-		iEET.copyFrame = CreateFrame('EditBox', 'iEETCopyFrame', UIParent)
+		iEET.copyFrame = CreateFrame('EditBox', 'iEETCopyFrame', UIParent, BackdropTemplateMixin and "BackdropTemplate")
 		iEET.copyFrame:SetBackdrop({
 				bgFile = "Interface\\Buttons\\WHITE8x8",
 				edgeFile = "Interface\\Buttons\\WHITE8x8",
@@ -1539,7 +1539,7 @@ function iEET:CreateOnscreenFrame()
 		local fa = 'onscreenAnchor' .. i
 		local fc = 'onscreenContent' .. i
 		---anchor frame
-		iEET[fa] = CreateFrame('FRAME', nil , iEET.onscreen)
+		iEET[fa] = CreateFrame('FRAME', nil , iEET.onscreen, BackdropTemplateMixin and "BackdropTemplate")
 		iEET[fa]:SetSize(slices[i], iEETConfig.onscreen.lines*11)
 		if not lastframe then
 			iEET[fa]:SetPoint('TOPLEFT', iEET.onscreen, 'TOPLEFT', 0, 0)
@@ -1633,7 +1633,7 @@ function iEET:StartRecordingWithoutFiltersPopup()
 			--Delete options main frame
 		local width = 310
 		iEET.noFiltersPopup = {}
-		iEET.noFiltersPopup.mainFrame = CreateFrame('Frame', 'iEETnoFiltersPopup', UIParent)
+		iEET.noFiltersPopup.mainFrame = CreateFrame('Frame', 'iEETnoFiltersPopup', UIParent, BackdropTemplateMixin and "BackdropTemplate")
 		iEET.noFiltersPopup.mainFrame:SetSize(width,110)
 		iEET.noFiltersPopup.mainFrame:SetPoint('CENTER', UIParent, 'CENTER', iEETConfig.spawnOffset,0)
 		iEET.noFiltersPopup.mainFrame:SetBackdrop(iEET.backdrop);
@@ -1645,7 +1645,7 @@ function iEET:StartRecordingWithoutFiltersPopup()
 		iEET.noFiltersPopup.mainFrame:EnableMouse(true)
 		iEET.noFiltersPopup.mainFrame:SetMovable(true)
 		-- Options title frame
-		iEET.noFiltersPopup.top = CreateFrame('FRAME', nil, iEET.noFiltersPopup.mainFrame)
+		iEET.noFiltersPopup.top = CreateFrame('FRAME', nil, iEET.noFiltersPopup.mainFrame, BackdropTemplateMixin and "BackdropTemplate")
 		iEET.noFiltersPopup.top:SetSize(width, 15)
 		iEET.noFiltersPopup.top:SetPoint('BOTTOMRIGHT', iEET.noFiltersPopup.mainFrame, 'TOPRIGHT', 0, -1)
 		iEET.noFiltersPopup.top:SetBackdrop(iEET.backdrop)
@@ -1669,7 +1669,7 @@ function iEET:StartRecordingWithoutFiltersPopup()
 		iEET.noFiltersPopup.top.text:SetText('Start logging without filters')
 		iEET.noFiltersPopup.top.text:Show()
 
-		iEET.noFiltersPopup.top.exitButton = CreateFrame('FRAME', nil, iEET.noFiltersPopup.mainFrame)
+		iEET.noFiltersPopup.top.exitButton = CreateFrame('FRAME', nil, iEET.noFiltersPopup.mainFrame, BackdropTemplateMixin and "BackdropTemplate")
 		iEET.noFiltersPopup.top.exitButton:SetSize(15, 15)
 		iEET.noFiltersPopup.top.exitButton:SetPoint('TOPRIGHT', iEET.noFiltersPopup.top, 'TOPRIGHT', 0, 0)
 		iEET.noFiltersPopup.top.exitButton:SetBackdrop(iEET.backdrop)
@@ -1721,7 +1721,7 @@ function iEET:StartRecordingWithoutFiltersPopup()
 				iEET.noFiltersPopup.errorText:Hide()
 			end
 		end
-		iEET.noFiltersPopup.timer = CreateFrame('editbox', nil, iEET.noFiltersPopup.mainFrame)
+		iEET.noFiltersPopup.timer = CreateFrame('editbox', nil, iEET.noFiltersPopup.mainFrame, BackdropTemplateMixin and "BackdropTemplate")
 		iEET.noFiltersPopup.timer:SetSize(101,20)
 		iEET.noFiltersPopup.timer:SetAutoFocus(false)
 		iEET.noFiltersPopup.timer:SetTextInsets(2, 2, 1, 0)
@@ -1744,7 +1744,7 @@ function iEET:StartRecordingWithoutFiltersPopup()
 		iEET.noFiltersPopup.timer.text:SetPoint('BOTTOM', iEET.noFiltersPopup.timer, 'TOP', 0,3)
 		iEET.noFiltersPopup.timer.text:SetText('Timer (sec)')
 
-		iEET.noFiltersPopup.name = CreateFrame('editbox', nil, iEET.noFiltersPopup.mainFrame)
+		iEET.noFiltersPopup.name = CreateFrame('editbox', nil, iEET.noFiltersPopup.mainFrame, BackdropTemplateMixin and "BackdropTemplate")
 		iEET.noFiltersPopup.name:SetSize(201,20)
 		iEET.noFiltersPopup.name:SetAutoFocus(false)
 		iEET.noFiltersPopup.name:SetTextInsets(2, 2, 1, 0)
@@ -1768,7 +1768,7 @@ function iEET:StartRecordingWithoutFiltersPopup()
 		iEET.noFiltersPopup.name.text:SetText('Log name')
 
 
-		iEET.noFiltersPopup.startButton = CreateFrame('FRAME', nil, iEET.noFiltersPopup.mainFrame)
+		iEET.noFiltersPopup.startButton = CreateFrame('FRAME', nil, iEET.noFiltersPopup.mainFrame, BackdropTemplateMixin and "BackdropTemplate")
 		iEET.noFiltersPopup.startButton:SetSize(width-6, 25)
 		iEET.noFiltersPopup.startButton:SetPoint('BOTTOM', iEET.noFiltersPopup.mainFrame, 'BOTTOM', 0, 3)
 		iEET.noFiltersPopup.startButton:SetBackdrop(iEET.backdrop)
