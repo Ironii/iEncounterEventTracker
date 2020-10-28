@@ -122,7 +122,6 @@ function iEET:oldImport(dataKey)
 		end
 		table.insert(iEET.data, tempTable)
   end
-  for k,v in pairs(iEET.encounterInfoData) do print(k,v) end
 	_oldLoopData()
 	iEET:print(string.format('!! OLD log!! Imported %s on %s (%s), %sman (%s), Time: %s, Logger: %s.',iEET.encounterInfoData.eN,GetDifficultyInfo(iEET.encounterInfoData.d),iEET.encounterInfoData.fT, iEET.encounterInfoData.rS, (iEET.encounterInfoData.k == 1 and 'kill' or 'wipe'), iEET.encounterInfoData.pT, iEET.encounterInfoData.lN or UNKNOWN))
 end
