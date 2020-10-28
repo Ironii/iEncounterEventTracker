@@ -2112,7 +2112,7 @@ do -- BigWigs
 			print("iEET: BigWigs event not found :",event)
 			return 
 		end
-		local d = iEET.eventFunctions[eventID]
+		local d = iEET.eventFunctions[eventID].data
 		if event == 'BigWigs_BarCreated' then
 			local key, text, time, cd = ...
 			t = {

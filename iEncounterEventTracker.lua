@@ -54,7 +54,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 2.001
+iEET.version = 2.002
 local colors = {}
 
 iEET.auraEvents = {
