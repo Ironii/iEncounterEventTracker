@@ -173,10 +173,10 @@ function iEET:CreateMainFrame()
 			iEET.loopDataCall = GetTime()
 			local txt = iEET.editbox:GetText()
 			if txt ~= 'Search' and string.len(txt) > 0 then
-				iEET:loopData(nil, true)
+				iEET:loopData()
 				iEET.generalSearch = txt
 			else
-				iEET:loopData(nil, true)
+				iEET:loopData()
 				iEET.generalSearch = nil
 			end
 		end
