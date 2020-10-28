@@ -2265,7 +2265,7 @@ do -- CUSTOM
 		local str = ""
 		for k,v in pairs(t) do
 			if type(v) == "table" then
-				str = sformat("%s\r[%s] = {%s\r},", str, k, tableToString(v))
+				str = sformat("%s\r[%s] = %s\r,", str, k, tableToString(v))
 			else
 				str = sformat("%s\r[%s] = %s,", str, k, tostring(v))
 			end
