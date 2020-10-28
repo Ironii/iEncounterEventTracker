@@ -18,8 +18,25 @@ better fight selecting
 --]]
 local _, iEET = ...
 iEET.data = {}
+local sformat = string.format
+local function tcopy(data)
+	local t = {}
+	for k,v in pairs(data) do
+		if type(v) == "table" then
+			t[k] = tcopy(v)
+		else
+			t[k] = v
+		end
+	end
+	return t
+end
 --local isAlpha = select(4, GetBuildInfo()) >= 70000 and true or false
-iEET.ignoring = {} -- so ignore list resets on relog, don't want to save it, atleast not yet
+iEET.ignoring = { -- so ignore list resets on relog, don't want to save it, atleast not yet
+	unitIDs = {},
+	spellIDs = {},
+	specialCategories = {},
+	npcNames = {},
+}
 --iEET.font = isAlpha and 'Fonts\\ARIALN.TTF' or 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
 iEET.font = 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
 --iEET.fontsize = isAlpha and 11 or 9
@@ -37,7 +54,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 1.853
+iEET.version = 2.000
 local colors = {}
 
 iEET.auraEvents = {
@@ -47,8 +64,12 @@ iEET.auraEvents = {
 	['SPELL_AURA_REMOVED_DOSE'] = true,
 	['SPELL_AURA_REFRESH'] = true,
 }
-
-iEET.IEEUnits = {}
+iEET.collapses = {}
+for i = 1, 40 do
+	iEET.collapses["nameplate"..i] = "nameplates"
+	iEET.collapses["raid"..i] = "raid"
+	iEET.collapses["raid"..i.."pet"] = "raidpets"
+end
 iEET.unitPowerUnits = {}
 iEET.encounterShortList = {}
 iEET.maxScrollRange = 0
@@ -108,11 +129,19 @@ iEET.fakeSpells = {
 		name = Spell:CreateFromSpellID(94681):GetSpellName() or "Cancel Cinematic",
 		spellID = 94681, -- Play Movie
 	},
+	StartLogging = {
+		name = "Start Logging"
+	},
+	EndLogging = {
+		name = "End Logging",
+	},
 	AllSpellIDs = {},
 }
 for k,v in pairs(iEET.fakeSpells) do
 	if k ~= "AllSpellIDs" then
-		iEET.fakeSpells.AllSpellIDs[v.spellID] = true
+		if v.spellID then
+			iEET.fakeSpells.AllSpellIDs[v.spellID] = true
+		end
 	end
 end
 iEET.ignoreList = {  -- Ignore list for 'Ignore Spell's menu, use event ignore to hide these if you want (they are fake spells)
@@ -120,6 +149,17 @@ iEET.ignoreList = {  -- Ignore list for 'Ignore Spell's menu, use event ignore t
 	[103528] = true, -- Target Selection
 	[133217] = true, -- Spawn NPCs
 	[143409] = true, -- Power Update
+}
+iEET.specialCategories = {
+	["Ignore"] = 0,
+	["Interrupt"] = 1,
+	["PowerUpdate"] = 2,
+	["Dispel"] = 3,
+	["Death"] = 4,
+	["NPCSpawn"] = 5,
+	["StartLogging"] = 6,
+	["EndLogging"] = 7,
+	["Taunt"] = 8,
 }
 iEET.savedPowers = {}
 iEET.events = {
@@ -156,6 +196,7 @@ iEET.events = {
 		['SPELL_PERIODIC_CREATE'] = 22, -- CLEU
 		['SPELL_PERIODIC_SUMMON'] = 23, -- CLEU
 		['SPELL_PERIODIC_HEAL'] = 24, -- CLEU
+		['SPELL_STOLEN'] = 62, -- CLEU
 		['UNIT_DIED'] = 25, -- CLEU
 		['ENCOUNTER_START'] = 27,
 		['ENCOUNTER_END'] = 28,
@@ -172,6 +213,7 @@ iEET.events = {
 		['UNIT_ENTERED_VEHICLE'] = 54,
 		['UNIT_EXITING_VEHICLE'] = 55,
 		['UNIT_EXITED_VEHICLE'] = 56,
+		['CHAT_MSG_ADDON'] = 63,
 		-- Cinematic
 		['PLAY_MOVIE'] = 57,
 		['CINEMATIC_START'] = 58,
@@ -200,270 +242,342 @@ iEET.events = {
 			l = 'SPELL_CAST_START',
 			s = 'SC_START',
 			c = true,
+			t = "cast",
 		},
 		[2] = {
 			l = 'SPELL_CAST_SUCCESS',
 			s = 'SC_SUCCESS',
 			c = true,
+			t = "cast",
 		},
 		[3] = {
 			l = 'SPELL_AURA_APPLIED',
 			s = '+SAURA',
 			c = true,
+			t = "aura",
 		},
 		[4] = {
 			l = 'SPELL_AURA_REMOVED',
 			s = '-SAURA',
 			c = true,
+			t = "aura",
 		},
 		[5] = {
 			l = 'SPELL_AURA_APPLIED_DOSE',
 			s = '+SA_DOSE',
 			c = true,
+			t = "aura",
 		},
 		[6] = {
 			l = 'SPELL_AURA_REMOVED_DOSE',
 			s = '-SA_DOSE',
 			c = true,
+			t = "aura",
 		},
 		[7] = {
 			l = 'SPELL_AURA_REFRESH',
 			s = 'SAURA_R',
 			c = true,
+			t = "aura",
 		},
 		[8] = {
 			l = 'SPELL_CAST_FAILED',
 			s = 'SC_FAILED',
 			c = true,
+			t = "cast"
 		},
 		[9] = {
 			l = 'SPELL_CREATE',
 			s = 'SPELL_CREATE',
 			c = true,
+			t = "cast"
 		},
 		[10] = {
 			l = 'SPELL_SUMMON',
 			s = 'SPELL_SUMMON',
 			c = true,
+			t = "cast"
 		},
 		[11] = {
 			l = 'SPELL_HEAL',
 			s = 'SPELL_HEAL',
 			c = true,
+			t = "heal",
 		},
 		[12] = {
 			l = 'SPELL_DISPEL',
 			s = 'SPELL_DISPEL',
 			c = true,
+			t = "misc"
 		},
 		[13] = {
 			l = 'SPELL_INTERRUPT',
 			s = 'S_INTERRUPT',
 			c = true,
+			t = "misc"
 		},
 		[14] = {
 			l = 'SPELL_PERIODIC_CAST_START',
 			s = 'SPC_START',
 			c = true,
+			t = "channel",
 		},
 		[15] = {
 			l = 'SPELL_PERIODIC_CAST_SUCCESS',
 			s = 'SPC_SUCCESS',
 			c = true,
+			t = "channel",
 		},
 		[16] = {
 			l = 'SPELL_PERIODIC_AURA_APPLIED',
 			s = '+SPAURA',
 			c = true,
+			t = "aura",
 		},
 		[17] = {
 			l = 'SPELL_PERIODIC_AURA_REMOVED',
 			s = '-SPAURA',
 			c = true,
+			t = "aura",
 		},
 		[18] = {
 			l = 'SPELL_PERIODIC_AURA_APPLIED_DOSE',
 			s = '+SPA_DOSE',
 			c = true,
+			t = "aura",
 		},
 		[19] = {
 			l = 'SPELL_PERIODIC_AURA_REMOVED_DOSE',
 			s = '-SPA_DOSE',
 			c = true,
+			t = "aura",
 		},
 		[20] = {
 			l = 'SPELL_PERIODIC_AURA_REFRESH',
 			s = 'SPAURA_R',
 			c = true,
+			t = "aura",
 		},
 		[21] = {
 			l = 'SPELL_PERIODIC_CAST_FAILED',
 			s = 'SPC_FAILED',
 			c = true,
+			t = "channel",
 		},
 		[22] = {
 			l = 'SPELL_PERIODIC_CREATE',
 			s = 'SP_CREATE',
 			c = true,
+			t = "channel",
 		},
 		[23] = {
 			l = 'SPELL_PERIODIC_SUMMON',
 			s = 'SP_SUMMON',
 			c = true,
+			t = "channel",
 		},
 		[24] = {
 			l = 'SPELL_PERIODIC_HEAL',
 			s = 'SP_HEAL',
 			c = true,
+			t = "channel",
 		},
 		[25] = {
 			l = 'UNIT_DIED',
 			s = 'UNIT_DIED',
 			c = true,
+			t = "misc",
 		},
 		[26] = {
 			l = 'UNIT_SPELLCAST_SUCCEEDED',
 			s = 'USC_SUCCEEDED',
+			t = "cast",
 		},
 		[27] = {
 			l = 'ENCOUNTER_START',
 			s = 'ENCOUNTER_START',
+			t = "misc",
 		},
 		[28] = {
 			l = 'ENCOUNTER_END',
 			s = 'ENCOUNTER_END',
+			t = "misc",
 		},
 		[29] = {
 			l = 'CHAT_MSG_MONSTER_EMOTE',
 			s = 'MONSTER_EMOTE',
+			t = "chat",
 		},
 		[30] = {
 			l = 'CHAT_MSG_MONSTER_SAY',
 			s = 'MONSTER_SAY',
+			t = "chat",
 		},
 		[31] = {
 			l = 'CHAT_MSG_MONSTER_YELL',
 			s = 'MONSTER_YELL',
+			t = "chat",
 		},
 		[32] = {
 			l = 'UNIT_TARGET',
 			s = 'UNIT_TARGET',
+			t = "misc",
 		},
 		[33] = {
 			l = 'INSTANCE_ENCOUNTER_ENGAGE_UNIT',
 			s = 'IEEU',
+			t = "misc",
 		},
 		[34] = {
 			l = 'UNIT_POWER_UPDATE',
 			s = 'UNIT_POWER_U',
+			t = "misc",
 		},
 		[35] = {
 			l = 'PLAYER_REGEN_DISABLED',
 			s = 'COMBAT_START',
+			t = "misc",
 		},
 		[36] = {
 			l = 'PLAYER_REGEN_ENABLED',
 			s = 'COMBAT_END',
+			t = "misc",
 		},
 		[37] = {
 			l = 'MANUAL_LOGGING_START',
 			s = 'MANUAL_START',
+			t = "misc",
 		},
 		[38] = {
 			l = 'MANUAL_LOGGING_END',
 			s = 'MANUAL_END',
+			t = "misc",
 		},
 		[39] = {
 			l = 'UNIT_SPELLCAST_START',
 			s = 'USC_START',
+			t = "cast",
 		},
 		[40] = {
 			l = 'UNIT_SPELLCAST_CHANNEL_START',
 			s = 'USC_C_START',
+			t = "channel",
 		},
 		[41] = {
 			l = 'UNIT_SPELLCAST_INTERRUPTIBLE',
 			s = 'INTERRUPTIBLE',
+			t = "misc",
 		},
 		[42] = {
 			l = 'UNIT_SPELLCAST_NOT_INTERRUPTIBLE',
 			s = 'NOT_INTERRUPTIBLE',
+			t = "misc",
 		},
 		[43]= {
 			l = 'RAID_BOSS_EMOTE',
 			s = 'RB_EMOTE',
+			t = "chat",
 		},
 		[44] = {
 			l = 'RAID_BOSS_WHISPER',
 			s = 'RB_WHISPER',
+			t = "chat",
 		},
 		[45] = {
 			l = 'CHAT_MSG_RAID_BOSS_WHISPER',
 			s = 'CMRB_WHISPER',
+			t = "chat",
 		},
 		[46] = {
 			l = 'CHAT_MSG_RAID_BOSS_EMOTE',
 			s = 'CMRB_EMOTE',
+			t = "chat",
 		},
 		[47] = {
 			l = 'BigWigs_BarCreated',
 			s = 'BW_BarCreated',
+			t = "bigwigs",
 		},
 		[48] = {
 			l = 'BigWigs_Message',
 			s = 'BW_Message',
+			t = "bigwigs",
 		},
 		[49] = {
 			l = 'BigWigs_PauseBar',
 			s = 'BW_PauseBar',
+			t = "bigwigs",
 		},
 		[50] = {
 			l = 'BigWigs_ResumeBar',
 			s = 'BW_ResumeBar',
+			t = "bigwigs",
 		},
 		[51] = {
 			l = 'BigWigs_StopBar',
 			s = 'BW_StopBar',
+			t = "bigwigs",
 		},
 		[52] = {
 			l = 'BigWigs_StopBars',
 			s = 'BW_StopBars',
+			t = "bigwigs",
 		},
 		[53] = {
 			l = 'UNIT_ENTERING_VEHICLE',
 			s =	'U_ENTERING_V',
+			t = "misc",
 		},
 		[54] = {
 			l = 'UNIT_ENTERED_VEHICLE',
 			s =	'U_ENTERED_V',
+			t = "misc",
 		},
 		[55] = {
 			l = 'UNIT_EXITING_VEHICLE',
-			s = 'U_EXITING_V'
+			s = 'U_EXITING_V',
+			t = "misc",
 		},
 		[56] = {
 			l = 'UNIT_EXITED_VEHICLE',
 			s = 'U_EXITED_V',
+			t = "misc",
 		},
 		[57] = {
 			l = 'PLAY_MOVIE',
 			s = 'PLAY_MOVIE',
+			t = "misc",
 		},
 		[58] = {
 			l = 'CINEMATIC_START',
 			s = 'CINEMATIC_START',
+			t = "misc",
 		},
 		[59] = {
 			l = 'CINEMATIC_STOP',
 			s = 'CINEMATIC_STOP',
+			t = "misc",
 		},
 		[60] = {
 			l = 'UNIT_SPELLCAST_CHANNEL_STOP',
-			s = 'USC_C_STOP'
+			s = 'USC_C_STOP',
+			t = "channel",
 		},
 		[61] = {
 			l = 'UNIT_SPELLCAST_STOP',
-			s = 'USC_STOP'
+			s = 'USC_STOP',
+			t = "cast",
+		},
+		[62] = {
+			l = "SPELL_STOLEN",
+			s = "SPELL_STOLEN",
+			c = true,
+			t = "misc",
+		},
+		[63] = {
+			l = 'CHAT_MSG_ADDON',
+			s = 'CM_ADDON',
+			t = "chat",
 		},
 	},
 }
@@ -491,61 +605,23 @@ local function spairs(t, order)
     end
 end
 iEET.spairs = spairs
-local commonSpells
-function iEET:IsCommonSpell(spellID)
-	spellID = tonumber(spellID)
-	if not spellID then return false end
-	if not commonSpells then
-		commonSpells = {}
-		for k,v in pairs(iEET.fakeSpells.AllSpellIDs) do -- Gather spell ids from fake spells
-			commonSpells[k] = true
-		end
-		for k,v in pairs(iEET.dispels) do -- Gather spell ids from dispels
-			commonSpells[k] = true
-		end
-		for k,v in pairs(iEET.interrupts) do -- Gather spell ids from interrupts
-			commonSpells[k] = true
-		end
-		for k,v in pairs(iEET.taunts) do -- Gather spell ids from taunts
-			commonSpells[k] = true
-		end
+
+function iEET:getColor(guid)
+	if colors[guid] then
+		return {colors[guid].r,colors[guid].g,colors[guid].b}
 	end
-	return commonSpells[spellID], iEET.fakeSpells.AllSpellIDs[spellID]
-end
-function iEET:getColor(event, sourceGUID, spellID)
-	if (event and event == 27) or (event and event == 37) then
-		return {0,1,0}
-	elseif (event and event == 28) or (event and event == 38) then
-		return {1,0,0}
-	elseif sourceGUID then
-		if colors[sourceGUID] and colors[sourceGUID][event] and colors[sourceGUID][event][spellID] then
-			return {colors[sourceGUID][event][spellID].r,colors[sourceGUID][event][spellID].g,colors[sourceGUID][event][spellID].b}
-		end
-		-- https://www.w3.org/WAI/ER/WD-AERT/#color-contrast
-		local t, i = {}, 0
-		repeat
-			t = {
-				['r'] = math.random(),
-				['g'] = math.random(),
-				['b'] = math.random(),
-				};
-				i = i + 1
-		until (((t.r * 255 * 299) + (t.g * 255 * 587) + (t.b * 255 * 114)) / 1000 > 125 or i >= 10)
-		if colors[sourceGUID] then
-			if colors[sourceGUID][event] then
-				if not colors[sourceGUID][event][spellID] then
-					colors[sourceGUID][event][spellID] = t
-				end
-			else
-				colors[sourceGUID][event] = {[spellID] = t}
-			end
-		else
-			colors[sourceGUID] = {[event] = {[spellID] = t}}
-		end
-		return {colors[sourceGUID][event][spellID].r,colors[sourceGUID][event][spellID].g,colors[sourceGUID][event][spellID].b}
-	else
-		return {1,1,1}
-	end
+	-- https://www.w3.org/WAI/ER/WD-AERT/#color-contrast
+	local t, i = {}, 0
+	repeat
+		t = {
+			['r'] = math.random(),
+			['g'] = math.random(),
+			['b'] = math.random(),
+			};
+			i = i + 1
+	until (((t.r * 255 * 299) + (t.g * 255 * 587) + (t.b * 255 * 114)) / 1000 > 125 or i >= 10)
+	colors[guid] = t
+	return {colors[guid].r,colors[guid].g,colors[guid].b}
 end
 function iEET:shouldTrack(event, unitType, npcID, spellID, sourceGUID, hideCaster)
 	if iEET.ignoreFilters then return true end
@@ -636,16 +712,14 @@ function iEET:LoadDefaults()
 
 			[60] = true, -- UNIT_SPELLCAST_CHANNEL_STOP
 			[61] = true, -- UNIT_SPELLCAST_STOP
+
+			[62] = true, -- SPELL_STOLEN
+			[63] = true, -- CHAT_MSG_ADDON
 		},
 		['version'] = iEET.version,
 		['autoSave'] = true,
 		['autoDiscard'] = 30,
-		['filtering'] = {
-			['timeBasedFiltering'] = {},
-			['req'] = {},
-			['requireAll'] = false,
-			['showTime'] = false, -- show time from nearest 'from' event instead of ENCOUNTER_START
-		},
+		['filtering'] = {},
 		['colors'] = {
 			['main'] = {
 				['bg'] = {['r'] = 0.1, ['g'] = 0.1, ['b'] = 0.1, ['a'] = 0.9},
@@ -681,6 +755,7 @@ function iEET:LoadDefaults()
 			['onscreen'] = false,
 		},
 		['spawnOffset'] = 0,
+		['expansionIgnore'] = {},
 	}
 	for k,v in pairs(defaults) do
 		if iEETConfig[k] == nil then
@@ -733,500 +808,181 @@ function iEET:print(msg)
 	print('iEET: ', msg)
 end
 
-function iEET:ShouldShow(eventData,e_time, msg, specificSearch) -- TESTING, msg is a temporary fix
-	--[[
-	iEETConfig.filtering = {
-		timeBasedFiltering = {
-			[1] = {
-				from = { (or nil)
-					timestamp/event/spellid/etc = X
-				} ,
-				to = { (or nil)
-					timestamp/event/spellid/etc = X
-				},
-				ok = true/false
-			}
-			...
-		},
-		req = {
-			[1] = {
-				event/spellid/etc = X,
-				event/spellid/etc = X,
-				...
-			} ,
-		},
-		requireAll = true/false, --require all from/to combos
-		anyData = X,
-		showTime = true -- show time from nearest 'from' event instead of ENCOUNTER_START
-
+do
+	local _id
+	local _eventID
+	local maxLengths = {
+		[5] = 18,
+		[6] = 14,
 	}
-	]]
-	local shouldShow = true
-	if specificSearch then
-		return eventData[specificSearch[2]] == specificSearch[1]
-	end
-	if (eventData.sI and iEET.ignoring[eventData.sI]) or
-	(iEET.interrupts[eventData.sI] and iEET.ignoring[0.1]) or --0.1 = interrupts
-	(iEET.dispels[eventData.sI] and iEET.ignoring[0.2]) or --0.2 = dispels
-	(not iEETConfig.tracking[eventData.e]) or
-	(iEET.interrupts[eventData.sI] and iEET.ignoring.Interrupters) or --spellid = interrupt and interrupters are ignored
-	(iEET.dispels[eventData.sI] and iEET.ignoring.Dispellers) or --spellid = dispel and dispellers are ignored
-	(iEET.ignoring[eventData.cN]) then
-		shouldShow = false
-	elseif eventData.e == 26 or eventData.e == 39 or eventData.e == 40 then -- UNIT_SPELLCAST_SUCCEEDED
-		local targetName = eventData.tN
-		if string.find(eventData.tN, 'nameplate') then
-			targetName = 'nameplates'
-		end
-		if iEET.ignoring[targetName] then
-			shouldShow = false
-		end
-	end
-	local timeOK = true
-	local function checkFrom(i)
-		if iEETConfig.filtering.timeBasedFiltering[i].from then
-			if iEETConfig.filtering.timeBasedFiltering[i].from.t then
-				if eventData.t-e_time < iEETConfig.filtering.timeBasedFiltering[i].from.t then
-					iEETConfig.filtering.timeBasedFiltering[i].from.ok = false
-					return false
-				end
-			end
-			local found = 0
-			local c = 0
-			for requiredKey, requiredValue in pairs(iEETConfig.filtering.timeBasedFiltering[i].from) do -- try to find right values
-				if requiredKey == 't' then	--no need to check time again
-					found = found + 1
-				elseif eventData[requiredKey] and eventData[requiredKey] == requiredValue then
-					found = found + 1
-				end
-				if eventData[requiredKey] then
-					c = c + 1
-				end
-			end
-			if found > 0 and found == c then
-				if (c > 1 and iEETConfig.filtering.timeBasedFiltering[i].from.t) or (c > 0 and not iEETConfig.filtering.timeBasedFiltering[i].from.t) then
-					iEETConfig.filtering.timeBasedFiltering[i].to.alreadyFound = false
-				end
-				iEETConfig.filtering.timeBasedFiltering[i].from.ok = true
-				return true
-			end
-		else
-			return true
-		end
-	end
-	local function checkTo(i)
-		if iEETConfig.filtering.timeBasedFiltering[i].to then
-			if iEETConfig.filtering.timeBasedFiltering[i].to.t then
-				if eventData.t-e_time > iEETConfig.filtering.timeBasedFiltering[i].to.t then
-					iEETConfig.filtering.timeBasedFiltering[i].to.ok = false
-					return false
-				end
-			end
-			if iEETConfig.filtering.timeBasedFiltering[i].to then
-				local found = 0
-				local c = 0
-				for requiredKey, requiredValue in pairs(iEETConfig.filtering.timeBasedFiltering[i].to) do -- try to find right values
-					if requiredKey == 't' then	--no need to check time again
-						found = found + 1
-					elseif eventData[requiredKey] and eventData[requiredKey] == requiredValue then
-						found = found + 1
-					end
-					if eventData[requiredKey] then
-						c = c + 1
-					end
-				end
-				if found > 0 and found == c then
-					iEETConfig.filtering.timeBasedFiltering[i].to.ok = false
-					iEETConfig.filtering.timeBasedFiltering[i].to.alreadyFound = true
-					iEETConfig.filtering.timeBasedFiltering[i].lastToShow = true
-					return false
-				else
-					if not iEETConfig.filtering.timeBasedFiltering[i].to.alreadyFound then
-						iEETConfig.filtering.timeBasedFiltering[i].to.ok = true
-						return true
-					end
-				end
-			end
-		else
-			return true
-		end
-	end
-	if shouldShow then
-		local function IsTimeOK()
-			if #iEETConfig.filtering.timeBasedFiltering > 0 then
-				for i = 1, #iEETConfig.filtering.timeBasedFiltering do -- loop trough every from/to combo
-					if iEETConfig.filtering.timeBasedFiltering[i].from and iEETConfig.filtering.timeBasedFiltering[i].to then
-						if not iEETConfig.filtering.timeBasedFiltering[i].from.ok then	--from still missing
-							if checkFrom(i) then
-								iEETConfig.filtering.timeBasedFiltering[i].to.ok = false
-								checkTo(i)
-							end
-						else --from found without to
-							if not checkTo(i) then
-								iEETConfig.filtering.timeBasedFiltering[i].from.ok = false
-								checkFrom(i)
-							end
-						end
-					elseif iEETConfig.filtering.timeBasedFiltering[i].from then
-						checkFrom(i)
-					else
-						checkTo(i)
-					end
-				end
-				local found = 0
-				for i = 1, #iEETConfig.filtering.timeBasedFiltering do
-					local ok = false
-					if iEETConfig.filtering.timeBasedFiltering[i].lastToShow then
-						ok = true
-						iEETConfig.filtering.timeBasedFiltering[i].lastToShow = nil
-					elseif iEETConfig.filtering.timeBasedFiltering[i].from and iEETConfig.filtering.timeBasedFiltering[i].to then
-						if iEETConfig.filtering.timeBasedFiltering[i].from.ok and iEETConfig.filtering.timeBasedFiltering[i].to.ok then
-							ok = true
-						end
-					elseif iEETConfig.filtering.timeBasedFiltering[i].to and iEETConfig.filtering.timeBasedFiltering[i].to.ok then
-						ok = true
-					elseif iEETConfig.filtering.timeBasedFiltering[i].from and iEETConfig.filtering.timeBasedFiltering[i].from.ok then
-						ok = true
-					end
-					if ok then
-						found = found + 1
-					end
-				end
-				if (iEETConfig.filtering.requireAll and found == #iEETConfig.filtering.timeBasedFiltering) or (found > 0 and not iEETConfig.filtering.requireAll) then
-					return true
-				else
-					return false
-				end
-			else
-				return true
-			end
-		end
-		if IsTimeOK() then
-			if #iEETConfig.filtering.req > 0 or msg then
-				for _,t in ipairs(iEETConfig.filtering.req) do
-					local found = 0
-					local c = 0
-					for requiredKey, requiredValue in pairs(t) do -- try to find right values
-						if eventData[requiredKey] and eventData[requiredKey] == requiredValue then
-							found = found + 1
-						end
-						c = c + 1
-					end
-					if found > 0 and found == c then
-						return true -- found right values
-					end
-				end
-				if msg then
-					for k,v in pairs(eventData) do -- loop trough current event
-						if msg and string.find(string.lower(v),msg) then
-							return true
-						end
-					end
-				end
-				return false -- found nothing
-			else
-				return true -- nothing to find
-			end
-		else
-			return false
-		end
-	else
-		return false
-	end
-end
-function iEET:removeExtras(str, hyperlink)
-	str = str:gsub('|c........', '') -- Colors
-	str = str:gsub('|r', '') -- Colors
-	str = str:gsub('|T.+|t', '') -- Textures
-	str = str:gsub('^%s*(.-)%s*$', '%1') -- Whitespace
-	str = str:gsub(':', ';;')
-	str = str:gsub('%%', '%%%%')
-	if hyperlink then
+	local function trim(str, col)
+		if not str then return " " end
+		if type(str) ~= "string" then return tostring(str) end
+		if str == "" then return " " end
+		str = str:gsub('|c........', '') -- Colors
+		str = str:gsub('|r', '') -- Colors
+		str = str:gsub('|T.+|t', '') -- Textures
+		str = str:gsub('%%', '%%%%')
 		str = str:gsub('|h', '') -- Spells
 		str = str:gsub('|H', '') -- Spells
+		if maxLengths[col] then
+			str = str:sub(1, maxLengths[col])
+		end
+		return str
 	end
-	return str
-end
-function iEET:FillFilters()
-	iEET.optionsFrameFilterTexts:Clear()
-	--from/to filters:
-	for _,t in pairs(iEETConfig.filtering.timeBasedFiltering) do
-		local s = ''
-		if t.from then
-			s = 'FROM:'
-			for k,v in pairs(t.from) do
-				if k ~= 'ok' and k ~= 'alreadyFound' then
-					s = s .. string.format('%s=%s;',k,v)
-				end
+	local function getHyperlink(str, col, accurateTime)
+		return string.format("\124HiEET%02d%03d%06d%s\124h%s\124h", col, _eventID, _id, accurateTime or " ", trim(str, col))
+	end
+	function iEET:addSpellDetails(link, linkVal) -- TODO : REWRITE
+		local col = tonumber(link:sub(5,6))
+		local eventID = tonumber(link:sub(7,9))
+		local id = tonumber(link:sub(10,15))
+		local accurateTime
+		if col == 1 or col == 2 then
+			accurateTime = tonumber(link:sub(16, -1))
+		end
+		local t = iEET.data[id]
+		if not t then
+			iEET:print(sformat("Error: data for id %s not found.", id or "nil"))
+			return 
+		end
+		local guidToSearch = iEET.eventFunctions[t[1]].gui(t)
+		iEET.detailInfo:SetText(guidToSearch)
+		local starttime = 0
+		local intervals = {}
+		local counts = {}
+		for i = 1, 7 do
+			if i ~= 4 then
+				iEET['detailContent' .. i]:Clear()
 			end
 		end
-		if t.to then
-			s = s .. (string.len(s) > 0 and ' ' or '') .. 'TO:'
-			for k,v in pairs(t.to) do
-				if k ~= 'ok' and k ~= 'alreadyFound' then
-					s = s.. string.format('%s=%s;',k,v)
-				end
-			end
-		end
-		iEET:AddNewFiltering(s)
-	end
-	if iEETConfig.filtering.requireAll then
-		iEET:AddNewFiltering('requireAll')
-	end
-	for _,t in pairs(iEETConfig.filtering.req) do
-		iEET:AddNewFiltering(t)
-	end
-end
-function iEET:addSpellDetails(hyperlink, linkData)
-	local linkType, eventToFind, spellIDToFind, spellNametoFind = strsplit(':',linkData)
-	eventToFind = tonumber(eventToFind)
-	if eventToFind == 43 or eventToFind == 44 or eventToFind == 45 or eventToFind == 46 then -- RAID_BOSS_EMOTE, RAID_BOSS_WHISPER
-		spellIDToFind = spellIDToFind:match('spell;;(%d+)')
-		iEET.detailInfo:SetText(iEET.events.fromID[eventToFind].s ..':'..Spell:CreateFromSpellID(spellIDToFind):GetSpellName())
-		spellIDToFind = 'spell:'..spellIDToFind
-	else
-		iEET.detailInfo:SetText((eventToFind and iEET.events.fromID[eventToFind].s .. ':' or '') .. hyperlink)
-	end
-	if linkType == 'iEETcustomspell' then
-		spellIDToFind = tonumber(spellIDToFind)
-	end
-	local starttime = 0
-	local intervals = {}
-	local counts = {}
-	for i = 1, 7 do
-		if i == 4 then
-		else
-			iEET['detailContent' .. i]:Clear()
-		end
-	end
-	if linkType == 'iEETList' then
-		spellNametoFind = hyperlink:match('\124h(.-)\124h$')
-	end
-	for k,v in ipairs(iEET.data) do
-		if v.e == 27 then starttime = v.t end -- ENCOUNTER_START
-		if linkType == 'iEETcustomspell' or linkType == 'iEETcustomyell' or linkType == 'iEETList' or linkType == 'iEETNpcList' then
-			local found = false
-			local hyperlinkToShow
-			if linkType == 'iEETList' then
-				if v.sN == spellNametoFind then
-					hyperlinkToShow = '\124HiEETList:' .. (v.eD and string.gsub(v.eD, '%%', '%%%%') or 'Empty List;Contact Ironi') .. '\124h%s\124h'
-					found = true
-				end
-			elseif linkType == 'iEETNpcList' then
-				if v.sI and v.sI == iEET.fakeSpells.SpawnNPCs.spellID then -- Spawn NPCs
-					hyperlinkToShow = '\124HiEETNpcList:' .. v.sG .. '\124h%s\124h'
-					found = true
-				end
-			elseif v.sI then
-				if (v.e == eventToFind) and (eventToFind == 43 or eventToFind == 44 or eventToFind == 45 or eventToFind == 46) then -- RAID_BOSS_EMOTE, RAID_BOSS_WHISPER
-					if v.sI:find(spellIDToFind) then
-						found = true
-					end
-				elseif v.sI == spellIDToFind and v.e == eventToFind then
-					found = true
-				end
-			end
-			if found then
-				local interval = false
-				local timestamp = v.t-starttime or nil
-				local count = nil
-				if v.sG then
-					if intervals[v.sG] then
-						if intervals[v.sG][v.e] then
-							if intervals[v.sG][v.e][v.sI] then
-								interval = timestamp - intervals[v.sG][v.e][v.sI]
-								intervals[v.sG][v.e][v.sI] = timestamp
-							else
-								intervals[v.sG][v.e][v.sI] = timestamp
-							end
-						else
-							intervals[v.sG][v.e] = {
-									[v.sI] = timestamp,
-							};
-						end
-					else
-						intervals[v.sG] = {
-							[v.e] = {
-								[v.sI] = timestamp,
-							};
-						};
-					end
-					if counts[v.sG] then
-						if counts[v.sG][v.e] then
-							if counts[v.sG][v.e][v.sI] then
-								counts[v.sG][v.e][v.sI] = counts[v.sG][v.e][v.sI] + 1
-								count = counts[v.sG][v.e][v.sI]
-							else
-								counts[v.sG][v.e][v.sI] = 1
-								count = 1
-							end
-						else
-							counts[v.sG][v.e] = {
-								[v.sI] = 1,
-							}
-						end
-					else
-						counts[v.sG] = {
-							[v.e] = {
-								[v.sI] = 1,
-							};
-						};
-						count = 1
-					end
-				end
-				local color = iEET:getColor(v.e, v.sG, v.sI)
-				iEET:addMessages(2, 1, timestamp, color, ('\124HiEETtime:' .. timestamp ..'\124h%s\124h'))
-				iEET:addMessages(2, 2, interval, color, interval and ('\124HiEETtime:' .. interval ..'\124h%s\124h') or nil)
-				iEET:addMessages(2, 3, iEET.events.fromID[v.e].s, color)
-				iEET:addMessages(2, 5, v.cN, color, hyperlinkToShow)
-				iEET:addMessages(2, 6, v.tN, color)
-				iEET:addMessages(2, 7, count, color)
-			end
-		end
-	end
-end
-function iEET:addToContent(timestamp,event,casterName,targetName,spellName,spellID,interval,count,sourceGUID, hp, extraData, destGUID, realTimeStamp, id)
-	local color = iEET:getColor(event, sourceGUID, spellID)
-	iEET:addMessages(1, 1, timestamp, color, '\124HiEETTotaltime:' .. timestamp..':'..realTimeStamp..'\124h%s\124h')
-	iEET:addMessages(1, 2, interval, color, interval and ('\124HiEETtime:' .. interval ..'\124h%s\124h') or nil)
-	iEET:addMessages(1, 3, iEET.events.fromID[event].s, color)
-	if event == 29 or event == 30 or event == 31 or event == 43 or event == 44 or event == 45 or event == 46 then -- MONSTER_EMOTE = 29, MOSNTER_SAY = 30, MONSTER_YELL = 31, RAID_BOSS_EMOTE = 43, RAID_BOSS_WHISPER = 44
-		local msg = spellID
-		if event == 29 or event == 43 or event == 44 or event == 45 or event == 46 then --trying to fix monster emotes, MONSTER_EMOTE
-			msg = iEET:removeExtras(spellID, true)
-		end
-		if event == 43 or event == 44 or event == 45 or event == 46 then
-			local sID = msg:match('spell;;(%d+)')
-			if sID then
-				local s = 'Message'
-				local sN = Spell:CreateFromSpellID(sID):GetSpellName() or 'Message'
-				iEET:addMessages(1, 4, sN, color, '\124HiEETcustomyell:' .. event .. ':' .. msg .. '\124h%s\124h')
+		for k,v in ipairs(iEET.data) do
+			local intervallGUID, specialCategory, col4, col5, col6, col8, collectorData = iEET.eventFunctions[v[1]].gui(v)
+			local _time = v[2]
+			local timeFromStart
+			if starttime == 0 then
+				timeFromStart = 0
 			else
-				iEET:addMessages(1, 4, 'Message', color, '\124HiEETcustomyell:' .. event .. ':' .. msg .. '\124h%s\124h') -- NEEDS CHANGING
+				timeFromStart = _time - starttime
 			end
-		else
-			iEET:addMessages(1, 4, 'Message', color, '\124HiEETcustomyell:' .. event .. ':' .. msg .. '\124h%s\124h') -- NEEDS CHANGING
-		end
-	elseif event == 47 or event == 48 or event == 49 or event == 50 or event == 51 or event == 52 then -- BigWigs
-		spellName = iEET:removeExtras(spellName)
-		if event == 52 then -- BigWigs_StopBars
-			iEET:addMessages(1, 4, spellName, color)
-		elseif event == 47 or event == 48 then -- BigWigs_BarCreated, BigWigs_Message
-			local sn
-			if tonumber(spellID) then
-				spellID = tonumber(spellID)
-				if spellID > 0 then -- spellID
-					sn = Spell:CreateFromSpellID(spellID):GetSpellName()
-					if not sn then -- PTR nil check
-						sn = spellID
-					end
-				else -- Encounter journal section ID
-					sn = C_EncounterJournal.GetSectionInfo(-spellID)
-					if sn then
-						sn = sn.title
-					else -- PTR nil check
-						sn = spellID
-					end
-				end
-			else
-				sn = spellID
+			if specialCategory == iEET.specialCategories.StartLogging then
+				starttime = _time
 			end
-			iEET:addMessages(1, 4, sn, color, '\124HiEETBW:' .. event .. ':' .. spellName .. '\124h%s\124h', id)
-		else -- BigWigs_PauseBar, BigWigs_ResumeBar, BigWigs_StopBar
-			iEET:addMessages(1, 4, spellName:gsub(';;', ':'), color, '\124HiEETBW_NOKEY:' .. event .. ':' .. spellName .. '\124h%s\124h', id)
-		end
-	elseif spellID then
-		if spellID == iEET.fakeSpells.SpawnNPCs.spellID then -- INSTANCE_ENCOUNTER_ENGAGE_UNIT
-			iEET:addMessages(1, 4, spellName, color,'\124HiEETNpcList:' .. sourceGUID .. '\124h%s\124h', id)
-		elseif event and event == 34 then -- UNIT_POWER
-			iEET:addMessages(1, 4, spellName, color,'\124HiEETList:' .. (extraData and string.gsub(extraData, '%%', '%%%%') or 'Empty List;Contact Ironi') .. '\124h%s\124h', id)
-		elseif event == 53 or event == 54 then -- UNIT_ENTERING_VEHICLE, UNIT_ENTERED_VEHICLE
-			iEET:addMessages(1, 4, spellName, color,'\124HiEETVehicle:' .. (extraData and (extraData..":"..(destGUID and destGUID or "NONE" )) or 'Empty List;Contact Ironi') .. '\124h%s\124h', id)
-		else
-			local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
-			if sourceGUID then
-				if sourceGUID:find('-') then
-					unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
+			if intervallGUID == guidToSearch then
+				local interval
+				local count
+				if not intervals[intervallGUID] then
+					intervals[intervallGUID] = _time
+					counts[intervallGUID] = 1
+					count = 1
 				else
-					npcID = sourceGUID
+					interval = _time - intervals[intervallGUID]
+					intervals[intervallGUID] = _time
+					counts[intervallGUID] = counts[intervallGUID] + 1
+					count = counts[intervallGUID]
 				end
-			else
-				npcID = 'NONE'
+				_id = k
+				_eventID = v[1]
+				local color = iEET:getColor(intervallGUID)
+				iEET:addMessages(2, 1, getHyperlink(sformat("%.1f",timeFromStart), 1, timeFromStart), color)
+				iEET:addMessages(2, 2, getHyperlink(interval and sformat("%.1f",interval) or nil, 2, interval), color)
+				iEET:addMessages(2, 3, getHyperlink(iEET.events.fromID[eventID].s, 3), color)
+				iEET:addMessages(2, 5, getHyperlink(col5, 5), color)
+				iEET:addMessages(2, 6, getHyperlink(col6, 6), color)
+				iEET:addMessages(2, 7, getHyperlink(count, 7), color)
+				--iEET:addMessages(2, 8, getHyperlink(col8, 8), color)
+				--iEET:addToContent(intervallGUID, v[1], k, timeFromStart, interval, col4, col5, col6, count, col8)
 			end
-			iEET:addMessages(1, 4, spellName, color, '\124HiEETcustomspell:' .. event ..
-				':' .. spellID .. ':' .. string.gsub(spellName, '%%', '%%%%') ..
-				':' .. (npcID and (npcID .. (spawnID and ('!' .. spawnID) or '')) or 'NONE')
-				.. ((destGUID and destGUID:len() > 0) and (':'.. destGUID) or '')
-				..'\124h%s\124h', id)
-		end
-	elseif event == 27 or event == 28 then -- ENCOUNTER_START, ENCOUNTER_END
-		if spellName then -- nil check for older logs
-			iEET:addMessages(1, 4, spellName, color)
-		else
-			iEET.content4:AddMessage(' ')
-		end
-	else
-		iEET.content4:AddMessage(' ')
-	end
-	local targetColor,sourceColor, classColor, sourceHyperlink, targetHyperlink
-	if iEETConfig.classColors then
-		if extraData and  extraData:match('^%d-\n%d-\n%-*') then
-			local toColor = string.match(extraData,'^(%d-)\n')
-			if toColor == '3' then
-				local stringToSplit = string.gsub(extraData,'^(%d-)\n', '')
-				local sourceString, targetString = strsplit(';',stringToSplit)
-				local sourceClassIndex, sourceRole = strsplit('\n',sourceString)
-				local localizedClass, class = GetClassInfo(tonumber(sourceClassIndex))
-				sourceColor = RAID_CLASS_COLORS[class]
-				sourceHyperlink = '\124HiEETList:' .. localizedClass .. '\n' .. sourceRole .. '\124h%s\124h'
-				local _,targetClassIndex, targetRole = strsplit('\n',targetString)
-				localizedClass, class = select(2, GetClassInfo(tonumber(targetClassIndex)))
-				targetColor = RAID_CLASS_COLORS[class]
-				targetHyperlink = '\124HiEETList:' .. localizedClass .. '\n' .. targetRole .. '\124h%s\124h'
-			else
-				local _,classIndex, role = strsplit('\n',extraData)
-				local localizedClass, class = GetClassInfo(tonumber(classIndex))
-				if toColor == '1' then
-					sourceColor = {RAID_CLASS_COLORS[class].r,RAID_CLASS_COLORS[class].g,RAID_CLASS_COLORS[class].b}
-					--sourceColor = RAID_CLASS_COLORS[class]
-					sourceHyperlink = '\124HiEETList:' .. localizedClass .. '\n' .. role .. '\124h%s\124h'
-				elseif toColor == '2' then
-					targetColor = {RAID_CLASS_COLORS[class].r,RAID_CLASS_COLORS[class].g,RAID_CLASS_COLORS[class].b}
-					--targetColor = RAID_CLASS_COLORS[class]
-					targetHyperlink = '\124HiEETList:' .. localizedClass .. '\n' .. role .. '\124h%s\124h'
-				end
-			end
-		end
-		--[[
-		if extraData and  extraData:match('^%d-\n%d-\n%-*') then -- 1-3\n1-12\nrole -- Class Coloring [1] = sourceName, [2] = targetName
-			local target, classIndex, role = strsplit('\n',extraData)
-			local localizedClass, class = select(2, GetClassInfo(tonumber(classIndex)))
-			classColor = RAID_CLASS_COLORS[class]
-			hyperlink = '\124HiEETList:' .. localizedClass .. '\n' .. role .. '\124h%s\124h'
-		end
-		--]]
-	end
-	iEET:addMessages(1, 5, casterName, (sourceColor or color),sourceHyperlink)
-	iEET:addMessages(1, 6, targetName, (targetColor or color),targetHyperlink)
-	iEET:addMessages(1, 7, count, color)
-	iEET:addMessages(1, 8, hp, color)
-end
-function iEET:addToEncounterAbilities(spellID, spellName)
-	if spellID and tonumber(spellID) and spellName then
-		spellID = tonumber(spellID)
-		local common, fake = iEET:IsCommonSpell(spellID)
-		if common then
-			if fake then
-				iEET.commonAbilitiesContent:AddMessage('\124Hspell:' .. spellID .. '\124h[' .. spellName .. ']\124h\124r', .6,.6,.6)
-			else
-				iEET.commonAbilitiesContent:AddMessage('\124Hspell:' .. spellID .. '\124h[' .. spellName .. ']\124h\124r', 1,1,1)
-			end
-		else
-			iEET.encounterAbilitiesContent:AddMessage('\124Hspell:' .. spellID .. '\124h[' .. spellName .. ']\124h\124r', 1,1,1)
 		end
 	end
 end
-function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink, id)
+do
+	local _id
+	local _eventID
+	local maxLengths = {
+		[4] = 20,
+		[5] = 18,
+		[6] = 14,
+	}
+	local function trim(str, col)
+		if not str then return " " end
+		if type(str) ~= "string" then return tostring(str) end
+		if str == "" then return " " end
+		str = str:gsub('|c........', '') -- Colors
+		str = str:gsub('|r', '') -- Colors
+		str = str:gsub('|T.+|t', '') -- Textures
+		str = str:gsub('%%', '%%%%')
+		str = str:gsub('|h', '') -- Spells
+		str = str:gsub('|H', '') -- Spells
+		if maxLengths[col] then
+			str = str:sub(1, maxLengths[col])
+		end
+		return str
+	end
+	local function getHyperlink(str, col, accurateTime)
+		return string.format("\124HiEET%02d%03d%06d%s\124h%s\124h", col, _eventID, _id, accurateTime or " ", trim(str, col))
+	end
+	function iEET:addToContent(intervallGUID, eventID, id, _time, interval, col4, col5, col6, count, col8)
+		local color = iEET:getColor(intervallGUID)
+		_id = id
+		_eventID = eventID
+		iEET:addMessages(1, 1, getHyperlink(sformat("%.1f",_time), 1, _time), color)
+		iEET:addMessages(1, 2, getHyperlink(interval and sformat("%.1f",interval) or nil, 2, interval), color)
+		iEET:addMessages(1, 3, getHyperlink(iEET.events.fromID[eventID].s, 3), color)
+		iEET:addMessages(1, 4, getHyperlink(col4, 4), color)
+		iEET:addMessages(1, 5, getHyperlink(col5, 5), color)
+		iEET:addMessages(1, 6, getHyperlink(col6, 6), color)
+		iEET:addMessages(1, 7, getHyperlink(count, 7), color)
+		iEET:addMessages(1, 8, getHyperlink(col8, 8), color)
+	end
+end
+do
+	local _catNames = {
+		Interrupt = {
+			name = Spell:CreateFromSpellID(324694):GetSpellName() or "Interrupt",
+			tooltip = "Interrupt abilities",
+		},
+		Dispel = {
+			name = Spell:CreateFromSpellID(135856):GetSpellName() or "Dispel",
+			tooltip = "Dispel abilities"
+		},
+		Death = {
+
+		},
+		Taunt = {
+
+		},
+	}
+	--[[
+	iEET.specialCategories = {
+		["Ignore"] = 0,
+		["Interrupt"] = 1,
+		["PowerUpdate"] = 2,
+		["Dispel"] = 3,
+		["Death"] = 4,
+		["NPCSpawn"] = 5,
+		["StartLogging"] = 6,
+		["EndLogging"] = 7,
+		["Taunt"] = 8,
+	}
+	--]]
+	do
+		local function getSpecialCatName(id)
+			for k,v in pairs(iEET.specialCategories) do
+				if v == id then return k end
+			end
+			return UNKNOWN
+		end
+	function iEET:addToEncounterAbilities(spellID, col4, specialCat)
+		if specialCat then
+			iEET.commonAbilitiesContent:AddMessage(string.format('\124HiEETCommon%s\124h%s\124r',specialCat,getSpecialCatName(specialCat)), .6,.6,.6)
+		elseif spellID and col4 then
+			iEET.encounterAbilitiesContent:AddMessage(string.format('\124HiEETEncounter%s\124h%s\124r',spellID,col4), 1,1,1)
+		end
+	end
+	end
+end
+function iEET:addMessages(placeToAdd, frameID, str, color)
 	local frame = ''
 	if placeToAdd == 1 then
 		frame = iEET['content' .. frameID]
@@ -1235,417 +991,162 @@ function iEET:addMessages(placeToAdd, frameID, value, color, hyperlink, id)
 	elseif placeToAdd == 3 then
 		frame = iEET['onscreenContent' .. frameID]
 	end
-	if frameID == 1 or frameID == 2 then -- time from encounter_start, interval
-		if value then
-			value = string.format("%.1f",value)
-		end
-		if hyperlink then
-			value = hyperlink:format(value)
-		end
-	--elseif isAlpha and frameID == 3 then -- event, ps. im getting tired of alpha using different font...
-	--	if value and value == 'ENCOUNTER_START' then
-	--		value = 'ENCOUNTER_STA'
-	--	end
-	elseif frameID == 4 then -- spellName
-		--if isAlpha and string.len(value) > 18 then
-		--	value =  string.sub(value, 1, 18)
-		--elseif string.len(value) > 20 then
-		--	value = string.sub(value, 1, 20)
-		--end
-		if value and string.len(value) > 20 then
-			value = string.sub(value, 1, 20)
-		end
-		if hyperlink then
-			value = hyperlink:format(value)
-		end
-	elseif frameID == 5 then -- sourceName
-		--if isAlpha and value and string.len(value) > 17 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
-		--	value = string.sub(value, 1, 17)
-		--elseif value and string.len(value) > 18 then
-		--	value = string.sub(value, 1, 18)
-		--end
-		if value and string.len(value) > 18 then
-			value = string.sub(value, 1, 18)
-		end
-		if hyperlink then -- Spell details, for IEEU and UNIT_POWER
-			value = hyperlink:format(value)
-		end
-	elseif frameID == 6 then -- targetName
-		--if isAlpha and value and string.len(value) > 13 then -- can't use custom fonts on alpha and default font(ARIALN) is wider than Accidental Presidency
-		--	value = string.sub(value, 1, 13)
-		--elseif value and string.len(value) > 14 then
-		--	value = string.sub(value, 1, 14)
-		--end
-		if value and string.len(value) > 14 then
-			value = string.sub(value, 1, 14)
-		end
-		if hyperlink then -- Spell details, for IEEU and UNIT_POWER
-			value = hyperlink:format(value)
-		end
-	end
 	local r,g,b = unpack(color)
-	frame:AddMessage(value and value or ' ',r,g,b,id)
+	frame:AddMessage(str,r,g,b)
 end
-function iEET:loopData(msg, specificSearch, hasRightData)
-	if specificSearch then
-		if not hasRightData then
-			local key = specificSearch[1]
-			if iEET.data[key] and iEET.data[key][specificSearch[2]] then
-				specificSearch[1] = iEET.data[key][specificSearch[2]]
-			else
-				if not iEET.longStrings[specificSearch[2]] then
-					iEET:print(string.format("Error: Unknown search values, please contact author. (%s)", specificSearch[2]))
+do
+	local function count(t)
+		local c = 0
+		for _ in pairs(t) do
+			c = c + 1
+		end
+		return c
+	end
+	local collapses = iEET.collapses
+	local function shouldShow(data, filters, guid)
+		local e = data[1]
+		if not iEETConfig.tracking[e] then return false end
+		if guid then return iEET.eventFunctions[e].gui(data, true) == guid end
+		if iEET.currentlyIgnoringFilters then return true end
+		if not (iEET.eventFunctions[e] and iEET.eventFunctions[e].filtering) then
+			iEET:print(string.format("Error: Filtering function for event id %d not found.", e))
+			return false
+		end
+		return iEET.eventFunctions[e].filtering(data, filters)
+	end
+	function iEET:loopData(generalSearch, dontReload, spellID, specialCat, eventGUID) -- TODO fix normal editbox
+		if #iEETConfig.filtering > 0 then
+			if iEET.encounterInfo then
+				iEET.encounterInfo:SetBackdropBorderColor(0.64,0,0,1)
+			end
+		elseif iEET.encounterInfo then
+			iEET.encounterInfo:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
+		end
+		-- CBA to optimize these
+		if count(iEET.ignoring.unitIDs) > 0 or count(iEET.ignoring.npcNames) > 0 then
+			iEET.npcList:SetBackdropBorderColor(1,0,0,1)
+		else
+			iEET.npcList:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
+		end
+		if count(iEET.ignoring.specialCategories) > 0 or count(iEET.ignoring.spellIDs) > 0 then
+			iEET.spellList:SetBackdropBorderColor(1,0,0,1)
+		else
+			iEET.spellList:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
+		end
+	
+		iEET.loopDataCall = GetTime()
+		iEET.frame:Hide() -- avoid fps spiking from ScrollingMessageFrame adding too many messages
+		if iEET.encounterInfoData and iEET.encounterInfoData.eN then
+			iEET.encounterInfo.text:SetText(string.format('%s(%s) %s %s, %s by %s', iEET.encounterInfoData.eN,string.sub(GetDifficultyInfo(iEET.encounterInfoData.d),1,1),(iEET.encounterInfoData.k == 1 and '+' or '-'),iEET.encounterInfoData.fT, iEET.encounterInfoData.pT, iEET.encounterInfoData.lN or UNKNOWN))
+		end
+		local starttime = 0
+		local intervals = {}
+		local counts = {}
+		colors = {}
+		for i=1, 8 do
+			iEET['content' .. i]:Clear()
+		end
+		if not dontReload then -- already gathered
+			iEET.encounterAbilitiesContent:Clear()
+			iEET.commonAbilitiesContent:Clear()
+			iEET.collector = {
+				['npcNames'] = {},
+				['unitIDs'] = {},
+				['spellIDs'] = {},
+				['specialCategories'] = {},
+			}
+		end
+		local filters = tcopy(iEETConfig.filtering)
+		for k,v in ipairs(iEET.data) do
+			if shouldShow(v,filters,eventGUID) then
+				if not iEET.eventFunctions[v[1]] and iEET.eventFunctions[v[1]].gui then
+					iEET:print("Error: handlers for event id %d not found, ignoring it.", v[1])
 				else
-					iEET:print(string.format("Error: This event doesn't have %s to search.", iEET.longStrings[specificSearch[2]]))
-				end
-				specificSearch = nil
-			end
-		end
-	end
-	if #iEETConfig.filtering.timeBasedFiltering > 0 or #iEETConfig.filtering.req > 0 then
-		if iEET.encounterInfo then
-			iEET.encounterInfo:SetBackdropBorderColor(0.64,0,0,1)
-		end
-		--reset
-		for i = 1, #iEETConfig.filtering.timeBasedFiltering do
-			if iEETConfig.filtering.timeBasedFiltering[i].to then
-				iEETConfig.filtering.timeBasedFiltering[i].to.ok = false
-				iEETConfig.filtering.timeBasedFiltering[i].to.alreadyFound = false
-			end
-			if iEETConfig.filtering.timeBasedFiltering[i].from then
-				iEETConfig.filtering.timeBasedFiltering[i].from.ok = false
-			end
-		end
-	elseif iEET.encounterInfo then
-		iEET.encounterInfo:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
-	end
-	iEET.loopDataCall = GetTime()
-	iEET.frame:Hide() -- avoid fps spiking from ScrollingMessageFrame adding too many messages
-	if iEET.encounterInfoData and iEET.encounterInfoData.eN then
-		iEET.encounterInfo.text:SetText(string.format('%s(%s) %s %s, %s by %s', iEET.encounterInfoData.eN,string.sub(GetDifficultyInfo(iEET.encounterInfoData.d),1,1),(iEET.encounterInfoData.k == 1 and '+' or '-'),iEET.encounterInfoData.fT, iEET.encounterInfoData.pT, iEET.encounterInfoData.lN or UNKNOWN))
-	end
-	local starttime = 0
-	local intervals = {}
-	local counts = {}
-	colors = {}
-	for i=1, 8 do
-		iEET['content' .. i]:Clear()
-	end
-	iEET.encounterAbilitiesContent:Clear()
-	iEET.commonAbilitiesContent:Clear()
-	iEET.collector = {
-		['encounterNPCs'] = {},
-		['encounterSpells'] = {},
-	}
-	for k,v in ipairs(iEET.data) do
-		if v.e == 27 or v.e == 37 then -- ENCOUNTER_START
-			starttime = v.t
-		end
-		if v.e == 26 or v.e == 39 or v.e == 40 or v.e == 41 or v.e == 42 then -- UNIT_SPELLCAST_SUCCEEDED
-			if string.find(v.tN, 'nameplate') then -- could be safe to assume that there will be atleast one nameplate unitid
-				if not iEET.collector.encounterNPCs.nameplates then
-					iEET.collector.encounterNPCs.nameplates = true
-				end
-			elseif v.tN and not iEET.collector.encounterNPCs[v.tN] then
-				iEET.collector.encounterNPCs[v.tN] = true
-			end
-		elseif v.cN and v.sI and not iEET.collector.encounterNPCs[v.cN] and not (v.e == 27 or v.e == 28 or v.e == 47 or v.e == 48 or v.e == 49 or v.e == 50 or v.e == 51 or v.e == 52) then -- Collect npc names, 27 = ENCOUNTER_START, 28 = ENCOUNTER_END, 47-52 BigWigs events
-			if iEET.interrupts[v.sI] then
-				if not iEET.collector.encounterNPCs.Interrupters then
-					iEET.collector.encounterNPCs.Interrupters = true
-				end
-			elseif iEET.dispels[v.sI] then
-				iEET.collector.encounterNPCs.Dispellers = true
-			elseif not iEET.ignoreList[v.sI] then --ignore fake spells
-				iEET.collector.encounterNPCs[v.cN] = true
-			end
-		end
-		if v.sI and v.sN and not iEET.collector.encounterSpells[v.sI] and not (v.e == 27 or v.e == 28 or v.e == 47 or v.e == 48 or v.e == 49 or v.e == 50 or v.e == 51 or v.e == 52) then -- Collect npc names, 27 = ENCOUNTER_START, 28 = ENCOUNTER_END, 47-52 BigWigs events
-			if iEET.interrupts[v.sI] then
-				if not iEET.collector.encounterSpells[0.1] then
-					iEET.collector.encounterSpells[0.1] = 'Interrupts'
-				end
-			elseif iEET.dispels[v.sI] then
-				if not iEET.collector.encounterSpells[0.2] then
-					iEET.collector.encounterSpells[0.2] = 'Dispels'
-				end
-			else
-				if v.sI == iEET.fakeSpells.PowerUpdate.spellID then -- Power Update
-					iEET.collector.encounterSpells[v.sI] = 'Power Update'
-					iEET:addToEncounterAbilities(v.sI, 'Power Update')
-				else -- ignore fake spells
-					iEET.collector.encounterSpells[v.sI] = v.sN
-					iEET:addToEncounterAbilities(v.sI, v.sN)
-				end
-			end
-		end
-		if iEET:ShouldShow(v, starttime, msg, specificSearch) then
-			local interval = nil
-			local timestamp = v.t-starttime or nil
-			local count = nil
-			if v.sG then
-				if intervals[v.sG] then
-					if intervals[v.sG][v.e] then
-						if intervals[v.sG][v.e][v.sI] then
-							interval = timestamp - intervals[v.sG][v.e][v.sI]
-							intervals[v.sG][v.e][v.sI] = timestamp
-						else
-							intervals[v.sG][v.e][v.sI] = timestamp
-						end
+					local intervallGUID, specialCategory, col4, col5, col6, col8, collectorData = iEET.eventFunctions[v[1]].gui(v)
+					local _time = v[2]
+					local timeFromStart
+					if starttime == 0 then
+						timeFromStart = 0
 					else
-						intervals[v.sG][v.e] = {
-								[v.sI] = timestamp,
-						};
+						timeFromStart = _time - starttime
 					end
-				else
-					intervals[v.sG] = {
-						[v.e] = {
-							[v.sI] = timestamp,
-						};
-					};
-				end
-				if counts[v.sG] then
-					if counts[v.sG][v.e] then
-						if counts[v.sG][v.e][v.sI] then
-							counts[v.sG][v.e][v.sI] = counts[v.sG][v.e][v.sI] + 1
-							count = counts[v.sG][v.e][v.sI]
-						else
-							counts[v.sG][v.e][v.sI] = 1
-							count = 1
-						end
-					else
-						counts[v.sG][v.e] = {
-							[v.sI] = 1,
-						}
+					if specialCategory == iEET.specialCategories.StartLogging then
+						starttime = _time
 					end
-				else
-					counts[v.sG] = {
-						[v.e] = {
-							[v.sI] = 1,
-						};
-					};
-					count = 1
-				end
-			end
-			if iEETConfig.tracking[v.e] or v.e == 27 or v.e == 28 then -- ENCOUNTER_START & ENCOUNTER_END
-				iEET:addToContent(timestamp,v.e,v.cN,v.tN,v.sN,v.sI,interval,count,v.sG,v.hp,v.eD, v.dG, v.t, k)
-			end
-		end
-	end
-	-- Update Slider values
-	iEET.maxScrollRange = iEET['content' .. 1]:GetMaxScrollRange()
-	iEET.mainFrameSlider:SetMinMaxValues(0, iEET.maxScrollRange)
-	iEET.mainFrameSlider:SetValue(iEET.maxScrollRange)
-	iEET.frame:Show()
-end
-function iEET:AddNewFiltering(msg)
-	if type(msg) == 'table' then
-		local s = false
-		for k,v in pairs(msg) do
-			if k == 'e' then
-				v = iEET.events.fromID[v].l
-			end
-			if not s then
-				s = k .. '=' .. v
-			else
-				s = s .. ';' .. k .. '=' .. v
-			end
-		end
-		msg = s
-	elseif tonumber(msg) then
-		msg = 'sI=' .. msg
-	end
-	if msg:match('^%d-%) ') then
-		msg = msg:gsub('^%d-%) ', '')
-	end
-	local lineID = iEET.optionsFrameFilterTexts:GetNumMessages()+1
-	iEET.optionsFrameFilterTexts:AddMessage(lineID .. ') ' .. msg)
-end
-function iEET:ClearFilteringArgs()
-	iEETConfig.filtering = {
-		timeBasedFiltering = {},
-		req = {},
-		requireAll = false,
-		showTime = false, -- show time from nearest 'from' event instead of ENCOUNTER_START
-	}
-end
-function iEET:ParseFilters()
-	local possibleNames = {
-		['event'] = 'e',
-		['spellid'] = 'sI',
-		['spellname'] = 'sN',
-		['time'] = 't',
-		['sourceguid'] = 'sG',
-		['sourcename'] = 'cN',
-		['destname'] = 'tN',
-		['unitid'] = 'tN',
-		['health'] = 'hp',
-		['e'] = 'e',
-		['si'] = 'sI',
-		['sn'] = 'sN',
-		['t'] = 't',
-		['sg'] = 'sG',
-		['cn'] = 'cN',
-		['tn'] = 'tN',
-		['hp'] = 'hp',
-	}
-	local function GetFiltersFromLine(line)
-		local t = {}
-		for _,arg in pairs({strsplit(';', line)}) do
-			arg = arg:gsub('^%s*(.-)%s*$', '%1')
-			if string.match(arg, '^(%a-)=(%d+)') then --change to elseif when from/to filtering is done?
-				local k,v = string.match(arg, '^(%a-)=(%d+)')
-				if possibleNames[string.lower(k)] then
-					k = possibleNames[string.lower(k)]
-				end
-				t[k] = tonumber(v)
-			elseif string.match(arg, '^(%a-)=(%a+)') then
-				local k,v = strsplit('=', arg)
-				if possibleNames[string.lower(k)] then
-					k = possibleNames[string.lower(k)]
-				end
-				if k == 'e' then
-					if not tonumber(v) then
-						v = string.upper(v)
-						if iEET.events.toID[v] then
-							v = iEET.events.toID[v]
-						else
-							for id,names in pairs(iEET.events.fromID) do
-								if names.s == v then
-									v = id
-									break
+					if specialCategory == iEET.specialCategories.StartLogging or (not spellID and not specialCat) or (collectorData and collectorData.spellID and collectorData.spellID == spellID) or (specialCat and specialCategory == specialCat) then
+						if not dontReload then
+							if collectorData then
+								local collapsed = collectorData.unitID and collapses[collectorData.unitID] or collectorData.unitID
+								if collectorData.unitID and not iEET.collector.unitIDs[collapsed] then
+									iEET.collector.unitIDs[collapsed] = true
+								end
+								if collectorData.spellID and not iEET.collector.spellIDs[collectorData.spellID] then
+									iEET.collector.spellIDs[collectorData.spellID] = true
+									iEET:addToEncounterAbilities(collectorData.spellID, col4)
+								end
+								if collectorData.casterName and not iEET.collector.npcNames[collectorData.casterName] then
+									iEET.collector.npcNames[collectorData.casterName] = true
+								end
+								if specialCategory and not iEET.collector.specialCategories[specialCategory] then
+									iEET.collector.specialCategories[specialCategory] = true
+									iEET:addToEncounterAbilities(collectorData.spellID, col4, specialCategory)
 								end
 							end
 						end
+						local interval
+						local count
+						if not intervals[intervallGUID] then
+							intervals[intervallGUID] = _time
+							counts[intervallGUID] = 1
+							count = 1
+						else
+							interval = _time - intervals[intervallGUID]
+							intervals[intervallGUID] = _time
+							counts[intervallGUID] = counts[intervallGUID] + 1
+							count = counts[intervallGUID]
+						end
+						iEET:addToContent(intervallGUID, v[1], k, timeFromStart, interval, col4, col5, col6, count, col8)
 					end
 				end
-				if k == 'e' and not tonumber(v) then
-						iEET:print('Invalid event: ' .. v)
-				else
-					t[k] = v
-				end
-			elseif tonumber(arg) then
-				t['sI'] = tonumber(arg)
 			end
 		end
-		local c = 0
-		for _ in pairs(t) do -- count entries
-			c = c + 1
-		end
-		if c > 0 then
-			return t
-		else
-			return
-		end
-	end
-	--gather all data etc and hide window
-	iEET:ClearFilteringArgs()	--Clear old filters
-	for i = 1, iEET.optionsFrameFilterTexts:GetNumMessages() do
-		local line = iEET.optionsFrameFilterTexts:GetMessageInfo(i)
-		line = line:gsub('^%d-%) ', '') -- strip lineID
-		if line:gsub('^%s*(.-)%s*$', '%1') == 'requireAll' then
-			iEETConfig.filtering.requireAll = true
-		elseif string.find(line, 'FROM:') or string.find(line, 'TO:') then
-			local fromTo = {}
-			if string.find(line, 'FROM:') and string.find(line, 'TO:') then -- BOTH
-				--line = line:gsub('^%s*(.-)%s*$', '%1')
-				local fromStart = string.find(line, 'FROM:')
-				local toStart = string.find(line, 'TO:')
-				local from = ''
-				local to = ''
-				if fromStart < toStart then --FROM first
-					from = line:sub(fromStart+5, toStart-1)
-					to = line:sub(toStart+3)
-				else -- TO first
-					to = line:sub(toStart+3, fromStart-1)
-					from = line:sub(fromStart+5)
-				end
-				fromTo.from = GetFiltersFromLine(from)
-				fromTo.to = GetFiltersFromLine(to)
-			elseif string.find(line,'FROM:') then
-				fromTo.from = GetFiltersFromLine(line:gsub('FROM:', ''))
-			else --TO
-				fromTo.to = GetFiltersFromLine(line:gsub('TO:', ''))
-			end
-			table.insert(iEETConfig.filtering.timeBasedFiltering, fromTo)
-		else
-			local t = GetFiltersFromLine(line)
-			if t then
-				table.insert(iEETConfig.filtering.req, t)
-			end
-		end
-	end
-	if iEET.frame then
-		iEET:loopData()
+		-- Update Slider values
+		iEET.maxScrollRange = iEET['content' .. 1]:GetMaxScrollRange()
+		iEET.mainFrameSlider:SetMinMaxValues(0, iEET.maxScrollRange)
+		iEET.mainFrameSlider:SetValue(iEET.maxScrollRange)
+		iEET.frame:Show()
 	end
 end
-function iEET:Hyperlinks(linkData, link)
+
+function iEET:Hyperlinks(link, linkVal)
+	local col = tonumber(link:sub(5,6))
+	local eventID = tonumber(link:sub(7,9))
+	local id = tonumber(link:sub(10,15))
+	local accurateTime
+	if col == 1 or col == 2 then
+		accurateTime = tonumber(link:sub(16, -1))
+	end
+	local t = iEET.data[id]
+	if not t then
+		iEET:print(sformat("Error: data for id %s not found.", id or "nil"))
+		return 
+	end
 	GameTooltip:ClearLines()
-	local linkType = strsplit(':', linkData)
-	if linkType == 'iEETcustomyell' then
-		local _, event, spellID, spellName = strsplit(':',linkData)
-		local sID = spellID:match('spell;;(%d+)')
-		local text = spellID:gsub(';;', ':')
-		if tonumber(sid) and C_Spell.DoesSpellExist(siD) then -- PTR/LIVE nil check
-			Spell:CreateFromSpellID(siD):ContinueOnSpellLoad(function()
-				local spellInfo = GetSpellDescription(sID)
-				text = text..'\n\n'..spellInfo
-				GameTooltip:AddLine(text, nil,nil,nil,true) -- Force wrapping
-			end)
+	if col == 1 or col == 2 or col == 3 then
+		if col == 1 then
+			GameTooltip:AddLine(accurateTime or "Error")
+			GameTooltip:AddLine(t[2] or "Error")
+		elseif col == 2 then
+			GameTooltip:AddLine(accurateTime or "Error")
 		else
-			GameTooltip:AddLine(text, nil,nil,nil,true) -- Force wrapping
+			GameTooltip:AddLine(iEET.events.fromID[eventID].l or "Error")
+			GameTooltip:AddLine("Event ID: "..eventID)
 		end
-	elseif linkType == 'iEETcustomspell' then
-		local _, event, spellID, spellName, npcID, destGUID = strsplit(':',linkData)
-		if spellID == 'NONE' then
-			return
-		end
-		local hyperlink = '\124Hspell:' .. tonumber(spellID)
-		GameTooltip:SetHyperlink('spell:' .. tonumber(spellID))
-		GameTooltip:AddLine('spellID:' .. spellID)
-		GameTooltip:AddLine('npc:' .. npcID)
-		if destGUID then
-			GameTooltip:AddLine('destGUID:' .. destGUID)
-		end
-	elseif linkType == 'iEETtime' then
-		local _, txt = strsplit(':',linkData)
-		local ntxt = tonumber(txt)
-		local m = math.floor(ntxt/60)
-		local s = ntxt%60
-		local ms = (s-math.floor(s))*1000
-		GameTooltip:SetText(string.format('%s\n%02d:%02d.%03d',txt,m,s,ms))
-	elseif linkType == 'iEETTotaltime' then
-		local _, txt, realTimeStamp = strsplit(':',linkData)
-		local ntxt = tonumber(txt)
-		local m = math.floor(ntxt/60)
-		local s = ntxt%60
-		local ms = (s-math.floor(s))*1000
-		GameTooltip:SetText(string.format('%s\n%02d:%02d.%03d\n%s',txt,m,s,ms, realTimeStamp))
-	elseif linkType == 'iEETNpcList' then
-		local _, txt = strsplit(':',linkData)
-		GameTooltip:SetText(txt)
-	elseif linkType == 'iEETList' then
-		linkData = linkData:gsub('iEETList:', '')
-		for _,v in pairs({strsplit(';',linkData)}) do
-			GameTooltip:AddLine(v)
-		end
-	elseif linkType == 'iEETBW' then
-		local event, text = linkData:match('iEETBW:(%d-):(.+)')
-		text = text:gsub(';;', ':')
-		GameTooltip:AddLine(text)
-	elseif linkType == 'iEETBW_NOKEY' then
-		local event, text = linkData:match('iEETBW_NOKEY:(%d-):(.+)')
-		text = text:gsub(';;', ':')
-		GameTooltip:AddLine(text)
-	elseif linkType == 'iEETVehicle' then
-		local hasVehicleUI, slots, isPlayerControlled, canAim, destGUID = linkData:match('iEETVehicle:(%d-):(%d-):(%d-):(%d-):(.-)$')
-		GameTooltip:AddLine(string.format("Has vehicle UI: %s", tostring(hasVehicleUI == 1)))
-		GameTooltip:AddLine("Slots : "..slots)
-		GameTooltip:AddLine(string.format("Is player controlled: %s", tostring(isPlayerControlled == 1)))
-		GameTooltip:AddLine(string.format("Can aim: %s", tostring((canAim == 1))))
-		GameTooltip:AddLine("Target: "..destGUID)
-	else
-		GameTooltip:SetHyperlink(link)
+	elseif not (iEET.eventFunctions[eventID] and iEET.eventFunctions[eventID].hyperlink) then
+		iEET:print(sformat("Error: hyperlink function for event id %s not found.", eventID or "nil"))
+		return
+	elseif not iEET.eventFunctions[eventID].hyperlink(col, iEET.data[id]) then
+		return
 	end
 	GameTooltip:Show()
 end
@@ -1853,7 +1354,7 @@ function iEET:ExportData(auto)
 		for k,v in ipairs(iEET.data) do
 			local t = {}
 			for a,b in pairs(v) do
-				_insert(t,_format('{%s=%s}',  a,b))
+				_insert(t,_format('{%s=%s}',a,tostring(b)))
 			end
 			_insert(tempDataTable, _format('|D|%s|D|', _concat(t)))
 		end
@@ -1870,21 +1371,37 @@ function iEET:ImportData(dataKey, prevNext)
 	iEET.encounterInfoData = {}
 	for eK,eV in string.gmatch(dataKey, '{(.-)=(.-)}') do
 		if eK == 'd' or eK == 'rS' or eK == 's' or eK == 'k' or eK == 'v' or eK == 'zI' or eK == 'eI' then
-			if tonumber(eV) then
-				eV = tonumber(eV)
+			local i = tonumber(eV)
+			if i then
+				if eK == "v" and i < 2 then -- REMOVE AT 9.1, "support" old logs during 9.0-9.1
+					iEET:oldImport(dataKey)
+					return
+				end
+				eV = i
 			end
 		end
 		iEET.encounterInfoData[eK] = eV
 	end
 	for v in string.gmatch(iEET_Data[dataKey], 'D|(.-)|D') do
 		local tempTable = {}
-		for dK,dV in string.gmatch(v, '{(.-)=(.-)}') do
-			if dK == 'sI' or dK == 't' or dK == 'e' then
-				if tonumber(dV) then
-					dV = tonumber(dV)
+		local eventID = 0
+		for key, d in string.gmatch(v, '{(.-)=(.-)}') do
+			key = tonumber(key)
+			if key == 1 or key == 2 then -- event, timestamp
+				d = tonumber(d)
+				if key == 1 then
+					eventID = d
 				end
+			elseif d == 'nil' then
+				d = nil
 			end
-			tempTable[dK] = dV
+			tempTable[key] = d
+		end
+		if not (iEET.eventFunctions[eventID] and iEET.eventFunctions[eventID].import) then
+			iEET:print(sformat("Error: importing functions for event id %d is missing", eventID))
+		end
+		if iEET.eventFunctions[eventID].import then
+			tempTable = iEET.eventFunctions[eventID].import(tempTable)
 		end
 		table.insert(iEET.data, tempTable)
 	end
@@ -1898,91 +1415,7 @@ function iEET:ImportData(dataKey, prevNext)
 	iEET:loopData(msg)
 	iEET:print(string.format('Imported %s on %s (%s), %sman (%s), Time: %s, Logger: %s.',iEET.encounterInfoData.eN,GetDifficultyInfo(iEET.encounterInfoData.d),iEET.encounterInfoData.fT, iEET.encounterInfoData.rS, (iEET.encounterInfoData.k == 1 and 'kill' or 'wipe'), iEET.encounterInfoData.pT, iEET.encounterInfoData.lN or UNKNOWN))
 end
-function iEET:ConvertOldReports() -- XXX remove at some point
-	-- assuming no one uses these logs anymore
-	--[[
-	local oldEventVars = {
-		timestamp = 't',
-		casterName = 'cN',
-		targetName = 'tN',
-		spellName = 'sN',
-		spellID = 'sI',
-		event = 'e',
-		sourceGUID = 'sG',
-	}
-	local oldKeyVars = {
-		encounterName = 'eN',
-		kill = 'k',
-		difficulty = 'd',
-		start = 's',
-		raidSize = 'rS',
-		pullTime = 'pT',
-		fightTime = 'fT',
-	}
-	for k,v in pairs(iEET.events.fromID) do --short event names to ids
-		oldEventVars[v.s] = k
-	end
-	local count = 0
-	for oldDataKey,oldDataValue in pairs(iEET_Data) do
-		if string.find(oldDataKey, 'encounterName=') then
-			local newKey = oldDataKey
-			local newValue = oldDataValue
-			for oV,nV in pairs(oldEventVars) do
-				newValue = string.gsub(newValue, oV, nV)
-			end
-			for oV, nV in pairs(oldKeyVars) do
-				newKey = string.gsub(newKey, oV, nV)
-			end
-			iEET_Data[newKey] = newValue
-			iEET_Data[oldDataKey] = nil
-			count = count + 1
-		end
-	end
-	]]
-	local function getEncounterStartData(data)
-		for v in string.gmatch(data, 'D|(.-)|D') do
-			local targetData
-			local eventData
-			for dK,dV in string.gmatch(v, '{(.-)=(.-)}') do
-				if dK == 'e' then
-					if tonumber(dV) == 27 then
-						eventData = tonumber(dV)
-					end
-				elseif dK == 'tN' then
-					targetData = dV
-				end
-				if targetData and eventData then
-					return targetData
-				end
-			end
-		end
-		return 0
-	end
-	local newDataTable = {}
-	local count = 0
-	for key, dataString in pairs(iEET_Data) do
-		if not key:find('eI=') then
-			--convert string to table; sort it; convert it back to string
-			local temp = {}
-			for k,v in string.gmatch(key, '{(.-)=(.-)}') do
-				temp[k] = v
-			end
-			-- add encounterID
-			temp.eI = getEncounterStartData(dataString)
-			-- convert back to string in right order
-			local encounterString = ''
-			for k,v in spairs(temp) do
-				encounterString = encounterString .. '{' .. k .. '=' .. v .. '}'
-			end
-			newDataTable[encounterString] = dataString
-			count = count + 1
-		else
-			newDataTable[key] = dataString
-		end
-	end
-	iEET_Data = newDataTable
-	iEET:print('Converted ' .. count .. ' old reports to new format.')
-end
+
 function iEET:ExportFightsToWTF()
 	iEET_ExportFromWTF = {}
 	local fightCount = 0
@@ -2053,8 +1486,6 @@ SlashCmdList["IEET"] = function(realMsg)
 		end
 	elseif msg == 'help' then
 		iEET:print('/ieet autosave to toggle autosaving\r/ieet autodiscard X to change auto discard timer\r/ieet clear to delete every fight entry')
-	elseif msg == 'convert' then
-		iEET:ConvertOldReports()
 	elseif msg == 'colorreset' then
 		iEETConfig.colors = {
 			['main'] = {

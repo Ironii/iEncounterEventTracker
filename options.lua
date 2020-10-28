@@ -156,6 +156,62 @@ function iEET:updateOptionsMenu()
 			iEET:updateOptionsMenu()
 			EasyMenu(iEET.optionsMenu, iEET.optionsMenuFrame, iEET.optionsList, 0 , 0, 'MENU');
 		end})
+		table.insert(iEET.optionsMenu, {text = 'Expansion specific ignore', notCheckable = true, keepShownOnClick = true, hasArrow = true, menuList = {
+			{text ='Vanilla - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.VANILLA], keepShownOnClick = true, arg1 = iEET.expansions.VANILLA, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
+			{text ='Vanilla - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.VANILLA5MAN], keepShownOnClick = true, arg1 = iEET.expansions.VANILLA5MAN, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil	end
+			end},
+			{text ='The Burning Crusade - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.TBC], keepShownOnClick = true, arg1 = iEET.expansions.TBC5, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
+			{text ='The Burning Crusade - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.TBC5MAN], keepShownOnClick = true, arg1 = iEET.expansions.TBC5MAN, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
+			{text ='Wrath of the Lich King - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.WOTLK], keepShownOnClick = true, arg1 = iEET.expansions.WOTLK, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
+			{text ='Wrath of the Lich King - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.WOTLK5MAN], keepShownOnClick = true, arg1 = iEET.expansions.WOTLK5MAN, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
+			{text ='Cataclysm - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.CATACLYSM], keepShownOnClick = true, arg1 = iEET.expansions.CATACLYSM, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
+			{text ='Cataclysm - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.CATACLYSM5MAN], keepShownOnClick = true, arg1 = iEET.expansions.CATACLYSM5MAN, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
+			{text ='Mist of Pandaria - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.MOP], keepShownOnClick = true, arg1 = iEET.expansions.MOP, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
+			{text ='Mist of Pandaria - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.MOP5MAN], keepShownOnClick = true, arg1 = iEET.expansions.MOP5MAN, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
+			{text ='Warlords of Draenor - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.WOD], keepShownOnClick = true, arg1 = iEET.expansions.WOD, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
+			{text ='Warlords of Draenor - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.WOD5MAN], keepShownOnClick = true, arg1 = iEET.expansions.WOD5MAN, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
+			{text ='Legion - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.LEGION], keepShownOnClick = true, arg1 = iEET.expansions.LEGION, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
+			{text ='Legion - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.LEGION5MAN], keepShownOnClick = true, arg1 = iEET.expansions.LEGION5MAN, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
+			{text ='Battle for Azeroth - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.BFA], keepShownOnClick = true, arg1 = iEET.expansions.BFA, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
+			{text ='Battle for Azeroth - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.BFA5MAN], keepShownOnClick = true, arg1 = iEET.expansions.BFA5MAN, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
+			{text ='Shadowlands - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.SHADOWLANDS], keepShownOnClick = true, arg1 = iEET.expansions.SHADOWLANDS, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
+			{text ='Shadowlands - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.SHADOWLANDS5MAN], keepShownOnClick = true, arg1 = iEET.expansions.SHADOWLANDS5MAN, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
+		}})
 	table.insert(iEET.optionsMenu, {text = 'Class coloring', isNotRadio = true,	checked = iEETConfig.classColors, keepShownOnClick = true, func = function()
 			if iEETConfig.classColors then
 				iEETConfig.classColors = false
@@ -189,162 +245,6 @@ function iEET:updateOptionsMenu()
 	table.insert(iEET.optionsMenu, { text = 'Close', notCheckable = true, func = function () CloseDropDownMenus(); end})
 end
 
-
-iEET.eventListMenu = {}
-iEET.eventListMenuFrame = CreateFrame('Frame', 'iEETEventListMenu', UIParent, 'UIDropDownMenuTemplate')
-function iEET:updateEventMenu()
-	iEET.eventListMenu = nil
-	iEET.eventListMenu = {}
-	table.insert(iEET.eventListMenu, {text = 'Show Events', isTitle = true, notCheckable = true})
-	for eventName,eventID in spairs(iEET.events.toID) do
-	--for k,_ in spairs(iEETConfig.tracking) do
-		table.insert(iEET.eventListMenu, {
-			--text = eventName,
-			text = string.format("%s%s", eventName, iEET.events.fromID[eventID].c and " (CLEU)" or ""),
-			isNotRadio = true,
-			checked = iEETConfig.tracking[eventID],
-			keepShownOnClick = true,
-			func = function()
-				if iEETConfig.tracking[eventID] then
-					iEETConfig.tracking[eventID] = false
-				else
-					iEETConfig.tracking[eventID] = true
-				end
-			end,
-		})
-	end
-	table.insert(iEET.eventListMenu, {text = 'Deselect all', notCheckable = true, func = function()
-		for k,_ in spairs(iEETConfig.tracking) do
-			iEETConfig.tracking[k] = false
-		end
-		iEET:updateEventMenu()
-		EasyMenu(iEET.eventListMenu, iEET.eventListMenuFrame, iEET.eventlist, 0 , 0, 'MENU');
-		end})
-	table.insert(iEET.eventListMenu, {text = 'Select all', notCheckable = true, func = function()
-		for k,_ in spairs(iEETConfig.tracking) do
-			iEETConfig.tracking[k] = true
-		end
-		iEET:updateEventMenu()
-		EasyMenu(iEET.eventListMenu, iEET.eventListMenuFrame,iEET.eventlist, 0 , 0, 'MENU');
-		end})
-	table.insert(iEET.eventListMenu, { text = 'Apply changes', notCheckable = true, func = function()
-		CloseDropDownMenus()
-		local msg
-		if iEET.editbox:GetText() ~= 'Search' then
-			local txt = iEET.editbox:GetText()
-			if string.len(txt) > 1 then
-				msg = string.lower(txt)
-			end
-		end
-		iEET:loopData(msg)
-	end})
-end
-
-iEET.npcListMenu = {}
-iEET.npcListMenuFrame = CreateFrame('Frame', 'iEETNPCListMenu', UIParent, 'UIDropDownMenuTemplate')
-function iEET:updateNPCListMenu()
-	iEET.npcListMenu = nil
-	iEET.npcListMenu = {}
-	table.insert(iEET.npcListMenu, {text = 'Ignored NPCs', isTitle = true, notCheckable = true})
-	if iEET.collector then
-		-- NPCs
-		for k in spairs(iEET.collector.encounterNPCs) do
-			table.insert(iEET.npcListMenu, {
-			text = k,
-			isNotRadio = true,
-			checked = iEET.ignoring[k],
-			keepShownOnClick = true,
-			func = function()
-				if iEET.ignoring[k] then
-					iEET.ignoring[k] = nil
-				else
-					iEET.ignoring[k] = true
-				end
-			end,
-			})
-		end
-	end
-	table.insert(iEET.npcListMenu, {text = 'Deselect all', notCheckable = true, func = function()
-		for k in spairs(iEET.collector.encounterNPCs) do
-			iEET.ignoring[k] = nil
-		end
-		iEET:updateNPCListMenu()
-		EasyMenu(iEET.npcListMenu, iEET.npcListMenuFrame, iEET.npcList, 0 , 0, 'MENU');
-		end})
-	table.insert(iEET.npcListMenu, {text = 'Select all', notCheckable = true, func = function()
-		for k in spairs(iEET.collector.encounterNPCs) do
-			iEET.ignoring[k] = true
-		end
-		iEET:updateNPCListMenu()
-		EasyMenu(iEET.npcListMenu, iEET.npcListMenuFrame, iEET.npcList, 0 , 0, 'MENU');
-		end})
-	table.insert(iEET.npcListMenu, { text = 'Apply changes', notCheckable = true, func = function()
-		CloseDropDownMenus()
-		local msg
-		if iEET.editbox:GetText() ~= 'Search' then
-			local txt = iEET.editbox:GetText()
-			if string.len(txt) > 1 then
-				msg = string.lower(txt)
-			end
-		end
-		iEET:loopData(msg)
-	end})
-end
-
-iEET.spellListMenu = {}
-iEET.spellListMenuFrame = CreateFrame('Frame', 'iEETSpellListMenu', UIParent, 'UIDropDownMenuTemplate')
-function iEET:updateSpellListMenu()
-	iEET.spellListMenu = nil
-	iEET.spellListMenu = {}
-	table.insert(iEET.spellListMenu, {text = 'Ignored Spells', isTitle = true, notCheckable = true})
-	if iEET.collector then
-		-- Spells
-		for k,v in spairs(iEET.collector.encounterSpells) do
-			if not iEET.ignoreList[k] then -- Filter fake spells out
-				table.insert(iEET.spellListMenu, {
-				text = k .. ' - ' .. v,
-				isNotRadio = true,
-				checked = iEET.ignoring[k],
-				keepShownOnClick = true,
-				func = function()
-					if iEET.ignoring[k] then
-						iEET.ignoring[k] = nil
-					else
-						iEET.ignoring[k] = true
-					end
-				end,
-				})
-			end
-		end
-		--table.insert(iEET.optionMenu, tempIgnoreSpells)
-	end
-	table.insert(iEET.spellListMenu, {text = 'Deselect all', notCheckable = true, func = function()
-			for k in spairs(iEET.collector.encounterSpells) do
-				iEET.ignoring[k] = nil
-			end
-			iEET:updateSpellListMenu()
-			EasyMenu(iEET.spellListMenu, iEET.spellListMenuFrame, iEET.spellList , 0 , 0, 'MENU');
-			end})
-	table.insert(iEET.spellListMenu, {text = 'Select all', notCheckable = true, func = function()
-			for k in spairs(iEET.collector.encounterSpells) do
-				iEET.ignoring[k] = true
-			end
-			iEET:updateSpellListMenu()
-			EasyMenu(iEET.spellListMenu, iEET.spellListMenuFrame, iEET.spellList , 0 , 0, 'MENU');
-			end})
-	table.insert(iEET.spellListMenu, { text = 'Apply changes', notCheckable = true, func = function()
-		CloseDropDownMenus()
-		local msg
-		if iEET.editbox:GetText() ~= 'Search' then
-			local txt = iEET.editbox:GetText()
-			if string.len(txt) > 1 then
-				msg = string.lower(txt)
-			end
-		end
-		iEET:loopData(msg)
-	end})
-end
-
 iEET.encounterListMenu = {}
 iEET.encounterListMenuFrame = CreateFrame('Frame', 'iEETEncounterListMenu', UIParent, 'UIDropDownMenuTemplate')
 function iEET:updateEncounterListMenu()
@@ -352,12 +252,8 @@ function iEET:updateEncounterListMenu()
 		iEET.encounterListMenu = {}
 	if iEET_Data then
 		local encountersTempTable = {}
-		local zonesTemp = {}
+		local groupSplitTemp = {}
 		for k,_ in pairs(iEET_Data) do -- Get encounters
-			--if string.find(k, 'encounterName=') then -- swichted to first :Show()
-			--	iEET:print('found old reports, please use "/ieet convert" to continue')
-			--	return
-			--end
 			local temp = {}
 			for eK,eV in string.gmatch(k, '{(.-)=(.-)}') do
 				if eK == 'd' or eK == 'rS' or eK == 's' or eK == 'k' or eK == 'v' or eK == 'zI' or eK == 'eI' then
@@ -367,77 +263,86 @@ function iEET:updateEncounterListMenu()
 				end
 				temp[eK] = eV
 			end
-			--if not temp.eI then
-			--	iEET:print('found old reports, please use "/ieet convert" to continue')
-			--	return
-			--end
+			local _, groupType = GetDifficultyInfo(temp.d)
+			if groupType then
+				if not groupSplitTemp[groupType] then
+					groupSplitTemp[groupType] = {text = groupType, hasArrow = true, notCheckable = true, menuList = {}}
+				end
+				temp.groupType = groupType
+			else
+				if not groupSplitTemp[UNKNOWN] then
+					groupSplitTemp[UNKNOWN] = {text = UNKNOWN, hasArrow = true, notCheckable = true, menuList = {}}
+				end
+				temp.groupType = UNKNOWN
+			end
+
 			temp.dataKey = k
 			if temp.zI then
 				local zone = temp.zI == -1 and "Custom" or GetRealZoneText(temp.zI)
 				temp.zoneName = zone
-				if not zonesTemp[zone] then
-					zonesTemp[zone] = {text = zone, hasArrow = true, notCheckable = true, menuList = {}}
-				end
 			else
 				temp.zoneName = UNKNOWN
-				if not zonesTemp[UNKNOWN] then
-					zonesTemp[UNKNOWN] = {text = UNKNOWN, hasArrow = true, notCheckable = true, menuList = {}}
-				end
 			end
-			if not encountersTempTable[temp.zoneName] then
-				encountersTempTable[temp.zoneName] = {}
+			if not encountersTempTable[temp.groupType] then
+				encountersTempTable[temp.groupType] = {}
 			end
-			if not encountersTempTable[temp.zoneName][temp.eN] then
-				encountersTempTable[temp.zoneName][temp.eN] = {}
+			if not encountersTempTable[temp.groupType][temp.zoneName] then
+				encountersTempTable[temp.groupType][temp.zoneName] = {}
 			end
-			if not encountersTempTable[temp.zoneName][temp.eN][temp.d] then
-				encountersTempTable[temp.zoneName][temp.eN][temp.d] = {}
+			if not encountersTempTable[temp.groupType][temp.zoneName][temp.eN] then
+				encountersTempTable[temp.groupType][temp.zoneName][temp.eN] = {}
 			end
-			table.insert(encountersTempTable[temp.zoneName][temp.eN][temp.d], temp)
+			if not encountersTempTable[temp.groupType][temp.zoneName][temp.eN][temp.d] then
+				encountersTempTable[temp.groupType][temp.zoneName][temp.eN][temp.d] = {}
+			end
+			table.insert(encountersTempTable[temp.groupType][temp.zoneName][temp.eN][temp.d], temp)
 		end -- Sorted by encounter -> Sort by ids inside
 		-- temp{} -> encounter{} -> difficulty{} -> fight{}
-		for zoneName, encountersTemp in pairs(encountersTempTable) do
-			for encounterName in spairs(encountersTemp) do -- Get alphabetically sorted encounters
-				--Looping bosses
-				local t = {text = encounterName, hasArrow = true, notCheckable = true, menuList = {}}
-				local t2 = {}
-				local zone
-				for difficultyID,_ in spairs(encountersTemp[encounterName]) do
-					-- Looping difficulties
-					t2 = {text = GetDifficultyInfo(difficultyID), hasArrow = true, notCheckable = true, menuList = {}}
-					for k,v in spairs(encountersTemp[encounterName][difficultyID], function(t,a,b) return t[b].pT < t[a].pT end) do
-						if not zone or (zone == UNKNOWN and v.zoneName ~= zone) then
-							zone = v.zoneName
-						end
-						local fightEntry = {
-							text = (v.k == 1 and '+ ' or '- ') .. v.fT .. ' (' .. v.pT .. ')' .. (v.lN and (' - ' .. v.lN) or ''),
-							notCheckable = true,
-							hasArrow = true,
-							checked = false,
-							keepShownOnClick = false,
-							func = function()
-								iEET:ImportData(v.dataKey)
-								iEET:Toggle(true) -- not really needed
-								CloseDropDownMenus()
-							end,
-							menuList = {{ -- delete menu
-								text = 'Delete',
+		for groupType, zoneInfo in spairs(encountersTempTable) do -- Get alphabetically sorted group types
+			for zoneName, encountersTemp in spairs(zoneInfo) do -- Get alphabetically sorted zones
+				local t3 = {text = zoneName, hasArrow = true, notCheckable = true, menuList = {}}
+				for encounterName in spairs(encountersTemp) do -- Get alphabetically sorted encounters
+					--Looping bosses
+					local t = {text = encounterName, hasArrow = true, notCheckable = true, menuList = {}}
+					local t2 = {}
+					local zone
+					for difficultyID,_ in spairs(encountersTemp[encounterName]) do
+						-- Looping difficulties
+						t2 = {text = GetDifficultyInfo(difficultyID), hasArrow = true, notCheckable = true, menuList = {}}
+						for k,v in spairs(encountersTemp[encounterName][difficultyID], function(t,a,b) return t[b].pT < t[a].pT end) do
+							if not zone or (zone == UNKNOWN and v.zoneName ~= zone) then
+								zone = v.zoneName
+							end
+							local fightEntry = {
+								text = (v.k == 1 and '+ ' or '- ') .. v.fT .. ' (' .. v.pT .. ')' .. (v.lN and (' - ' .. v.lN) or ''),
 								notCheckable = true,
+								hasArrow = true,
+								checked = false,
+								keepShownOnClick = false,
 								func = function()
-									iEET_Data[v.dataKey] = nil
-									iEET:updateEncounterListMenu()
+									iEET:ImportData(v.dataKey)
+									iEET:Toggle(true) -- not really needed
+									CloseDropDownMenus()
 								end,
-							},},
-						}
-						table.insert(t2.menuList, fightEntry)
+								menuList = {{ -- delete menu
+									text = 'Delete',
+									notCheckable = true,
+									func = function()
+										iEET_Data[v.dataKey] = nil
+										iEET:updateEncounterListMenu()
+									end,
+								},},
+							}
+							table.insert(t2.menuList, fightEntry)
+						end
+						table.insert(t.menuList, t2)
 					end
-					table.insert(t.menuList, t2)
+					table.insert(t3.menuList, t)
 				end
-				table.insert(zonesTemp[zone].menuList, t)
-				--table.insert(iEET.encounterListMenu, t)
+				table.insert(groupSplitTemp[groupType].menuList, t3)
 			end
 		end
-		for zoneName,v in spairs(zonesTemp) do
+		for _,v in spairs(groupSplitTemp) do
 			table.insert(iEET.encounterListMenu, v)
 		end
 	end

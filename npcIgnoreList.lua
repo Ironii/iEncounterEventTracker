@@ -7,7 +7,6 @@ iEET.npcIgnoreList = {
 	[92993] = true,		--Burning Blade Banner
 	[143985] = true,	-- Absorb-o-Tron
 	[152396] = true, -- Guardian of Azeroth (essence)
-	[162764] = true, -- Twisted Appendage (corruption)
 
 --Death Knight
 	[24207] = true, 	--Army of the Dead
