@@ -394,9 +394,11 @@ do
 		local bg = addNewFilterOptions:GetFrame("bg", "eventPage")
 		bg:SetWidth(totalWidth)
 		local title = addNewFilterOptions:GetFrame("title", "eventPage")
+		title:ClearAllPoints()
 		title:SetParent(bg)
 		title:SetPoint("top", bg, "top", 0, 0)
 		title.text:SetText(titleText)
+		title:Show()
 		local i = 1
 		local height = 20
 		local width = totalWidth/5
