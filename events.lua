@@ -371,7 +371,7 @@ do
 					}
 				end
 			end
-		elseif prefix == "iEETSync" then
+		elseif prefix == "iEETSync" then -- TO DO: add syncs to events
 			if not currentlyLogging or sender == UnitName('player') then return end
 			local t = {
 				[d.event] = eventID,
@@ -2260,6 +2260,52 @@ do --Start/End recording
 		end
 	end
 end
+do -- CUSTOM 
+	local function tableToString(t)
+		local str = ""
+		for k,v in pairs(t) do
+			if type(v) == "table" then
+				str = sformat("%s\r[%s] = {%s\r},", str, k, tableToString(v))
+			else
+				str = sformat("%s\r[%s] = %s,", str, k, tostring(v))
+			end
+		end
+		return str
+	end
+	local eventID = 64
+	iEET.eventFunctions[eventID] = {
+		data = defaults.chats.data,
+		gui = defaults.chats.gui,
+		filtering = function(args, filters, ...)
+			return defaultFiltering(args, defaults.chats.data, filters, eventID, ...)
+		end,
+		hyperlink = defaults.chats.hyperlink,
+		import = function(args) return args end,
+	}
+	local d = iEET.eventFunctions[eventID].data
+	function iEET_AddCustom(msg)
+		if not currentlyLogging then
+			iEET:print("Error (iEET_AddCustom): iEET isn't currently logging anything.")
+			return
+		elseif msg == nil then
+			iEET:print("Error: Cannot use nil as argument for iEET_AddCustom.")
+			return
+		end
+		if type(msg) == "table" then
+			msg = tableToString(msg)
+		else
+			msg = tostring(msg)
+		end
+		local t = {
+			[d.event] = eventID,
+			[d.time] = GetTime(),
+			[d.sourceName] = "Logger",
+			[d.message] = msg,
+		}
+		tinsert(iEET.data, t)
+		iEET:OnscreenAddMessages(t)
+	end
+end
 do
 	iEET.eventFunctions[37] = {  -- START LOGGING
 		data = {
@@ -2370,6 +2416,7 @@ function iEET:ForceStartWithoutFilters(time, name)
 	end)
 	iEET:Force(true, name .. " (Full logging)")
 end
+
 --Gather all keys for filtering
 iEET.allPossibleKeys = {}
 for k,v in pairs(iEET.eventFunctions) do

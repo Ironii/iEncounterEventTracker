@@ -780,7 +780,7 @@ function iEET:CreateMainFrame()
 				iEET.currentlyIgnoringFilters = true
 				self:SetBackdropBorderColor(0,1,0,1)
 			end
-			iEET:loopData(nil, true)
+			iEET:loopData()
 		else
 			iEET:Options()
 		end

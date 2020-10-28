@@ -214,6 +214,7 @@ iEET.events = {
 		['UNIT_EXITING_VEHICLE'] = 55,
 		['UNIT_EXITED_VEHICLE'] = 56,
 		['CHAT_MSG_ADDON'] = 63,
+		['CUSTOM'] = 64,
 		-- Cinematic
 		['PLAY_MOVIE'] = 57,
 		['CINEMATIC_START'] = 58,
@@ -579,6 +580,11 @@ iEET.events = {
 			s = 'CM_ADDON',
 			t = "chat",
 		},
+		[64] = {
+			l = "CUSTOM",
+			s = "CUSTOM",
+			t = "misc",
+		},
 	},
 }
 iEET.addonUsers = {}
@@ -715,6 +721,8 @@ function iEET:LoadDefaults()
 
 			[62] = true, -- SPELL_STOLEN
 			[63] = true, -- CHAT_MSG_ADDON
+
+			[64] = true, -- CUSTOM
 		},
 		['version'] = iEET.version,
 		['autoSave'] = true,
@@ -914,6 +922,7 @@ do
 		str = str:gsub('%%', '%%%%')
 		str = str:gsub('|h', '') -- Spells
 		str = str:gsub('|H', '') -- Spells
+		str = str:gsub('\r', '')
 		if maxLengths[col] then
 			str = str:sub(1, maxLengths[col])
 		end

@@ -19,7 +19,8 @@ local function trim(str, col)
   str = str:gsub('|T.+|t', '') -- Textures
   str = str:gsub('%%', '%%%%')
   str = str:gsub('|h', '') -- Spells
-  str = str:gsub('|H', '') -- Spells
+	str = str:gsub('|H', '') -- Spells
+	str = str:gsub('\r', '')
   if maxLengths[col] then
     str = str:sub(1, maxLengths[col])
   end
