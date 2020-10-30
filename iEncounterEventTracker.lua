@@ -54,7 +54,7 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 2.003
+iEET.version = 2.004
 local colors = {}
 
 iEET.auraEvents = {
@@ -215,6 +215,7 @@ iEET.events = {
 		['UNIT_EXITED_VEHICLE'] = 56,
 		['CHAT_MSG_ADDON'] = 63,
 		['CUSTOM'] = 64,
+		['UPDATE_UI_WIDGET'] = 65,
 		-- Cinematic
 		['PLAY_MOVIE'] = 57,
 		['CINEMATIC_START'] = 58,
@@ -585,6 +586,11 @@ iEET.events = {
 			s = "CUSTOM",
 			t = "misc",
 		},
+		[65] = {
+			l = "UPDATE_UI_WIDGET",
+			s = "U_UI_WIDGET",
+			t = "misc"
+		}
 	},
 }
 iEET.addonUsers = {}
@@ -723,6 +729,7 @@ function iEET:LoadDefaults()
 			[63] = true, -- CHAT_MSG_ADDON
 
 			[64] = true, -- CUSTOM
+			[65] = true, -- UPDATE_UI_WIDGET
 		},
 		['version'] = iEET.version,
 		['autoSave'] = true,
@@ -854,7 +861,7 @@ do
 			iEET:print(sformat("Error: data for id %s not found.", id or "nil"))
 			return 
 		end
-		local guidToSearch = iEET.eventFunctions[t[1]].gui(t)
+		local guidToSearch = iEET.eventFunctions[t[1]].gui(t, true)
 		iEET.detailInfo:SetText(guidToSearch)
 		local starttime = 0
 		local intervals = {}
@@ -1014,6 +1021,7 @@ do
 	local collapses = iEET.collapses
 	local function shouldShow(data, filters, guid)
 		local e = data[1]
+		if e == 27 or e == 37 then return true end -- Always show ENCOUNTER_START and MANUAL_START
 		if not iEETConfig.tracking[e] then return false end
 		if guid then return iEET.eventFunctions[e].gui(data, true) == guid end
 		if iEET.currentlyIgnoringFilters then return true end

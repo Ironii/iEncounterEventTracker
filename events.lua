@@ -31,6 +31,7 @@ local cleuEventsToTrack = {
 
 	['UNIT_DIED'] = 'UNIT_DIED',
 }
+local seenWidgets = {}
 do
 	local validUnits = {
 		boss1 = true, boss2 = true, boss3 = true, boss4 = true, boss5 = true,
@@ -2190,6 +2191,7 @@ do --Start/End recording
 		'CINEMATIC_STOP',
 		'UNIT_SPELLCAST_CHANNEL_STOP',
 		'UNIT_SPELLCAST_STOP',
+		'UPDATE_UI_WIDGET',
 	}
 	function iEET:StartRecording(force, encounterID)
 		currentlyLogging = true
@@ -2201,6 +2203,8 @@ do --Start/End recording
 		iEET.data = {}
 		iEET.raidComp = nil
 		iEET.raidComp = {}
+		seenWidgets = nil
+		seenWidgets = {}
 		--Collecting raid comp info for destName class coloring + class info
 		if IsInRaid() then -- ignore solo play etc, don't care about old raids
 			for i = 1, GetNumGroupMembers() do
@@ -2306,7 +2310,7 @@ do -- CUSTOM
 		iEET:OnscreenAddMessages(t)
 	end
 end
-do
+do -- Manual logging (start/end)
 	iEET.eventFunctions[37] = {  -- START LOGGING
 		data = {
 			["event"] = 1,
@@ -2416,7 +2420,192 @@ function iEET:ForceStartWithoutFilters(time, name)
 	end)
 	iEET:Force(true, name .. " (Full logging)")
 end
+do -- UPDATE_UI_WIDGET
+	local eventID = 65
+	local d = {
+		["event"] = 1,
+		["time"] = 2,
+		["widgetID"] = 3,
+		["widgetData"] = 4,
+		["widgetType"] = 5,
+		["widgetSetID"] = 6,
+		["unitID"] = 7,
+		["sourceName"] = 8,
+		["sourceGUID"] = 9,
+	}
+	local _e = Enum.UIWidgetVisualizationType
+	local _w = C_UIWidgetManager
+	local _widgetHandlers = {
+		[_e.IconAndText] = _w.GetIconAndTextWidgetVisualizationInfo,
+		[_e.CaptureBar] = _w.GetCaptureBarWidgetVisualizationInfo,
+		[_e.StatusBar] = _w.GetStatusBarWidgetVisualizationInfo,
+		[_e.DoubleStatusBar] = _w.GetDoubleStatusBarWidgetVisualizationInfo,
+		[_e.IconTextAndBackground] = _w.GetIconTextAndBackgroundWidgetVisualizationInfo,
+		[_e.DoubleIconAndText] = _w.GetDoubleIconAndTextWidgetVisualizationInfo,
+		[_e.StackedResourceTracker] = _w.GetStackedResourceTrackerWidgetVisualizationInfo,
+		[_e.IconTextAndCurrencies] = _w.GetIconTextAndCurrenciesWidgetVisualizationInfo,
+		[_e.TextWithState] = _w.GetTextWithStateWidgetVisualizationInfo,
+		[_e.HorizontalCurrencies] = _w.GetHorizontalCurrenciesWidgetVisualizationInfo,
+		[_e.BulletTextList] = _w.GetBulletTextListWidgetVisualizationInfo,
+		[_e.ScenarioHeaderCurrenciesAndBackground] = _w.GetScenarioHeaderCurrenciesAndBackgroundWidgetVisualizationInfo,
+		[_e.TextureAndText] = _w.GetTextureAndTextVisualizationInfo,
+		[_e.SpellDisplay] = _w.GetSpellDisplayVisualizationInfo,
+		[_e.DoubleStateIconRow] = _w.GetDoubleStateIconRowVisualizationInfo,
+		[_e.TextureAndTextRow] = _w.GetTextureAndTextRowVisualizationInfo,
+		[_e.ZoneControl] = _w.GetZoneControlVisualizationInfo,
+		[_e.CaptureZone] = _w.GetCaptureZoneVisualizationInfo,
+		[_e.TextureWithAnimation] = _w.GetTextureWithAnimationVisualizationInfo,
+		[_e.DiscreteProgressSteps] = _w.GetDiscreteProgressStepsVisualizationInfo,
+		[_e.ScenarioHeaderTimer] = _w.GetScenarioHeaderTimerWidgetVisualizationInfo,
+	}
+	local function tableToString(key, t)
+		local str = sformat("%s", key)
+		for k,v in pairs(t) do
+			if type(v) == table then
+				str = sformat("%s\r%s", str, tableToString(k,v))
+			else
+				str = sformat("%s\r%s : %s", str, k, tostring(v))
+			end
+		end
+		return str
+	end
+	local function _count(t)
+		if not t then return 0 end
+		local i = 0
+		for _ in pairs(t) do
+			i = i + 1
+		end
+		return i
+	end
+	local _concat = table.concat
+	local function _checkChangedValues(key, oldData, newData)
+		local t1 = type(oldData) == "table"
+		local t2 = type(newData) == "table"
+		if t1 or t2 then
+			if t1 and t2 then
+				local _oi = _count(oldData)
+				local _ni = _count(newData)
+				local changedValues = {}
+				if _oi == _ni or _oi > _ni then -- Old table has more keys (or they have same amount of keys, cba to loop trough to check if all keys are the same)
+					for k,v in pairs(oldData) do
+						local str = _checkChangedValues(k, v, newData[k])
+						if str then
+							tinsert(changedValues, str)
+						end
+					end
+				else -- New data has more keys
+					for k,v in pairs(newData) do
+						str = _checkChangedValues(k, oldData[k], v)
+						if str then
+							tinsert(changedValues, str)
+						end
+					end
+				end
+				if #changedValues == 0 then return end
+				return _concat(changedValues, "\r")
+			elseif t1 then -- Was table, isn't anymore
+				return sformat("%s : %s (table)", key, tostring(newData))
+			else -- Is table now, wasn't before
+				return sformat("%s : %s (%s)", key, tableToString(t), oldData)
+			end
+		elseif oldData ~= newData then
+			return sformat("%s : %s (%s)", key, tostring(newData), tostring(oldData))
+		end
+		return
+	end
+	local function _updateWidgetData(widgetInfo)
+		local widgetData = _widgetHandlers[widgetInfo.widgetType](widgetInfo.widgetID)
+		local sourceName, sourceGUID
+		local shown = widgetData.shownState
+		if shown == 0 and not seenWidgets[widgetInfo.widgetID] then return 0 end
+		local widgetDataToShow = {prev = {"Changed values from previous:"}, first = {"Changed values from first:"}}
+		if widgetInfo.unitToken then
+			sourceGUID = UnitGUID(unitID) or UNKNOWN -- cba to do more checks
+			sourceName = UnitName(unitID) or UNKNOWN
+		end
+		if seenWidgets[widgetInfo.widgetID] then
+			local prevData = seenWidgets[widgetInfo.widgetID].prev or nil
+			local firstData = seenWidgets[widgetInfo.widgetID].first
+			if seenWidgets[widgetInfo.widgetID].shownState and shown == 0 then -- state changed to hidden
+				shown = 2
+			end
+			for k,v in pairs(widgetData) do
+				local newFromFirst = _checkChangedValues(k, firstData[k], v)
+				if newFromFirst then
+					tinsert(widgetDataToShow.first, newFromFirst)
+				end
+				if prevData then
+					local newFromPrev = _checkChangedValues(k, prevData[k], v)
+					if newFromPrev then
+						tinsert(widgetDataToShow.prev, newFromPrev)
+					end
+				end
+			end
+			seenWidgets[widgetInfo.widgetID].prev = widgetData
+			return shown, sformat("%s\r\r%s", 
+			(#widgetDataToShow.prev > 1 and _concat(widgetDataToShow.prev, "\r") or "Changed values from previous: NONE"), 
+			(#widgetDataToShow.first > 1 and _concat(widgetDataToShow.first, "\r") or "Changed values from first: NONE")),
+			sourceName, sourceGUID
+		end
+		seenWidgets[widgetInfo.widgetID] = {first = widgetData}
+		return shown, tableToString("*New*", widgetData), sourceName, sourceGUID
+	end
 
+	iEET.eventFunctions[eventID] = {
+		data = d,
+		gui = function(args, getGUID)
+			local guid = sformat("%s-%s", eventID, args[d.widgetID]) -- Create unique string from event + widgetID
+			local dataToShow = args[d.widgetData]:gsub("Changed values from previous:", "") -- remove stuff so you have a chance to see something of value in ieet main window
+			dataToShow = dataToShow:gsub("Changed values from first:", "")
+			if getGUID then return guid end
+			return guid, -- 1
+				nil, -- 2
+				sformat("%s (%s)", args[d.widgetID], args[d.widgetSetID]), -- 3
+				dataToShow, -- 4
+				args[d.unitID] and ({unitID = args[d.unitID], casterName = args[d.sourceName]}) or nil -- 5
+		end,
+		import = function(args)
+			args[d.widgetID] = tonumber(args[d.widgetID])
+			args[d.widgetSetID] = tonumber(args[d.widgetSetID])
+			args[d.widgetType] = tonumber(args[d.widgetType])
+			return args
+		end,
+		filtering = function(args, filters, ...)
+			return defaultFiltering(args, d, filters, eventID, ...)
+		end,
+		hyperlink = function(col, data) -- to do: write
+			if col == 7 or col == 8 then return end
+			addToTooltip(nil,
+				formatKV("Widget id", data[d.widgetID]),
+				formatKV("Widget type", data[d.widgetType]),
+				formatKV("widget set id", data[d.widgetSetID]),
+				formatKV("Unit token", data[d.unitID]),
+				formatKV("Source name", data[d.sourceName]),
+				formatKV("Source GUID", data[d.sourceGUID]),
+				formatKV("Widget data", data[d.widgetData])
+			)
+			return true
+		end,
+	}
+	function addon:UPDATE_UI_WIDGET(widgetInfo)
+		-- shown: 0 = hidden, 1 = shown, 2 = was shown, now hidden, let trough
+		local shown, widgetData, sourceName, sourceGUID = _updateWidgetData(widgetInfo)
+		if shown == 0 then return end
+		local t = {
+			[d.event] = eventID,
+			[d.time] = GetTime(),
+			[d.widgetID] = widgetInfo.widgetID,
+			[d.widgetData] = widgetData,
+			[d.widgetType] = widgetInfo.widgetType,
+			[d.widgetSetID] = widgetInfo.widgetSetID,
+			[d.unitID] = widgetInfo.unitToken,
+			[d.sourceName] = sourceName,
+			[d.sourceGUID] = sourceGUID,
+		}
+		tinsert(iEET.data, t)
+		iEET:OnscreenAddMessages(t)
+	end
+end
 --Gather all keys for filtering
 iEET.allPossibleKeys = {}
 for k,v in pairs(iEET.eventFunctions) do
