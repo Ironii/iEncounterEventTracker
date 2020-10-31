@@ -248,7 +248,7 @@ function iEET:updateOptionsMenu()
 		iEET:print('Export variable cleared.')
 	end})
 	tinsert(iEET.optionsMenu, {text = 'Start recording without filters', notCheckable = true, func = function () iEET:StartRecordingWithoutFiltersPopup() end})
-	tinsert(iEET.optionsMenu, {text = "Spreadsheet exporting", isNotRadio = true, keepShownOnClick = true, hasArrow = true, menuList = {
+	tinsert(iEET.optionsMenu, {text = "Spreadsheet exporting", notCheckable = true, keepShownOnClick = true, hasArrow = true, menuList = {
 		{ text = 'Excel', notCheckable = true, func = function() iEET:copyCurrent(iEET.ENUMS.SPREADSHEETS.EXCEL) end},
 		{ text = 'Google', notCheckable = true, func = function() iEET:copyCurrent(iEET.ENUMS.SPREADSHEETS.GOOGLE) end},
 		{ text = 'OpenOffice', notCheckable = true, func = function() iEET:copyCurrent(iEET.ENUMS.SPREADSHEETS.OPENOFFICE) end},

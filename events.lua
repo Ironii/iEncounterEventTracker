@@ -118,6 +118,7 @@ defaults.unitEvents.data = {
 	["spellName"] = 6,
 	["spellID"] = 7,
 	["hp"] = 8,
+	["castGUID"] = 9,
 }
 defaults.unitEvents.gui = function(args, getGUID)
 	local d = defaults.unitEvents.data
@@ -144,11 +145,15 @@ defaults.unitEvents.hyperlink = function(col, data)
 	if col == 7 or col == 8 then return end
 	if col == 4 then
 		if C_Spell.DoesSpellExist(data[d.spellID]) then -- TODO : CHECK if it requires caching first, live/ptr check
-			addToTooltip(data[d.spellID], sformat("Spell ID: %s", data[d.spellID]))
+			addToTooltip(data[d.spellID],
+				formatKV("Spell ID", data[d.spellID]),
+				formatKV("castGUID", data[d.castGUID])
+			)
 		else
 			addToTooltip(nil,
 				formatKV("Spell ID", data[d.spellID]),
-				formatKV("Spell name", data[d.spellName])
+				formatKV("Spell name", data[d.spellName]),
+				formatKV("castGUID", data[d.castGUID])
 			)
 		end
 	elseif col == 5 or col == 6 then
@@ -196,7 +201,7 @@ defaults.chats.hyperlink = function(col, data)
 end
 defaults.chats.chatLink = function(col, data)	return end
 
-local function defaultUnitHandler(event, unitID, spellID, spellName, returnOnly)
+local function defaultUnitHandler(event, unitID, castGUID, spellID, spellName, returnOnly)
 	if iEET.IsValidUnit(unitID) then
 		local sourceGUID = UnitGUID(unitID)
 		local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
@@ -226,6 +231,7 @@ local function defaultUnitHandler(event, unitID, spellID, spellName, returnOnly)
 						[d.spellName] = spellName or Spell:CreateFromSpellID(spellID):GetSpellName(),
 						[d.spellID] = spellID,
 						[d.hp] = php,
+						[d.castGUID] = castGUID,
 					}
 					table.insert(iEET.data, t);
 					iEET:OnscreenAddMessages(t)
@@ -556,8 +562,8 @@ do -- UNIT_SPELLCAST_SUCCEEDED
 	iEET.eventFunctions[eventID].filtering = function(args, filters, ...)
 		return defaultFiltering(args, defaults.unitEvents.data, filters, eventID, ...)
 	end
-	function addon:UNIT_SPELLCAST_SUCCEEDED(unitID, arg2,spellID)
-		defaultUnitHandler(eventID, unitID, spellID)
+	function addon:UNIT_SPELLCAST_SUCCEEDED(unitID, castGUID, spellID)
+		defaultUnitHandler(eventID, unitID, castGUID, spellID)
 	end
 end
 do -- UNIT_SPELLCAST_START
@@ -566,8 +572,8 @@ do -- UNIT_SPELLCAST_START
 	iEET.eventFunctions[eventID].filtering = function(args, filters, ...)
 		return defaultFiltering(args, defaults.unitEvents.data, filters, eventID, ...)
 	end
-	function addon:UNIT_SPELLCAST_START(unitID, arg2,spellID)
-		defaultUnitHandler(eventID, unitID, spellID)
+	function addon:UNIT_SPELLCAST_START(unitID, castGUID, spellID)
+		defaultUnitHandler(eventID, unitID, castGUID, spellID)
 	end
 end
 do -- UNIT_SPELLCAST_STOP
@@ -576,8 +582,8 @@ do -- UNIT_SPELLCAST_STOP
 	iEET.eventFunctions[eventID].filtering = function(args, filters, ...)
 		return defaultFiltering(args, defaults.unitEvents.data, filters, eventID, ...)
 	end
-	function addon:UNIT_SPELLCAST_STOP(unitID, arg2, spellID)
-		defaultUnitHandler(eventID, unitID, spellID)
+	function addon:UNIT_SPELLCAST_STOP(unitID, castGUID, spellID)
+		defaultUnitHandler(eventID, unitID, castGUID, spellID)
 	end
 end
 do -- UNIT_SPELLCAST_CHANNEL_START
@@ -586,8 +592,8 @@ do -- UNIT_SPELLCAST_CHANNEL_START
 	iEET.eventFunctions[eventID].filtering = function(args, filters, ...)
 		return defaultFiltering(args, defaults.unitEvents.data, filters, eventID, ...)
 	end
-	function addon:UNIT_SPELLCAST_CHANNEL_START(unitID, arg2,spellID)
-		defaultUnitHandler(eventID, unitID, spellID)
+	function addon:UNIT_SPELLCAST_CHANNEL_START(unitID, castGUID, spellID)
+		defaultUnitHandler(eventID, unitID, castGUID, spellID)
 	end
 end
 do -- UNIT_SPELLCAST_CHANNEL_STOP
@@ -596,8 +602,8 @@ do -- UNIT_SPELLCAST_CHANNEL_STOP
 	iEET.eventFunctions[eventID].filtering = function(args, filters, ...)
 		return defaultFiltering(args, defaults.unitEvents.data, filters, eventID, ...)
 	end
-	function addon:UNIT_SPELLCAST_CHANNEL_STOP(unitID, arg2,spellID)
-		defaultUnitHandler(eventID, unitID, spellID)
+	function addon:UNIT_SPELLCAST_CHANNEL_STOP(unitID, castGUID, spellID)
+		defaultUnitHandler(eventID, unitID, castGUID, spellID)
 	end
 end
 do -- UNIT_SPELLCAST_INTERRUPTIBLE
@@ -631,7 +637,6 @@ do -- UNIT_SPELLCAST_INTERRUPTIBLE
 			return defaultFiltering(args, d, filters, eventID, ...)
 		end,
 		hyperlink = function(col, data)
-			local d = defaults.unitEvents.data
 			if col == 7 or col == 8 or col == 4 then return end
 			addToTooltip(nil,
 				formatKV("Source name", data[d.sourceName]),
@@ -643,7 +648,7 @@ do -- UNIT_SPELLCAST_INTERRUPTIBLE
 		chatLink = function(col, data) return end,
 	}
 	function addon:UNIT_SPELLCAST_INTERRUPTIBLE(unitID)
-		local isValid, sourceGUID, sourceName, php = defaultUnitHandler(eventID, unitID, nil, nil, true)
+		local isValid, sourceGUID, sourceName, php = defaultUnitHandler(eventID, unitID, nil, nil, nil, true)
 		local t = {
 			[d.event] = eventID,
 			[d.time] = GetTime(),
@@ -687,7 +692,6 @@ do -- UNIT_SPELLCAST_NOT_INTERRUPTIBLE
 			return defaultFiltering(args, d, filters, eventID, ...)
 		end,
 		hyperlink = function(col, data)
-			local d = defaults.unitEvents.data
 			if col == 7 or col == 8 or col == 4 then return end
 			addToTooltip(nil,
 				formatKV("Source name", data[d.sourceName]),
@@ -699,7 +703,7 @@ do -- UNIT_SPELLCAST_NOT_INTERRUPTIBLE
 		chatLink = function(col, data) return end,
 	}
 	function addon:UNIT_SPELLCAST_NOT_INTERRUPTIBLE(unitID)
-		local isValid, sourceGUID, sourceName, php = defaultUnitHandler(eventID, unitID, nil, nil, true)
+		local isValid, sourceGUID, sourceName, php = defaultUnitHandler(eventID, unitID, nil, nil, nil, true)
 		local t = {
 			[d.event] = eventID,
 			[d.time] = GetTime(),
@@ -772,7 +776,7 @@ do -- UNIT_TARGET
 		chatLink = function(col, data) return end
 	}
 	function addon:UNIT_TARGET(unitID)
-		local isValid, sourceGUID, sourceName, php = defaultUnitHandler(eventID, unitID, nil, nil, true)
+		local isValid, sourceGUID, sourceName, php = defaultUnitHandler(eventID, unitID, nil, nil, nil, true)
 		if not isValid then return end
 		local targetGUID = UnitGUID(unitID..'target')
 		local targetName = UnitName(unitID..'target')
@@ -849,7 +853,7 @@ do -- UNIT_POWER_UPDATE
 		chatLink = function(col, data) return end,
 	}
 	function addon:UNIT_POWER_UPDATE(unitID, powerType)
-		local isValid, sourceGUID, sourceName, php = defaultUnitHandler(eventID, unitID, nil, nil, true)
+		local isValid, sourceGUID, sourceName, php = defaultUnitHandler(eventID, unitID, nil, nil, nil, true)
 		if not isValid then return end
 		if not iEET.savedPowers[powerType] then
 			-- Get power type ID
@@ -1395,7 +1399,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 							formatKV("Target role", data[d.destRole])
 						)
 					else -- 8
-						addToTooltip(nil, formatKV("Aura type", data[d.auraType] == 1 and "BUFF" or "DEBUFF"))
+						addToTooltip(nil, formatKV("Aura type", data[d.auraType] == "1" and "BUFF" or "DEBUFF"))
 					end
 					return true
 				end,
