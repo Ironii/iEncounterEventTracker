@@ -318,16 +318,15 @@ local function defaultFiltering(args, keyIDList, filters, eventID)
 								break -- Go to next
 							end
 						end
-					elseif not keyIDList[f.key] then break -- should not happen, args were changed during update or smh
-					elseif checkValid(args[keyIDList[f.key]], f.val, f.operator) then
+					elseif keyIDList[f.key] and checkValid(args[keyIDList[f.key]], f.val, f.operator) then
 						shouldShow = true
 					else
 						shouldShow = false
 						break -- Go to next
 					end
 				end
-				if shouldShow then return true end
 			end
+			if shouldShow then return true end
 	end
 	return false -- No valid filter found, don't show
 end
