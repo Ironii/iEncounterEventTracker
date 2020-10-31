@@ -1,5 +1,5 @@
 local _, iEET = ...
-local spairs = iEET.spairs
+local spairs, sformat = iEET.spairs, string.format
 function iEET:ShowColorPicker(frame)
 	iEET.colorToChange = frame
 	local r,g,b,a
@@ -395,17 +395,30 @@ function iEET:CreateMainFrame()
 			GameTooltip:Hide()
 		end)
 		fc:SetScript("OnHyperlinkClick", function(self, linkData, link, button)
-			if string.find(linkData, 'iEETtime') then
-				return
-			elseif IsShiftKeyDown() and IsInRaid() then -- TO DO: REWRITE
-				local linkType = strsplit(':', linkData)
-				if linkType == 'iEETcustomyell' then
-					local _, event, spellID, spellName = strsplit(':',linkData)
-					SendChatMessage(spellID, 'RAID')
-				elseif linkType == 'iEETcustomspell' then
-					local _, event, spellID, spellName, npcID = strsplit(':',linkData)
-					SendChatMessage(GetSpellLink(tonumber(spellID)), 'RAID')
+			if IsShiftKeyDown() then
+				local col = tonumber(linkData:sub(5,6)) -- i don't think we need this at all, not yet anyway, might as well paste the same data/spell from each column
+				local eventID = tonumber(linkData:sub(7,9))
+				local id = tonumber(linkData:sub(10,15))
+				local t = iEET.data[id]
+				if not t then
+					iEET:print(sformat("Error: data for id %s not found.", id or "nil"))
+					return 
 				end
+				if not (iEET.eventFunctions[eventID] and iEET.eventFunctions[eventID].chatLink) then
+					iEET:print(sformat("Error: hyperlink function for event id %s not found.", eventID or "nil"))
+					return
+				end
+				local spellLink = iEET.eventFunctions[eventID].chatLink(col, t)
+				if not spellLink then
+					iEET:print("Error: Event has no relevant spell to link.")
+					return
+				end
+				if IsInGroup() then
+					SendChatMessage(spellLink, IsInRaid() and 'RAID' or 'PARTY')
+				else
+					print(spellLink)
+				end
+				return
 			else
 				iEET:addSpellDetails(linkData, link)
 			end
@@ -719,7 +732,7 @@ function iEET:CreateMainFrame()
 		end
 	end)
 	iEET.editbox:SetAutoFocus(false)
-	iEET.editbox:SetWidth(269)
+	iEET.editbox:SetWidth(213)
 	iEET.editbox:SetHeight(21)
 	iEET.editbox:SetTextInsets(2, 2, 1, 0)
 	iEET.editbox:SetPoint('RIGHT', iEET.top, 'RIGHT', -24,0)
@@ -748,9 +761,24 @@ function iEET:CreateMainFrame()
 	iEET.eventlist:SetScript('OnClick',function()
 		iEET:GetPageFromFilters("filterEvents")
 	end)
-	--iEET:updateOptionMenu()
+	----Filtering window button:
+	createButton('filteringButton', nil,60,21,'Filters','LEFT','eventlist','RIGHT',1,0)
+	iEET.filteringButton:SetScript('OnClick',function(self, button)
+		if button == "RightButton" then
+			if iEET.currentlyIgnoringFilters then
+				iEET.currentlyIgnoringFilters = false
+				self:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
+			else
+				iEET.currentlyIgnoringFilters = true
+				self:SetBackdropBorderColor(0,1,0,1)
+			end
+			iEET:loopData()
+		else
+			iEET:Options()
+		end
+	end)
 	--NPC list
-	createButton('npcList', nil,60,21,'NPCs','LEFT','eventlist','RIGHT',1,0)
+	createButton('npcList', nil,60,21,'NPCs','LEFT','filteringButton','RIGHT',1,0)
 	iEET.npcList:SetScript('OnClick',function()
 		if iEET.encounterInfoData and iEET.encounterInfoData.eN then
 			iEET:GetPageFromFilters("npcs")
@@ -769,39 +797,11 @@ function iEET:CreateMainFrame()
 		iEET:updateEncounterListMenu()
 		EasyMenu(iEET.encounterListMenu, iEET.encounterListMenuFrame, iEET.encounterListButton, 0 , 0, 'MENU')
 	end)
-	----Filtering window button:
-	createButton('filteringButton', nil,21,21,'F','LEFT','encounterListButton','RIGHT',1,0)
-	iEET.filteringButton:SetScript('OnClick',function(self, button)
-		if button == "RightButton" then
-			if iEET.currentlyIgnoringFilters then
-				iEET.currentlyIgnoringFilters = false
-				self:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
-			else
-				iEET.currentlyIgnoringFilters = true
-				self:SetBackdropBorderColor(0,1,0,1)
-			end
-			iEET:loopData()
-		else
-			iEET:Options()
-		end
-	end)
 	--Settings
-	createButton('optionsList', nil,21,21,'O','LEFT','filteringButton','RIGHT',1,0)
+	createButton('optionsList', nil,60,21,'Options','LEFT','encounterListButton','RIGHT',1,0)
 	iEET.optionsList:SetScript('OnClick',function()
 		iEET:updateOptionsMenu()
 		EasyMenu(iEET.optionsMenu, iEET.optionsMenuFrame, iEET.optionsList, 0 , 0, 'MENU')
-	end)
-	----Spreadsheet export button:
-	iEET.spreadsheetCopyMenu = {
-		{ text = 'Excel', notCheckable = true, func = function() iEET:copyCurrent(3) end},
-		{ text = 'Google', notCheckable = true, func = function() iEET:copyCurrent(1) end},
-		{ text = 'OpenOffice', notCheckable = true, func = function() iEET:copyCurrent(2) end},
-		{ text = 'Cancel', notCheckable = true, func = function() CloseDropDownMenus() end},
-	}
-	iEET.spreadsheetListMenuFrame = CreateFrame('Frame', 'iEETspreadsheetListMenu', UIParent, 'UIDropDownMenuTemplate')
-	createButton('spreadsheetCopyButton',nil,21,21,'S','LEFT','optionsList','RIGHT',1,0)
-	iEET.spreadsheetCopyButton:SetScript('OnClick',function()
-		EasyMenu(iEET.spreadsheetCopyMenu, iEET.spreadsheetListMenuFrame, iEET.spreadsheetCopyButton, 0 , 0, 'MENU');
 	end)
 	--Main window exit button
 	createButton('exitButton', nil,21,21,'X','LEFT','editbox','RIGHT',1,0)
@@ -963,30 +963,6 @@ function iEET:CreateOnscreenFrame()
 		iEET[fc]:SetScript("OnMouseWheel", function(self, delta)
 			iEET:ScrollOnscreen(delta)
 		end)
-		if i == 1 or i == 2 or i == 4 or i == 5 or i == 6 then --allow hyperlinks for encounter time, interval time, spellName, sourceName, destName
-			--iEET[fc]:SetHyperlinksEnabled(true)
-			iEET[fc]:SetScript("OnHyperlinkEnter", function(self, linkData, link)
-				GameTooltip:SetOwner(iEET.onscreen, "ANCHOR_TOPRIGHT", 0-iEET.onscreen:GetWidth(), 0-iEET.onscreen:GetHeight())
-				iEET:Hyperlinks(linkData, link)
-			end)
-			iEET[fc]:SetScript("OnHyperlinkLeave", function()
-				GameTooltip:Hide()
-			end)
-			iEET[fc]:SetScript("OnHyperlinkClick", function(self, linkData, link, button)
-				if string.find(linkData, 'iEETtime') then
-					return
-				elseif IsShiftKeyDown() and IsInRaid() then
-					local linkType = strsplit(':', linkData)
-					if linkType == 'iEETcustomyell' then
-						local _, event, spellID, spellName = strsplit(':',linkData)
-						SendChatMessage(spellID, 'RAID')
-					elseif linkType == 'iEETcustomspell' then
-						local _, event, spellID, spellName, npcID = strsplit(':',linkData)
-						SendChatMessage(GetSpellLink(tonumber(spellID)), 'RAID')
-					end
-				end
-			end)
-		end
 		iEET[fc]:SetFrameStrata('HIGH')
 		iEET[fc]:SetFrameLevel(2)
 		iEET[fc]:EnableMouse(true)

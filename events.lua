@@ -160,6 +160,12 @@ defaults.unitEvents.hyperlink = function(col, data)
 	end
 	return true
 end
+defaults.unitEvents.chatLink = function(col, data)
+	-- ignore column for now
+	local d = defaults.unitEvents.data
+	if not data[d.spellID] then return end
+	return GetSpellLink(data[d.spellID])
+end
 defaults.chats = {}
 defaults.chats.data = {
 	["event"] = 1,
@@ -188,6 +194,7 @@ defaults.chats.hyperlink = function(col, data)
 		return true
 	end
 end
+defaults.chats.chatLink = function(col, data)	return end
 
 local function defaultUnitHandler(event, unitID, spellID, spellName, returnOnly)
 	if iEET.IsValidUnit(unitID) then
@@ -361,6 +368,7 @@ do
 		import = function(args)
 			return args
 		end,
+		chatLink = function(col, data) return end,
 	}
 	local d = iEET.eventFunctions[eventID].data
 	function addon:CHAT_MSG_ADDON(prefix,msg,chatType,sender)
@@ -430,6 +438,10 @@ do -- ENCOUNTER_START
 			)
 			return true
 		end,
+		chatLink = function(col, data)
+			-- TODO: maybe add link to encounter journal?
+			return
+		end
 	}
 	function addon:ENCOUNTER_START(encounterID, encounterName, difficultyID, raidSize,...)
 		local mapID = select(8, GetInstanceInfo())
@@ -498,6 +510,7 @@ do -- ENCOUNTER_END
 			)
 			return true
 		end,
+		chatLink = function(col, data) return end
 	}
 	function addon:ENCOUNTER_END(EncounterID, encounterName, difficultyID, raidSize, kill,...)
 		local t = {
@@ -627,6 +640,7 @@ do -- UNIT_SPELLCAST_INTERRUPTIBLE
 			)
 			return true
 		end,
+		chatLink = function(col, data) return end,
 	}
 	function addon:UNIT_SPELLCAST_INTERRUPTIBLE(unitID)
 		local isValid, sourceGUID, sourceName, php = defaultUnitHandler(eventID, unitID, nil, nil, true)
@@ -682,6 +696,7 @@ do -- UNIT_SPELLCAST_NOT_INTERRUPTIBLE
 			)
 			return true
 		end,
+		chatLink = function(col, data) return end,
 	}
 	function addon:UNIT_SPELLCAST_NOT_INTERRUPTIBLE(unitID)
 		local isValid, sourceGUID, sourceName, php = defaultUnitHandler(eventID, unitID, nil, nil, true)
@@ -753,7 +768,8 @@ do -- UNIT_TARGET
 				)
 			end
 			return true
-		end
+		end,
+		chatLink = function(col, data) return end
 	}
 	function addon:UNIT_TARGET(unitID)
 		local isValid, sourceGUID, sourceName, php = defaultUnitHandler(eventID, unitID, nil, nil, true)
@@ -829,7 +845,8 @@ do -- UNIT_POWER_UPDATE
 			)
 			end
 			return true
-		end
+		end,
+		chatLink = function(col, data) return end,
 	}
 	function addon:UNIT_POWER_UPDATE(unitID, powerType)
 		local isValid, sourceGUID, sourceName, php = defaultUnitHandler(eventID, unitID, nil, nil, true)
@@ -942,6 +959,7 @@ do -- UNIT_ENTERING_VEHICLE
 		import = function(args)
 			return args
 		end,
+		chatLink = function(col, data) return end,
 	}
 	function addon:UNIT_ENTERING_VEHICLE(unitID, hasVehicleUI,isControlSeat,vehicleID, vehicleGUID, mayChooseExit, hasPitch)
 		local sourceGUID = UnitGUID(unitID)
@@ -1026,6 +1044,7 @@ do -- UNIT_ENTERED_VEHICLE
 		import = function(args)
 			return args
 		end,
+		chatLink = function(col, data) return end,
 	}
 	function addon:UNIT_ENTERED_VEHICLE(unitID, hasVehicleUI,isControlSeat,vehicleID, vehicleGUID, mayChooseExit, hasPitch)
 		local sourceGUID = UnitGUID(unitID)
@@ -1091,6 +1110,7 @@ do -- UNIT_EXITING_VEHICLE
 		import = function(args)
 			return args
 		end,
+		chatLink = function(col, data) return end,
 	}
 	function addon:UNIT_EXITING_VEHICLE(unitID)
 		local sourceGUID = UnitGUID(unitID)
@@ -1144,6 +1164,7 @@ do -- UNIT_EXITED_VEHICLE
 		import = function(args)
 			return args
 		end,
+		chatLink = function(col, data) return end,
 	}	
 	function addon:UNIT_EXITED_VEHICLE(unitID)
 		local sourceGUID = UnitGUID(unitID)
@@ -1226,6 +1247,11 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				end
 				return true
 			end,
+			chatLink = function(col, data)
+				-- ignore column for now
+				if not data[defaultCLEUData.spellID] then return end
+				return GetSpellLink(data[defaultCLEUData.spellID])
+			end,
 		}
 	end
 	do -- SPELL_DISPEL, SPELL_INTERRUPT, SPELL_STOLEN
@@ -1299,6 +1325,11 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					end
 					return true
 				end,
+				chatLink = function(col, data)
+					-- ignore column for now
+					if not data[d.spellID] then return end
+					return GetSpellLink(data[d.spellID])
+				end,
 			}
 		end
 	end
@@ -1367,7 +1398,12 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 						addToTooltip(nil, formatKV("Aura type", data[d.auraType] == 1 and "BUFF" or "DEBUFF"))
 					end
 					return true
-				end
+				end,
+				chatLink = function(col, data)
+					-- ignore column for now
+					if not data[d.spellID] then return end
+					return GetSpellLink(data[d.spellID])
+				end,
 			}
 		end
 	end
@@ -1447,7 +1483,12 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 						)
 					end
 					return true
-				end
+				end,
+				chatLink = function(col, data)
+					-- ignore column for now
+					if not data[d.spellID] then return end
+					return GetSpellLink(data[d.spellID])
+				end,
 			}
 		end
 	end
@@ -1483,6 +1524,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 						)
 				return true
 			end,
+			chatLink = function(col, data) return end
 		}
 	end
 	function addon:COMBAT_LOG_EVENT_UNFILTERED()
@@ -1579,6 +1621,7 @@ do -- INSTANCE_ENCOUNTER_ENGAGE_UNIT
 			addToTooltip(nil,data[d.npcs])
 			return true
 		end,
+		chatLink = function(col, data) return end,
 	}
 	function addon:INSTANCE_ENCOUNTER_ENGAGE_UNIT()
 		local newUnits = {}
@@ -1637,6 +1680,7 @@ do -- CHAT_MSG_MONSTER_EMOTE
 		import = function(args)
 			return args
 		end,
+		chatLink = defaults.chats.chatLink,
 	}
 	local d = iEET.eventFunctions[eventID].data
 	function addon:CHAT_MSG_MONSTER_EMOTE(msg, sourceName)
@@ -1660,6 +1704,7 @@ do -- CHAT_MSG_MONSTER_SAY
 		end,
 		hyperlink = defaults.chats.hyperlink,
 		import = function(args) return args end,
+		chatLink = defaults.chats.chatLink,
 	}
 	local d = iEET.eventFunctions[eventID].data
 	function addon:CHAT_MSG_MONSTER_SAY(msg, sourceName)
@@ -1685,6 +1730,7 @@ do -- CHAT_MSG_MONSTER_YELL
 		filtering = function(args, filters, ...)
 			return defaultFiltering(args, defaults.chats.data, filters, eventID, ...)
 		end,
+		chatLink = defaults.chats.chatLink,
 	}
 	local d = iEET.eventFunctions[eventID].data
 	function addon:CHAT_MSG_MONSTER_YELL(msg, sourceName)
@@ -1730,6 +1776,7 @@ do -- RAID_BOSS_EMOTE
 			end
 			return true
 		end,
+		chatLink = defaults.chats.chatLink,
 	}
 	function addon:RAID_BOSS_EMOTE(msg, sourceName,_,_,destName)
 		local t = {
@@ -1753,6 +1800,7 @@ do -- RAID_BOSS_WHISPER
 			return defaultFiltering(args, defaults.chats.data, filters, eventID, ...)
 		end,
 		hyperlink = defaults.chats.hyperlink,
+		chatLink = defaults.chats.chatLink,
 	}
 	local d = iEET.eventFunctions[eventID].data
 	function addon:RAID_BOSS_WHISPER(msg, sourceName) -- im not sure if there is sourceName, needs testing -- TODO : proc CHAT_MSG_ADDON
@@ -1798,6 +1846,7 @@ do -- CHAT_MSG_RAID_BOSS_EMOTE
 			end
 			return true
 		end,
+		chatLink = defaults.chats.chatLink,
 	}
 	function addon:CHAT_MSG_RAID_BOSS_EMOTE(msg, sourceName,_,_,destName,...)
 		local t = {
@@ -1821,6 +1870,7 @@ do -- CHAT_MSG_RAID_BOSS_WHISPER
 		end,
 		import = function(args) return args end,
 		hyperlink = defaults.chats.hyperlink,
+		chatLink = defaults.chats.chatLink,
 	}
 	local d = iEET.eventFunctions[eventID].data
 	function addon:CHAT_MSG_RAID_BOSS_WHISPER(msg, sourceName)
@@ -1848,6 +1898,7 @@ do -- PLAYER_REGEN_DISABLED
 		end,
 		hyperlink = function(col, data) return end, -- Nothing to show
 		import = function(args) return args end,
+		chatLink = function(col, data) return end,
 	}
 	function addon:PLAYER_REGEN_DISABLED()
 		local t = {
@@ -1872,6 +1923,7 @@ do -- PLAYER_REGEN_ENABLED
 		end,
 		hyperlink = function (col, data) return end, -- Nothing to show
 		import = function(args) return args end,
+		chatLink = function(col, data) return end,
 	}
 	function addon:PLAYER_REGEN_ENABLED()
 		local t = {
@@ -1901,6 +1953,7 @@ do -- PLAY_MOVIE
 			end
 		end,
 		import = function(args) return args end,
+		chatLink = function(col, data) return end,
 	}
 	function addon:PLAY_MOVIE(movieID)
 		local t = {
@@ -1931,6 +1984,7 @@ do -- CINEMATIC_START
 			end
 		end,
 		import = function(args) return args end,
+		chatLink = function(col, data) return end,
 	}
 	function addon:CINEMATIC_START(canBeCancelled)
 		local t = {
@@ -1956,6 +2010,7 @@ do -- CINEMATIC_STOP
 		end,
 		hyperlink = function(col, data) return end, -- Nothing to show
 		import = function(args) return args end,
+		chatLink = function(col, data) return end,
 	}
 	function addon:CINEMATIC_STOP()
 		local t = {
@@ -2029,6 +2084,7 @@ do -- BigWigs
 				return true
 			end,
 			import = function(args) return args end,
+			chatLink = function(col, data) return end,
 		}
 	end
 	do -- BigWigs_Message
@@ -2057,6 +2113,7 @@ do -- BigWigs
 				return true
 			end,
 			import = function(args) return args end,
+			chatLink = function(col, data) return end,
 		}
 	end
 	do -- BigWigs_PauseBar
@@ -2083,6 +2140,7 @@ do -- BigWigs
 				return true
 			end,
 			import = function(args) return args end,
+			chatLink = function(col, data) return end,
 		}
 	end
 	do -- BigWigs_ResumeBar
@@ -2109,6 +2167,7 @@ do -- BigWigs
 				return true
 			end,
 			import = function(args) return args end,
+			chatLink = function(col, data) return end,
 		}
 	end
 	do -- BigWigs_StopBar
@@ -2135,6 +2194,7 @@ do -- BigWigs
 				return true
 			end,
 			import = function(args) return args end,
+			chatLink = function(col, data) return end,
 		}
 	end
 	do -- BigWigs_StopBars
@@ -2155,6 +2215,7 @@ do -- BigWigs
 			end,
 			hyperlink = function(col, data) return end, -- Nothing to show
 			import = function(args) return args end,
+			chatLink = function(col, data) return end,
 		}
 	end
 	function iEET:BigWigsData(event,...)
@@ -2338,6 +2399,7 @@ do -- CUSTOM
 		end,
 		hyperlink = defaults.chats.hyperlink,
 		import = function(args) return args end,
+		chatLink = function(col, data) return end,
 	}
 	local d = iEET.eventFunctions[eventID].data
 	function iEET_AddCustom(msg)
@@ -2376,6 +2438,7 @@ do -- Manual logging (start/end)
 		filtering = function(args, filters) return true end, -- Always show
 		hyperlink = function(args, filters) return end, -- Nothing to show
 		import = function(args) return args end,
+		chatLink = function(col, data) return end,
 	}
 	iEET.eventFunctions[38] = {  -- END LOGGING
 		data = {
@@ -2390,6 +2453,7 @@ do -- Manual logging (start/end)
 		filtering = function(args, filters) return true end, -- Always show
 		hyperlink = function(args, filters) return end, -- Nothing to show
 		import = function(args) return args end,
+		chatLink = function(col, data) return end,
 	}
 	function iEET:Force(start, name)
 		local t
@@ -2626,7 +2690,7 @@ do -- UPDATE_UI_WIDGET
 		filtering = function(args, filters, ...)
 			return defaultFiltering(args, d, filters, eventID, ...)
 		end,
-		hyperlink = function(col, data) -- to do: write
+		hyperlink = function(col, data)
 			if col == 7 or col == 8 then return end
 			addToTooltip(nil,
 				formatKV("Widget id", data[d.widgetID]),
@@ -2639,6 +2703,7 @@ do -- UPDATE_UI_WIDGET
 			)
 			return true
 		end,
+		chatLink = function(col, data) return end,
 	}
 	function addon:UPDATE_UI_WIDGET(widgetInfo)
 		-- shown: 0 = hidden, 1 = shown, 2 = was shown, now hidden, let trough
@@ -2703,6 +2768,7 @@ do -- DeadlyBossMods
 				args[d.spellID] = tonumber(args[d.spellID])
 				return args
 			end,
+			chatLink = function(col, data) return end,
 		}	
 		function dbmHandlers:DBM_Announce(msg, icon, msgType, spellID, modID, specialWarning)
 			local t = {
@@ -2752,6 +2818,7 @@ do -- DeadlyBossMods
 			import = function(args)
 				return args
 			end,
+			chatLink = function(col, data) return end,
 		}	
 		function dbmHandlers:DBM_Debug(msg, level)
 			local t = {
@@ -2819,6 +2886,7 @@ do -- DeadlyBossMods
 				args[d.timer] = tonumber(args[d.timer])
 				return args
 			end,
+			chatLink = function(col, data) return end,
 		}	
 		function dbmHandlers:DBM_TimerStart(id, msg, timer, icon, msgType, spellID, colorID, modID, keep, fade, spellName, mobGUID)
 			local t = {
@@ -2869,6 +2937,7 @@ do -- DeadlyBossMods
 			import = function(args)
 				return args
 			end,
+			chatLink = function(col, data) return end,
 		}	
 		function dbmHandlers:DBM_TimerStop(id)
 			local t = {
@@ -2920,6 +2989,7 @@ do -- DeadlyBossMods
 				args[d.spellID] = tonumber(args.spellID)
 				return args
 			end,
+			chatLink = function(col, data) return end,
 		}	
 		function dbmHandlers:DBM_TimerFadeUpdate(id, spellID, modID, fade)
 			local t = {
@@ -2972,6 +3042,7 @@ do -- DeadlyBossMods
 				args[d.total] = tonumber(args[d.total])
 				return args
 			end,
+			chatLink = function(col, data) return end,
 		}	
 		function dbmHandlers:DBM_TimerUpdate(id, elapsed, total)
 			local t = {
@@ -3020,7 +3091,7 @@ end
 --[[
 function iEET_CHECK_EVENTS()
 	for k,v in pairs(iEET.eventFunctions) do
-		for _,tName in pairs({"data", "gui", "filtering", "hyperlink", "import"}) do
+		for _,tName in pairs({"data", "gui", "filtering", "hyperlink", "import", "chatLink"}) do
 			if not v[tName] then print(k,"Missing", tName) end
 		end
 	end

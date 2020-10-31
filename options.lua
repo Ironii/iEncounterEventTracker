@@ -1,13 +1,19 @@
 local _, iEET = ...
 local spairs = iEET.spairs
+local tinsert = table.insert
 iEET.optionsMenu = {}
+iEET.ENUMS.SPREADSHEETS = {
+	GOOGLE = 1,
+	OPENOFFICE = 2,
+	EXCEL = 3,
+}
 iEET.optionsMenuFrame = CreateFrame('Frame', 'iEETOptionsListMenu', UIParent, 'UIDropDownMenuTemplate')
 function iEET:updateOptionsMenu()
 	iEET.optionsMenu = nil
 	iEET.optionsMenu = {}
 	local onscreenIgnoredEvents = {}
 	for eventName,eventID in spairs(iEET.events.toID) do
-		table.insert(onscreenIgnoredEvents, {
+		tinsert(onscreenIgnoredEvents, {
 			text = string.format("%s%s", eventName, iEET.events.fromID[eventID].c and " (CLEU)" or ""),
 			isNotRadio = true,
 			checked = iEETConfig.onscreen.ignoredEvents[eventID],
@@ -21,8 +27,8 @@ function iEET:updateOptionsMenu()
 			end,
 		})
 	end
-  table.insert(iEET.optionsMenu, {text = 'Options', isTitle = true, notCheckable = true})
-  table.insert(iEET.optionsMenu, {text = 'Onscreen display', notCheckable = true, keepShownOnClick = true, hasArrow = true, menuList = {
+  tinsert(iEET.optionsMenu, {text = 'Options', isTitle = true, notCheckable = true})
+  tinsert(iEET.optionsMenu, {text = 'Onscreen display', notCheckable = true, keepShownOnClick = true, hasArrow = true, menuList = {
     {text ='Enabled', isNotRadio = true, checked = iEETConfig.onscreen.enabled, keepShownOnClick = false, func = function()
 			if iEETConfig.onscreen.enabled then
 				iEETConfig.onscreen.enabled = false
@@ -38,8 +44,8 @@ function iEET:updateOptionsMenu()
 		{text = 'Ignored events', notCheckable = true, keepShownOnClick = true, hasArrow = true, menuList = onscreenIgnoredEvents},
 
   }})
-	table.insert(iEET.optionsMenu, {text = 'Mass delete options', notCheckable = true, func = function() iEET:toggleDeleteOptions() end})
-	table.insert(iEET.optionsMenu, {text = 'Color', notCheckable = true, keepShownOnClick = true, hasArrow = true, menuList = {
+	tinsert(iEET.optionsMenu, {text = 'Mass delete options', notCheckable = true, func = function() iEET:toggleDeleteOptions() end})
+	tinsert(iEET.optionsMenu, {text = 'Color', notCheckable = true, keepShownOnClick = true, hasArrow = true, menuList = {
 			{text = 'Main Frame',
 			notCheckable = true,
 			hasArrow = true,
@@ -134,7 +140,7 @@ function iEET:updateOptionsMenu()
 				end},
 			},},
 		},})
-	table.insert(iEET.optionsMenu, {text = 'Automatic saving', isNotRadio = true, checked = iEETConfig.autoSave, keepShownOnClick = false, func = function()
+	tinsert(iEET.optionsMenu, {text = 'Automatic saving', isNotRadio = true, checked = iEETConfig.autoSave, keepShownOnClick = false, func = function()
 			if iEETConfig.autoSave then
 				iEETConfig.autoSave = false
 				iEET:print('Automatic saving is now off.')
@@ -145,7 +151,7 @@ function iEET:updateOptionsMenu()
 			iEET:updateOptionsMenu()
 			EasyMenu(iEET.optionsMenu, iEET.optionsMenuFrame, iEET.optionsList, 0 , 0, 'MENU');
 		end})
-	table.insert(iEET.optionsMenu, {text = 'Use automatic saving only inside raid instances', isNotRadio = true, checked = iEETConfig.onlyRaids, keepShownOnClick = false, func = function()
+	tinsert(iEET.optionsMenu, {text = 'Use automatic saving only inside raid instances', isNotRadio = true, checked = iEETConfig.onlyRaids, keepShownOnClick = false, func = function()
 			if iEETConfig.onlyRaids then
 				iEETConfig.onlyRaids = false
 				iEET:print('Always using automatic saving.')
@@ -156,63 +162,63 @@ function iEET:updateOptionsMenu()
 			iEET:updateOptionsMenu()
 			EasyMenu(iEET.optionsMenu, iEET.optionsMenuFrame, iEET.optionsList, 0 , 0, 'MENU');
 		end})
-		table.insert(iEET.optionsMenu, {text = 'Expansion specific ignore', notCheckable = true, keepShownOnClick = true, hasArrow = true, menuList = {
-			{text ='Vanilla - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.VANILLA], keepShownOnClick = true, arg1 = iEET.expansions.VANILLA, func = function(self, arg1, arg2, checked)
+		tinsert(iEET.optionsMenu, {text = 'Expansion specific ignore', notCheckable = true, keepShownOnClick = true, hasArrow = true, menuList = {
+			{text ='Vanilla - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.VANILLA], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.VANILLA, func = function(self, arg1, arg2, checked)
 				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
 			end},
-			{text ='Vanilla - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.VANILLA5MAN], keepShownOnClick = true, arg1 = iEET.expansions.VANILLA5MAN, func = function(self, arg1, arg2, checked)
+			{text ='Vanilla - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.VANILLA5MAN], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.VANILLA5MAN, func = function(self, arg1, arg2, checked)
 				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil	end
 			end},
-			{text ='The Burning Crusade - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.TBC], keepShownOnClick = true, arg1 = iEET.expansions.TBC5, func = function(self, arg1, arg2, checked)
+			{text ='The Burning Crusade - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.TBC], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.TBC5, func = function(self, arg1, arg2, checked)
 				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
 			end},
-			{text ='The Burning Crusade - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.TBC5MAN], keepShownOnClick = true, arg1 = iEET.expansions.TBC5MAN, func = function(self, arg1, arg2, checked)
+			{text ='The Burning Crusade - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.TBC5MAN], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.TBC5MAN, func = function(self, arg1, arg2, checked)
 				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
 			end},
-			{text ='Wrath of the Lich King - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.WOTLK], keepShownOnClick = true, arg1 = iEET.expansions.WOTLK, func = function(self, arg1, arg2, checked)
+			{text ='Wrath of the Lich King - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.WOTLK], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.WOTLK, func = function(self, arg1, arg2, checked)
 				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
 			end},
-			{text ='Wrath of the Lich King - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.WOTLK5MAN], keepShownOnClick = true, arg1 = iEET.expansions.WOTLK5MAN, func = function(self, arg1, arg2, checked)
+			{text ='Wrath of the Lich King - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.WOTLK5MAN], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.WOTLK5MAN, func = function(self, arg1, arg2, checked)
 				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
 			end},
-			{text ='Cataclysm - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.CATACLYSM], keepShownOnClick = true, arg1 = iEET.expansions.CATACLYSM, func = function(self, arg1, arg2, checked)
+			{text ='Cataclysm - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.CATACLYSM], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.CATACLYSM, func = function(self, arg1, arg2, checked)
 				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
 			end},
-			{text ='Cataclysm - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.CATACLYSM5MAN], keepShownOnClick = true, arg1 = iEET.expansions.CATACLYSM5MAN, func = function(self, arg1, arg2, checked)
+			{text ='Cataclysm - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.CATACLYSM5MAN], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.CATACLYSM5MAN, func = function(self, arg1, arg2, checked)
 				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
 			end},
-			{text ='Mist of Pandaria - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.MOP], keepShownOnClick = true, arg1 = iEET.expansions.MOP, func = function(self, arg1, arg2, checked)
+			{text ='Mist of Pandaria - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.MOP], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.MOP, func = function(self, arg1, arg2, checked)
 				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
 			end},
-			{text ='Mist of Pandaria - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.MOP5MAN], keepShownOnClick = true, arg1 = iEET.expansions.MOP5MAN, func = function(self, arg1, arg2, checked)
+			{text ='Mist of Pandaria - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.MOP5MAN], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.MOP5MAN, func = function(self, arg1, arg2, checked)
 				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
 			end},
-			{text ='Warlords of Draenor - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.WOD], keepShownOnClick = true, arg1 = iEET.expansions.WOD, func = function(self, arg1, arg2, checked)
+			{text ='Warlords of Draenor - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.WOD], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.WOD, func = function(self, arg1, arg2, checked)
 				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
 			end},
-			{text ='Warlords of Draenor - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.WOD5MAN], keepShownOnClick = true, arg1 = iEET.expansions.WOD5MAN, func = function(self, arg1, arg2, checked)
+			{text ='Warlords of Draenor - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.WOD5MAN], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.WOD5MAN, func = function(self, arg1, arg2, checked)
 				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
 			end},
-			{text ='Legion - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.LEGION], keepShownOnClick = true, arg1 = iEET.expansions.LEGION, func = function(self, arg1, arg2, checked)
+			{text ='Legion - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.LEGION], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.LEGION, func = function(self, arg1, arg2, checked)
 				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
 			end},
-			{text ='Legion - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.LEGION5MAN], keepShownOnClick = true, arg1 = iEET.expansions.LEGION5MAN, func = function(self, arg1, arg2, checked)
+			{text ='Legion - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.LEGION5MAN], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.LEGION5MAN, func = function(self, arg1, arg2, checked)
 				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
 			end},
-			{text ='Battle for Azeroth - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.BFA], keepShownOnClick = true, arg1 = iEET.expansions.BFA, func = function(self, arg1, arg2, checked)
+			{text ='Battle for Azeroth - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.BFA], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.BFA, func = function(self, arg1, arg2, checked)
 				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
 			end},
-			{text ='Battle for Azeroth - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.BFA5MAN], keepShownOnClick = true, arg1 = iEET.expansions.BFA5MAN, func = function(self, arg1, arg2, checked)
+			{text ='Battle for Azeroth - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.BFA5MAN], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.BFA5MAN, func = function(self, arg1, arg2, checked)
 				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
 			end},
-			{text ='Shadowlands - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.SHADOWLANDS], keepShownOnClick = true, arg1 = iEET.expansions.SHADOWLANDS, func = function(self, arg1, arg2, checked)
+			{text ='Shadowlands - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.SHADOWLANDS], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, func = function(self, arg1, arg2, checked)
 				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
 			end},
-			{text ='Shadowlands - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.expansions.SHADOWLANDS5MAN], keepShownOnClick = true, arg1 = iEET.expansions.SHADOWLANDS5MAN, func = function(self, arg1, arg2, checked)
+			{text ='Shadowlands - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.SHADOWLANDS5MAN], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.SHADOWLANDS5MAN, func = function(self, arg1, arg2, checked)
 				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
 			end},
 		}})
-	table.insert(iEET.optionsMenu, {text = 'Class coloring', isNotRadio = true,	checked = iEETConfig.classColors, keepShownOnClick = true, func = function()
+	tinsert(iEET.optionsMenu, {text = 'Class coloring', isNotRadio = true,	checked = iEETConfig.classColors, keepShownOnClick = true, func = function()
 			if iEETConfig.classColors then
 				iEETConfig.classColors = false
 				iEET:print('Class coloring is now off.')
@@ -224,7 +230,7 @@ function iEET:updateOptionsMenu()
 			EasyMenu(iEET.optionsMenu, iEET.optionsMenuFrame, iEET.optionsList, 0 , 0, 'MENU');
 			iEET:loopData()
 		end})
-	table.insert(iEET.optionsMenu, {text = 'Clear all fights', notCheckable = true, keepShownOnClick = true, hasArrow = true, menuList = {
+	tinsert(iEET.optionsMenu, {text = 'Clear all fights', notCheckable = true, keepShownOnClick = true, hasArrow = true, menuList = {
 		{text = 'Are you sure?', keepShownOnClick = true, notCheckable = true, hasArrow = true, menuList = {
 			{text = 'For realsies?', keepShownOnClick = true, notCheckable = true, hasArrow = true, menuList = {
 				{text = 'Clear all fights', notCheckable = true, keepShownOnClick = false, func = function()
@@ -236,13 +242,18 @@ function iEET:updateOptionsMenu()
 			}
 		}}
 	}})
-	table.insert(iEET.optionsMenu, {text = 'Export sorted fights to WTF file', notCheckable = true, func = function() iEET:ExportFightsToWTF() end})
-	table.insert(iEET.optionsMenu, {text = 'Clear exported fights (iEET_ExportFromWTF)', notCheckable = true, func = function()
+	tinsert(iEET.optionsMenu, {text = 'Export sorted fights to WTF file', notCheckable = true, func = function() iEET:ExportFightsToWTF() end})
+	tinsert(iEET.optionsMenu, {text = 'Clear exported fights (iEET_ExportFromWTF)', notCheckable = true, func = function()
 		iEET_ExportFromWTF = {}
 		iEET:print('Export variable cleared.')
 	end})
-	table.insert(iEET.optionsMenu, { text = 'Start recording without filters', notCheckable = true, func = function () iEET:StartRecordingWithoutFiltersPopup() end})
-	table.insert(iEET.optionsMenu, { text = 'Close', notCheckable = true, func = function () CloseDropDownMenus(); end})
+	tinsert(iEET.optionsMenu, {text = 'Start recording without filters', notCheckable = true, func = function () iEET:StartRecordingWithoutFiltersPopup() end})
+	tinsert(iEET.optionsMenu, {text = "Spreadsheet exporting", isNotRadio = true, keepShownOnClick = true, hasArrow = true, menuList = {
+		{ text = 'Excel', notCheckable = true, func = function() iEET:copyCurrent(iEET.ENUMS.SPREADSHEETS.EXCEL) end},
+		{ text = 'Google', notCheckable = true, func = function() iEET:copyCurrent(iEET.ENUMS.SPREADSHEETS.GOOGLE) end},
+		{ text = 'OpenOffice', notCheckable = true, func = function() iEET:copyCurrent(iEET.ENUMS.SPREADSHEETS.OPENOFFICE) end},
+	}})
+	tinsert(iEET.optionsMenu, { text = 'Close', notCheckable = true, func = function () CloseDropDownMenus(); end})
 end
 
 iEET.encounterListMenu = {}
@@ -295,7 +306,7 @@ function iEET:updateEncounterListMenu()
 			if not encountersTempTable[temp.groupType][temp.zoneName][temp.eN][temp.d] then
 				encountersTempTable[temp.groupType][temp.zoneName][temp.eN][temp.d] = {}
 			end
-			table.insert(encountersTempTable[temp.groupType][temp.zoneName][temp.eN][temp.d], temp)
+			tinsert(encountersTempTable[temp.groupType][temp.zoneName][temp.eN][temp.d], temp)
 		end -- Sorted by encounter -> Sort by ids inside
 		-- temp{} -> encounter{} -> difficulty{} -> fight{}
 		for groupType, zoneInfo in spairs(encountersTempTable) do -- Get alphabetically sorted group types
@@ -333,18 +344,18 @@ function iEET:updateEncounterListMenu()
 									end,
 								},},
 							}
-							table.insert(t2.menuList, fightEntry)
+							tinsert(t2.menuList, fightEntry)
 						end
-						table.insert(t.menuList, t2)
+						tinsert(t.menuList, t2)
 					end
-					table.insert(t3.menuList, t)
+					tinsert(t3.menuList, t)
 				end
-				table.insert(groupSplitTemp[groupType].menuList, t3)
+				tinsert(groupSplitTemp[groupType].menuList, t3)
 			end
 		end
 		for _,v in spairs(groupSplitTemp) do
-			table.insert(iEET.encounterListMenu, v)
+			tinsert(iEET.encounterListMenu, v)
 		end
 	end
-	table.insert(iEET.encounterListMenu, { text = 'Exit', notCheckable = true, func = function () CloseDropDownMenus() end})
+	tinsert(iEET.encounterListMenu, { text = 'Exit', notCheckable = true, func = function () CloseDropDownMenus() end})
 end

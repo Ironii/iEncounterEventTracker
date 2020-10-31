@@ -21,6 +21,7 @@ iEET.ignoring = { -- so ignore list resets on relog, don't want to save it, atle
 	specialCategories = {},
 	npcNames = {},
 }
+iEET.ENUMS = {}
 --iEET.font = isAlpha and 'Fonts\\ARIALN.TTF' or 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
 iEET.font = 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
 --iEET.fontsize = isAlpha and 11 or 9
@@ -1306,7 +1307,7 @@ function iEET:massDelete(data)
 	iEET:print(counter .. ' fights deleted.')
 	encounters = nil
 end
-function iEET:copyCurrent(formatStyle)
+function iEET:copyCurrent(formatStyle) -- TODO : rewrite with event specific export funcs
 	local totalData = ''
 	for line = 1, iEET.content1:GetNumMessages() do
 		local lineData = ''
@@ -1318,11 +1319,11 @@ function iEET:copyCurrent(formatStyle)
 					local spellName = lineInfo:match('\124h(.*)\124h$')
 					if spellName then
 						local s = ''
-						if formatStyle == 1 then -- Google Spreadsheet
+						if formatStyle == iEET.ENUMS.SPREADSHEETS.GOOGLE then -- Google Spreadsheet
 							s = '=HYPERLINK("http://bfa.wowhead.com/spell=%s", "%s")'
-						elseif formatStyle == 2 then -- Openoffice Math
+						elseif formatStyle == iEET.ENUMS.SPREADSHEETS.OPENOFFICE then -- Openoffice Math
 							s = '=HYPERLINK("http://bfa.wowhead.com/spell=%s"; "%s")'
-						elseif formatStyle == 3 then -- Excel
+						elseif formatStyle == iEET.ENUMS.SPREADSHEETS.EXCEL then -- Excel
 							s = '=HYPERLINK("http://bfa.wowhead.com/spell=%s", "%s")'
 						end
 						--add ExtraData to 9th column
