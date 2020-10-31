@@ -8,7 +8,9 @@ local sformat = string.format
 local maxLengths = {
   [4] = 20,
   [5] = 18,
-  [6] = 14,
+	[6] = 14,
+	[7] = 4,
+	[8] = 4,
 }
 local function trim(str, col)
   if not str then return " " end

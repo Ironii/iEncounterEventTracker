@@ -1,22 +1,6 @@
---[[--------------------------FILTERING-OPTIONS-USAGE-------------
-split different args with ';' NOT DONE
-x=x
-possible key values:
-t	time 		number
-e	event 		number or string	(long(SPELL_CAST_START instead of SC_START) event name or number, numbers under iEET.events)
-sG	sourceGUID	string	UNIT_DIED:destGUID
-cN	sourceName	string	UNIT_DIED:destName
-tN	destName		string	USCS: source unitID
-sN	spellName	string
-sI	spellID		number
-hp	Health		number	USCS only
-
---]]--------------------------------------------------------------
---[[TO DO:--
-compare
-better fight selecting
---]]
 local _, iEET = ...
+iEET.version = 2.005
+
 iEET.data = {}
 local sformat = string.format
 local function tcopy(data)
@@ -54,7 +38,6 @@ iEET.backdrop = {
 		bottom = -1,
 	}
 }
-iEET.version = 2.004
 local colors = {}
 
 iEET.auraEvents = {
@@ -238,6 +221,12 @@ iEET.events = {
 		['BigWigs_ResumeBar'] = 50,
 		['BigWigs_StopBar'] = 51,
 		['BigWigs_StopBars'] = 52,
+		['DBM_Announce'] = 66,
+		['DBM_Debug'] = 67,
+		['DBM_TimerStart'] = 68,
+		['DBM_TimerStop'] = 69,
+		['DBM_TimerFadeUpdate'] = 70,
+		['DBM_TimerUpdate'] = 71,
 	},
 	['fromID'] = {
 		[1] = {
@@ -590,7 +579,37 @@ iEET.events = {
 			l = "UPDATE_UI_WIDGET",
 			s = "U_UI_WIDGET",
 			t = "misc"
-		}
+		},
+		[66] = {
+			l = "DBM_Announce",
+			s = "DBM_Announce",
+			t = "dbm"
+		},
+		[67] = {
+			l = "DBM_Debug",
+			s = "DBM_Debug",
+			t = "dbm"
+		},
+		[68] = {
+			l = "DBM_TimerStart",
+			s = "DBM_TStart",
+			t = "dbm"
+		},
+		[69] = {
+			l = "DBM_TimerStop",
+			s = "DBM_TStop",
+			t = "dbm"
+		},
+		[70] = {
+			l = "DBM_TimerFadeUpdate",
+			s = "DBM_TFUpdate",
+			t = "dbm"
+		},
+		[71] = {
+			l = "DBM_TimerUpdate",
+			s = "DBM_TUpdate",
+			t = "dbm"
+		},
 	},
 }
 iEET.addonUsers = {}
@@ -730,6 +749,13 @@ function iEET:LoadDefaults()
 
 			[64] = true, -- CUSTOM
 			[65] = true, -- UPDATE_UI_WIDGET
+
+			[66] = true, -- DBM_Announce
+			[67] = true, -- DBM_Debug
+			[68] = true, -- DBM_TimerStart
+			[69] = true, -- DBM_TimerStop
+			[70] = true, -- DBM_TimerFadeUpdate
+			[71] = true, -- DBM_TimerUpdate
 		},
 		['version'] = iEET.version,
 		['autoSave'] = true,
@@ -784,38 +810,7 @@ function iEET:LoadDefaults()
 		end
 	end
 end
-function iEET:BWRecording(start)
-	if not BigWigsLoader then
-		return
-	end
-	if start then
-    	BigWigsLoader.RegisterMessage('iEncounterEventTracker', 'BigWigs_BarCreated', function(event,_,_,_, key, text, time,_, cd)
-        	iEET:BigWigsData(event, key, text, time, cd)
-    	end)
-		BigWigsLoader.RegisterMessage('iEncounterEventTracker', 'BigWigs_Message', function(event, _, key, text)
-        	iEET:BigWigsData(event, key, text)
-    	end)
-		BigWigsLoader.RegisterMessage('iEncounterEventTracker', 'BigWigs_PauseBar', function(_, _, text)
-			iEET:BigWigsData('BigWigs_PauseBar', text)
-		end)
-		BigWigsLoader.RegisterMessage('iEncounterEventTracker', 'BigWigs_ResumeBar', function(_, _, text)
-			iEET:BigWigsData('BigWigs_ResumeBar', text)
-		end)
-		BigWigsLoader.RegisterMessage('iEncounterEventTracker', 'BigWigs_StopBar', function(_, _, text)
-			iEET:BigWigsData('BigWigs_StopBar', text)
-		end)
-		BigWigsLoader.RegisterMessage('iEncounterEventTracker', 'BigWigs_StopBars', function()
-			iEET:BigWigsData('BigWigs_StopBars')
-		end)
-	else
-		BigWigsLoader.UnregisterMessage('iEncounterEventTracker', 'BigWigs_BarCreated')
-		BigWigsLoader.UnregisterMessage('iEncounterEventTracker', 'BigWigs_Message')
-		BigWigsLoader.UnregisterMessage('iEncounterEventTracker', 'BigWigs_PauseBar')
-		BigWigsLoader.UnregisterMessage('iEncounterEventTracker', 'BigWigs_ResumeBar')
-		BigWigsLoader.UnregisterMessage('iEncounterEventTracker', 'BigWigs_StopBar')
-		BigWigsLoader.UnregisterMessage('iEncounterEventTracker', 'BigWigs_StopBars')
-	end
-end
+
 function iEET:TrimWS(str)
 	return str:gsub('^%s*(.-)%s*$', '%1')
 end
@@ -829,6 +824,8 @@ do
 	local maxLengths = {
 		[5] = 18,
 		[6] = 14,
+		[7] = 4,
+		[8] = 4,
 	}
 	local function trim(str, col)
 		if not str then return " " end
@@ -918,6 +915,8 @@ do
 		[4] = 20,
 		[5] = 18,
 		[6] = 14,
+		[7] = 4,
+		[8] = 4,
 	}
 	local function trim(str, col)
 		if not str then return " " end

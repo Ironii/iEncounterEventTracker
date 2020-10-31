@@ -1,3 +1,4 @@
+-- TODO : add k:v searches without event reqs
 local _, iEET = ...
 local spairs = iEET.spairs
 local tinsert, tremove, sformat, tconcat = table.insert, table.remove, string.format, table.concat
@@ -369,6 +370,7 @@ do
 		chat = "Chats",
 		misc = "Miscellaneous",
 		bigwigs = "BigWigs",
+		dbm = "DeadlyBossMods",
 	}
 	local sortedEvents = {}
 	for k,v in spairs(iEET.events.fromID, function(t,a,b) return t[b].l > t[a].l end) do
