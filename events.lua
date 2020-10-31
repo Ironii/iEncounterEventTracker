@@ -1,5 +1,4 @@
 -- TODO : transcriptor imports
--- TODO : add castIDs
 
 local _, iEET = ...
 local cleuEventsToTrack = {
@@ -245,7 +244,7 @@ local ignoreFiltersTimer
 
 local function checkValid(arg, searchValue, operator)
 	if not arg or not searchValue or not operator then return false end
-	if operator == "exactly" or operator == "is" or operator == "class" or operator == "role" then
+	if operator == "exact" or operator == "is" or operator == "class" or operator == "role" then
 		return arg == searchValue
 	elseif operator == "auraType" then
 		if searchValue == "0" then
@@ -453,7 +452,7 @@ do -- ENCOUNTER_START
 		local mapID = select(8, GetInstanceInfo())
 		if not iEET.forceRecording then
 			iEET:StartRecording()
-			iEET.encounterInfoData = { --TODO
+			iEET.encounterInfoData = {
 				['s'] = GetTime(),
 				['eN'] = encounterName,
 				['pT'] = date('%y.%m.%d %H:%M'), -- y.m.d instead of d.m.y for easier sorting
@@ -1814,6 +1813,9 @@ do -- RAID_BOSS_WHISPER
 			[d.sourceName] = sourceName,
 			[d.message] = msg,
 		}
+		if IsInGroup() then
+			C_ChatInfo.SendAddonMessage('iEETSync', sformat("%s-%s", eventID, msg), IsInGroup(LE_PARTY_CATEGORY_INSTANCE) and "INSTANCE_CHAT" or IsInRaid() and "RAID" or "party")
+		end
 		tinsert(iEET.data, t)
 		iEET:OnscreenAddMessages(t)
 	end
@@ -1884,6 +1886,9 @@ do -- CHAT_MSG_RAID_BOSS_WHISPER
 			[d.sourceName] = sourceName,
 			[d.message] = msg,
 		}
+		if IsInGroup() then
+			C_ChatInfo.SendAddonMessage('iEETSync', sformat("%s-%s", eventID, msg), IsInGroup(LE_PARTY_CATEGORY_INSTANCE) and "INSTANCE_CHAT" or IsInRaid() and "RAID" or "party")
+		end
 		tinsert(iEET.data, t)
 		iEET:OnscreenAddMessages(t)
 	end
@@ -2063,27 +2068,27 @@ do -- BigWigs
 		local d = {
 			["event"] = 1,
 			["time"] = 2,
-			["duration"] = 3,
-			["key"] = 4,
-			["text"] = 5,
-			["cd"] = 6,
+			["bw_duration"] = 3,
+			["bw_key"] = 4,
+			["bw_text"] = 5,
+			["bw_cd"] = 6,
 		}
 		iEET.eventFunctions[eventID] = {
 			data = d, 
 			gui = function(args, getGUID)
-				local guid = sformat("%s-%s", eventID, args[d.key] or "")
+				local guid = sformat("%s-%s", eventID, args[d.bw_key] or "")
 				if getGUID then return guid end
-				return guid, iEET.specialCategories.Ignore, args[d.text], sformat("%s", args[d.cd] and "~" or "", args[d.duration]), args[d.key]
+				return guid, iEET.specialCategories.Ignore, args[d.bw_text], sformat("%s", args[d.bw_cd] and "~" or "", args[d.bw_duration]), args[d.bw_key]
 			end,
 			filtering = function(args, filters, ...)
 				return defaultFiltering(args, d, filters, eventID, ...)
 			end,
 			hyperlink = function(col, data)
 				addToTooltip(nil,
-					formatKV("Duration", data[d.duration]),
-					formatKV("Key", data[d.key]),
-					formatKV("Text", data[d.text]),
-					formatKV("CD", data[d.cd])
+					formatKV("Duration", data[d.bw_duration]),
+					formatKV("Key", data[d.bw_key]),
+					formatKV("Text", data[d.bw_text]),
+					formatKV("CD", data[d.bw_cd])
 				)
 				return true
 			end,
@@ -2096,23 +2101,23 @@ do -- BigWigs
 		local d = {
 			["event"] = 1,
 			["time"] = 2,
-			["text"] = 3,
-			["key"] = 4,
+			["bw_text"] = 3,
+			["bw_key"] = 4,
 		}
 		iEET.eventFunctions[eventID] = { 
 			data = d,
 			gui = function(args, getGUID)
-				local guid = sformat("%s-%s", eventID, args[d.key] or "")
+				local guid = sformat("%s-%s", eventID, args[d.bw_key] or "")
 				if getGUID then return guid end
-				return guid, iEET.specialCategories.Ignore, args[d.text], nil, args[d.key]
+				return guid, iEET.specialCategories.Ignore, args[d.bw_text], nil, args[d.bw_key]
 			end,
 			filtering = function(args, filters, ...)
 				return defaultFiltering(args, d, filters, eventID, ...)
 			end,
 			hyperlink = function(col, data)
 				addToTooltip(nil,
-					formatKV("Key", data[d.key]),
-					formatKV("Text", data[d.text])
+					formatKV("Key", data[d.bw_key]),
+					formatKV("Text", data[d.bw_text])
 				)
 				return true
 			end,
@@ -2125,21 +2130,21 @@ do -- BigWigs
 		local d = {
 			["event"] = 1,
 			["time"] = 2,
-			["text"] = 3,
+			["bw_text"] = 3,
 		}
 		iEET.eventFunctions[eventID] = { 
 			data = d, 
 			gui = function(args, getGUID)
-				local guid = sformat("%s-%s", eventID, args[d.text] or "")
+				local guid = sformat("%s-%s", eventID, args[d.bw_text] or "")
 				if getGUID then return guid end
-				return guid, iEET.specialCategories.Ignore, args[d.text]
+				return guid, iEET.specialCategories.Ignore, args[d.bw_text]
 			end,
 			filtering = function(args, filters, ...)
 				return defaultFiltering(args, d, filters, eventID, ...)
 			end,
 			hyperlink = function(col, data)
 				addToTooltip(nil,
-					formatKV("Text", data[d.text])
+					formatKV("Text", data[d.bw_text])
 				)
 				return true
 			end,
@@ -2152,21 +2157,21 @@ do -- BigWigs
 		local d = {
 			["event"] = 1,
 			["time"] = 2,
-			["text"] = 3,
+			["bw_text"] = 3,
 		}
 		iEET.eventFunctions[eventID] = { 
 			data = d,
 			gui = function(args, getGUID)
-				local guid = sformat("%s-%s", eventID, args[d.text] or "")
+				local guid = sformat("%s-%s", eventID, args[d.bw_text] or "")
 				if getGUID then return guid end
-				return guid, iEET.specialCategories.Ignore, args[d.text]
+				return guid, iEET.specialCategories.Ignore, args[d.bw_text]
 			end,
 			filtering = function(args, filters, ...)
 				return defaultFiltering(args, d, filters, eventID, ...)
 			end,
 			hyperlink = function(col, data)
 				addToTooltip(nil,
-					formatKV("Text", data[d.text])
+					formatKV("Text", data[d.bw_text])
 				)
 				return true
 			end,
@@ -2179,21 +2184,21 @@ do -- BigWigs
 		local d = {
 			["event"] = 1,
 			["time"] = 2,
-			["text"] = 3,
+			["bw_text"] = 3,
 		}
 		iEET.eventFunctions[eventID] = { 
 			data = d,
 			gui = function(args, getGUID)
-				local guid = sformat("%s-%s", eventID, args[d.text] or "")
+				local guid = sformat("%s-%s", eventID, args[d.bw_text] or "")
 				if getGUID then return guid end
-				return guid, iEET.specialCategories.Ignore, args[d.text]
+				return guid, iEET.specialCategories.Ignore, args[d.bw_text]
 			end,
 			filtering = function(args, filters, ...)
 				return defaultFiltering(args, d, filters, eventID, ...)
 			end,
 			hyperlink = function(col, data)
 				addToTooltip(nil,
-					formatKV("Text", data[d.text])
+					formatKV("Text", data[d.bw_text])
 				)
 				return true
 			end,
@@ -2210,7 +2215,7 @@ do -- BigWigs
 		iEET.eventFunctions[eventID] = { 
 			data = d,
 			gui = function(args, getGUID)
-				local guid = sformat("%s-%s", eventID, args[d.key] or "")
+				local guid = sformat("%s", eventID)
 				if getGUID then return guid end
 				return guid, iEET.specialCategories.Ignore, "BigWigs_StopBars"
 			end,
@@ -2235,39 +2240,39 @@ do -- BigWigs
 			t = {
 				[d.event] = eventID,
 				[d.time] = GetTime(),
-				[d.duration] = time,
-				[d.key] = key,
-				[d.text] = text,
-				[d.cd] = cd,
+				[d.bw_duration] = time,
+				[d.bw_key] = key,
+				[d.bw_text] = text,
+				[d.bw_cd] = cd,
 			}
 		elseif event == 'BigWigs_Message' then
 			local key,text = ...
 			t = {
 				[d.event] = eventID,
 				[d.time] = GetTime(),
-				[d.key] = key,
-				[d.text] = text,
+				[d.bw_key] = key,
+				[d.bw_text] = text,
 			}
 		elseif event == 'BigWigs_PauseBar' then
 			local text = ...
 			t = {
 				[d.event] = eventID,
 				[d.time] = GetTime(),
-				[d.text] = text,
+				[d.bw_text] = text,
 			}
 		elseif event == 'BigWigs_ResumeBar' then
 			local text = ...
 			t = {
 				[d.event] = eventID,
 				[d.time] = GetTime(),
-				[d.text] = text,
+				[d.bw_text] = text,
 			}
 		elseif event == 'BigWigs_StopBar' then
 			local text = ...
 			t = {
 				[d.event] = eventID,
 				[d.time] = GetTime(),
-				[d.text] = text,
+				[d.bw_text] = text,
 			}
 		elseif event == 'BigWigs_StopBars' then
 			t = {
@@ -2735,41 +2740,41 @@ do -- DeadlyBossMods
 		local d = {
 			["event"] = 1,
 			["time"] = 2,
-			["message"] = 3,
-			["icon"] = 4,
-			["messageType"] = 5,
-			["spellID"] = 6,
-			["modID"] = 7,
-			["special"] = 8,
+			["dbm_message"] = 3,
+			["dbm_icon"] = 4,
+			["dbm_messageType"] = 5,
+			["dbm_spellID"] = 6,
+			["dbm_modID"] = 7,
+			["dbm_special"] = 8,
 		}
 		iEET.eventFunctions[eventID] = {
 			data = d,
 			gui = function(args, getGUID)
-				local guid = sformat("%s-%s-%s", eventID, (args[d.spellID] or ""), (args[d.modID] or "")) -- Create unique string from event + spellID + modID
+				local guid = sformat("%s-%s-%s", eventID, (args[d.dbm_spellID] or ""), (args[d.dbm_modID] or "")) -- Create unique string from event + spellID + modID
 				if getGUID then return guid end
 				return guid, -- 1
 					iEET.specialCategories.Ignore, -- 2
-					args[d.message], -- 3
-					args[d.messageType], -- 4
-					args[d.spellID], -- 5
-					args[d.modID] -- 6
+					args[d.dbm_message], -- 3
+					args[d.dbm_messageType], -- 4
+					args[d.dbm_spellID], -- 5
+					args[d.dbm_modID] -- 6
 			end,
 			filtering = function(args, filters, ...)
 				return defaultFiltering(args, d, filters, eventID, ...)
 			end,
 			hyperlink = function(col, data)
 				addToTooltip(nil,
-					formatKV("Message", data[d.message]),
-					formatKV("Icon", data[d.icon]),
-					formatKV("Type", data[d.messageType]),
-					formatKV("Spell ID", data[d.spellID]),
-					formatKV("Mod ID", data[d.modID]),
-					formatKV("Special", data[d.special])
+					formatKV("Message", data[d.dbm_message]),
+					formatKV("Icon", data[d.dbm_icon]),
+					formatKV("Type", data[d.dbm_messageType]),
+					formatKV("Spell ID", data[d.dbm_spellID]),
+					formatKV("Mod ID", data[d.dbm_modID]),
+					formatKV("Special", data[d.dbm_special])
 				)
 				return true
 			end,
 			import = function(args)
-				args[d.spellID] = tonumber(args[d.spellID])
+				args[d.dbm_spellID] = tonumber(args[d.dbm_spellID])
 				return args
 			end,
 			chatLink = function(col, data) return end,
@@ -2778,12 +2783,12 @@ do -- DeadlyBossMods
 			local t = {
 				[d.event] = eventID,
 				[d.time] = GetTime(),
-				[d.message] = msg,
-				[d.icon] = icon,
-				[d.messageType] = msgType,
-				[d.spellID] = spellID,
-				[d.modID] = modID,
-				[d.special] = specialWarning,
+				[d.dbm_message] = msg,
+				[d.dbm_icon] = icon,
+				[d.dbm_messageType] = msgType,
+				[d.dbm_spellID] = spellID,
+				[d.dbm_modID] = modID,
+				[d.dbm_special] = specialWarning,
 			}
 			table.insert(iEET.data, t);
 			iEET:OnscreenAddMessages(t)
@@ -2794,18 +2799,18 @@ do -- DeadlyBossMods
 		local d = {
 			["event"] = 1,
 			["time"] = 2,
-			["message"] = 3,
-			["level"] = 4,
+			["dbm_message"] = 3,
+			["dbm_level"] = 4,
 		}
 		iEET.eventFunctions[eventID] = {
 			data = d,
 			gui = function(args, getGUID)
-				local guid = sformat("%s-%s", eventID, (args[d.level] or "")) -- Create unique string from event + debug level
+				local guid = sformat("%s-%s", eventID, (args[d.dbm_level] or "")) -- Create unique string from event + debug level
 				if getGUID then return guid end
 				return guid, -- 1
 					iEET.specialCategories.Ignore, -- 2
-					args[d.message], -- 3
-					args[d.level] -- 4
+					args[d.dbm_message], -- 3
+					args[d.dbm_level] -- 4
 			end,
 			filtering = function(args, filters, ...)
 				return defaultFiltering(args, d, filters, eventID, ...)
@@ -2813,8 +2818,8 @@ do -- DeadlyBossMods
 			hyperlink = function(col, data)
 				if col == 4 or col == 5 then
 					addToTooltip(nil,
-						formatKV("Message", data[d.message]),
-						formatKV("Level", data[d.level])
+						formatKV("Message", data[d.dbm_message]),
+						formatKV("Level", data[d.dbm_level])
 					)
 					return true
 				end
@@ -2828,8 +2833,8 @@ do -- DeadlyBossMods
 			local t = {
 				[d.event] = eventID,
 				[d.time] = GetTime(),
-				[d.message] = msg,
-				[d.level] = level,
+				[d.dbm_message] = msg,
+				[d.dbm_level] = level,
 			}
 			table.insert(iEET.data, t);
 			iEET:OnscreenAddMessages(t)
@@ -2840,54 +2845,54 @@ do -- DeadlyBossMods
 		local d = {
 			["event"] = 1,
 			["time"] = 2,
-			["id"] = 3,
-			["message"] = 4,
-			["timer"] = 5,
-			["icon"] = 6,
-			["messageType"] = 7,
-			["spellID"] = 8,
-			["colorID"] = 9,
-			["modID"] = 10,
-			["keep"] = 11,
-			["fade"] = 12,
-			["spellName"] = 13,
-			["mobGUID"] = 14,
+			["dbm_id"] = 3,
+			["dbm_message"] = 4,
+			["dbm_timer"] = 5,
+			["dbm_icon"] = 6,
+			["dbm_messageType"] = 7,
+			["dbm_spellID"] = 8,
+			["dbm_colorID"] = 9,
+			["dbm_modID"] = 10,
+			["dbm_keep"] = 11,
+			["dbm_fade"] = 12,
+			["dbm_spellName"] = 13,
+			["dbm_mobGUID"] = 14,
 		}
 		iEET.eventFunctions[eventID] = {
 			data = d,
 			gui = function(args, getGUID)
-				local guid = sformat("%s-%s-%s", eventID, (args[d.spellID] or ""), (args[d.modID] or "")) -- Create unique string from event + spellID + modID
+				local guid = sformat("%s-%s-%s", eventID, (args[d.dbm_spellID] or ""), (args[d.dbm_modID] or "")) -- Create unique string from event + spellID + modID
 				if getGUID then return guid end
 				return guid, -- 1
 					iEET.specialCategories.Ignore, -- 2
-					args[d.message], -- 3
-					args[d.messageType], -- 4
-					args[d.spellID], -- 5
-					args[d.timer] -- 6
+					args[d.dbm_message], -- 3
+					args[d.dbm_messageType], -- 4
+					args[d.dbm_spellID], -- 5
+					args[d.dbm_timer] -- 6
 			end,
 			filtering = function(args, filters, ...)
 				return defaultFiltering(args, d, filters, eventID, ...)
 			end,
 			hyperlink = function(col, data)
 				addToTooltip(nil,
-					formatKV("ID", data[d.id]),
-					formatKV("Message", data[d.message]),
-					formatKV("Timer", data[d.timer]),
-					formatKV("Icon", data[d.icon]),
-					formatKV("Type", data[d.messageType]),
-					formatKV("Spell ID", data[d.spellID]),
-					formatKV("Mod ID", data[d.modID]),
-					formatKV("Color ID", data[d.colorID]),
-					formatKV("Keep", data[d.keep]),
-					formatKV("Fade", data[d.fade]),
-					formatKV("Spell name", data[d.spellName]),
-					formatKV("Mob GUID", data[d.mobGUID])
+					formatKV("ID", data[d.dbm_id]),
+					formatKV("Message", data[d.dbm_message]),
+					formatKV("Timer", data[d.dbm_timer]),
+					formatKV("Icon", data[d.dbm_icon]),
+					formatKV("Type", data[d.dbm_messageType]),
+					formatKV("Spell ID", data[d.dbm_spellID]),
+					formatKV("Mod ID", data[d.dbm_modID]),
+					formatKV("Color ID", data[d.dbm_colorID]),
+					formatKV("Keep", data[d.dbm_keep]),
+					formatKV("Fade", data[d.dbm_fade]),
+					formatKV("Spell name", data[d.dbm_spellName]),
+					formatKV("Mob GUID", data[d.dbm_mobGUID])
 				)
 				return true
 			end,
 			import = function(args)
-				args[d.spellID] = tonumber(args[d.spellID])
-				args[d.timer] = tonumber(args[d.timer])
+				args[d.dbm_spellID] = tonumber(args[d.dbm_spellID])
+				args[d.dbm_timer] = tonumber(args[d.dbm_timer])
 				return args
 			end,
 			chatLink = function(col, data) return end,
@@ -2896,16 +2901,16 @@ do -- DeadlyBossMods
 			local t = {
 				[d.event] = eventID,
 				[d.time] = GetTime(),
-				[d.message] = msg,
-				[d.icon] = icon,
-				[d.messageType] = msgType,
-				[d.spellID] = spellID,
-				[d.colorID] = colorID,
-				[d.modID] = modID,
-				[d.keep] = keep,
-				[d.fade] = fade,
-				[d.spellName] = spellName,
-				[d.mobGUID] = mobGUID,
+				[d.dbm_message] = msg,
+				[d.dbm_icon] = icon,
+				[d.dbm_messageType] = msgType,
+				[d.dbm_spellID] = spellID,
+				[d.dbm_colorID] = colorID,
+				[d.dbm_modID] = modID,
+				[d.dbm_keep] = keep,
+				[d.dbm_fade] = fade,
+				[d.dbm_spellName] = spellName,
+				[d.dbm_mobGUID] = mobGUID,
 			}
 			table.insert(iEET.data, t);
 			iEET:OnscreenAddMessages(t)
@@ -2916,16 +2921,16 @@ do -- DeadlyBossMods
 		local d = {
 			["event"] = 1,
 			["time"] = 2,
-			["id"] = 3,
+			["dbm_id"] = 3,
 		}
 		iEET.eventFunctions[eventID] = {
 			data = d,
 			gui = function(args, getGUID)
-				local guid = sformat("%s-%s", eventID, (args[d.id] or "")) -- Create unique string from event + id
+				local guid = sformat("%s-%s", eventID, (args[d.dbm_id] or "")) -- Create unique string from event + id
 				if getGUID then return guid end
 				return guid, -- 1
 					iEET.specialCategories.Ignore, -- 2
-					args[d.id] -- 3
+					args[d.dbm_id] -- 3
 			end,
 			filtering = function(args, filters, ...)
 				return defaultFiltering(args, d, filters, eventID, ...)
@@ -2933,7 +2938,7 @@ do -- DeadlyBossMods
 			hyperlink = function(col, data)
 				if col == 4 then
 					addToTooltip(nil,
-						formatKV("ID", data[d.id])
+						formatKV("ID", data[d.dbm_id])
 					)
 					return true
 				end
@@ -2947,7 +2952,7 @@ do -- DeadlyBossMods
 			local t = {
 				[d.event] = eventID,
 				[d.time] = GetTime(),
-				[d.id] = id,
+				[d.dbm_id] = id,
 			}
 			table.insert(iEET.data, t);
 			iEET:OnscreenAddMessages(t)
@@ -2958,22 +2963,22 @@ do -- DeadlyBossMods
 		local d = {
 			["event"] = 1,
 			["time"] = 2,
-			["id"] = 3,
-			["spellID"] = 4,
-			["modID"] = 5,
-			["fade"] = 6,
+			["dbm_id"] = 3,
+			["dbm_spellID"] = 4,
+			["dbm_modID"] = 5,
+			["dbm_fade"] = 6,
 		}
 		iEET.eventFunctions[eventID] = {
 			data = d,
 			gui = function(args, getGUID)
-				local guid = sformat("%s-%s-%s", eventID, (args[d.id] or "")) -- Create unique string from event + id
+				local guid = sformat("%s-%s-%s", eventID, (args[d.dbm_id] or "")) -- Create unique string from event + id
 				if getGUID then return guid end
 				return guid, -- 1
 					iEET.specialCategories.Ignore, -- 2
-					args[d.id], -- 3
-					args[d.spellID], -- 4
-					args[d.modID], -- 5
-					args[d.fade] -- 6
+					args[d.dbm_id], -- 3
+					args[d.dbm_spellID], -- 4
+					args[d.dbm_modID], -- 5
+					args[d.dbm_fade] -- 6
 			end,
 			filtering = function(args, filters, ...)
 				return defaultFiltering(args, d, filters, eventID, ...)
@@ -2981,16 +2986,16 @@ do -- DeadlyBossMods
 			hyperlink = function(col, data)
 				if col == 4 then
 					addToTooltip(nil,
-						formatKV("ID", data[d.id]),
-						formatKV("Spell ID", data[d.spellID]),
-						formatKV("Mod ID", data[d.modID]),
-						formatKV("Fade", data[d.fade])
+						formatKV("ID", data[d.dbm_id]),
+						formatKV("Spell ID", data[d.dbm_spellID]),
+						formatKV("Mod ID", data[d.dbm_modID]),
+						formatKV("Fade", data[d.dbm_fade])
 					)
 					return true
 				end
 			end,
 			import = function(args)
-				args[d.spellID] = tonumber(args.spellID)
+				args[d.dbm_spellID] = tonumber(args[dbm_spellID])
 				return args
 			end,
 			chatLink = function(col, data) return end,
@@ -2999,10 +3004,10 @@ do -- DeadlyBossMods
 			local t = {
 				[d.event] = eventID,
 				[d.time] = GetTime(),
-				[d.id] = id,
-				[d.spellID] = spellID,
-				[d.modID] = modID,
-				[d.fade] = fade,
+				[d.dbm_id] = id,
+				[d.dbm_spellID] = spellID,
+				[d.dbm_modID] = modID,
+				[d.dbm_fade] = fade,
 			}
 			table.insert(iEET.data, t);
 			iEET:OnscreenAddMessages(t)
@@ -3013,20 +3018,20 @@ do -- DeadlyBossMods
 		local d = {
 			["event"] = 1,
 			["time"] = 2,
-			["id"] = 3,
-			["elapsed"] = 4,
-			["total"] = 5,
+			["dbm_id"] = 3,
+			["dbm_elapsed"] = 4,
+			["dbm_total"] = 5,
 		}
 		iEET.eventFunctions[eventID] = {
 			data = d,
 			gui = function(args, getGUID)
-				local guid = sformat("%s-%s-%s", eventID, (args[d.id] or "")) -- Create unique string from event + id
+				local guid = sformat("%s-%s-%s", eventID, (args[d.dbm_id] or "")) -- Create unique string from event + id
 				if getGUID then return guid end
 				return guid, -- 1
 					iEET.specialCategories.Ignore, -- 2
-					args[d.id], -- 3
-					args[d.elapsed], -- 4
-					args[d.total] -- 5
+					args[d.dbm_id], -- 3
+					args[d.dbm_elapsed], -- 4
+					args[d.dbm_total] -- 5
 			end,
 			filtering = function(args, filters, ...)
 				return defaultFiltering(args, d, filters, eventID, ...)
@@ -3034,16 +3039,16 @@ do -- DeadlyBossMods
 			hyperlink = function(col, data)
 				if col == 4 then
 					addToTooltip(nil,
-						formatKV("ID", data[d.id]),
-						formatKV("Elapsed", data[d.elapsed]),
-						formatKV("Total", data[d.total])
+						formatKV("ID", data[d.dbm_id]),
+						formatKV("Elapsed", data[d.dbm_elapsed]),
+						formatKV("Total", data[d.dbm_total])
 					)
 					return true
 				end
 			end,
 			import = function(args)
-				args[d.elapsed] = tonumber(args[d.elapsed])
-				args[d.total] = tonumber(args[d.total])
+				args[d.dbm_elapsed] = tonumber(args[d.dbm_elapsed])
+				args[d.dbm_total] = tonumber(args[d.dbm_total])
 				return args
 			end,
 			chatLink = function(col, data) return end,
@@ -3052,9 +3057,9 @@ do -- DeadlyBossMods
 			local t = {
 				[d.event] = eventID,
 				[d.time] = GetTime(),
-				[d.id] = id,
-				[d.elapsed] = elapsed,
-				[d.total] = total,
+				[d.dbm_id] = id,
+				[d.dbm_elapsed] = elapsed,
+				[d.dbm_total] = total,
 			}
 			table.insert(iEET.data, t);
 			iEET:OnscreenAddMessages(t)

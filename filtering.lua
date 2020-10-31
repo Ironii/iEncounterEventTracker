@@ -452,11 +452,13 @@ do
 		local bg = addNewFilterOptions:GetFrame("bg", lineID)
 		bg:SetParent(frame)
 		bg:SetFrameStrata('DIALOG')
-		bg:SetFrameLevel(2)
+		bg:SetFrameLevel(20)
 		bg:ClearAllPoints()
 		bg:SetAllPoints(frame)
 		bg:Show()
 		local lastFrame
+		local row = 0
+		local col = 0
 		for k,v in spairs(t) do
 			local f = addNewFilterOptions:GetFrame("button",lineID)
 			f:SetParent(bg)
@@ -468,12 +470,19 @@ do
 			f:SetScript("OnEnter", nil)
 			f:SetScript("OnLeave", nil)
 			f.text:SetText(reverse and k or v)
-			if lastFrame then
-				f:SetPoint("top", lastFrame, "bottom", 0, 0)
+			if row == 21 then
+				col = col + 1
+				row = 1
+				f:SetPoint("top", bg, "bottom", col*99, 0)	
+			elseif lastFrame then
+					f:SetPoint("top", lastFrame, "bottom", 0, 1)
+					row = row + 1
 			else
 				f:SetPoint("top", bg, "bottom", 0, 0)
+				row = row + 1
 			end
 			lastFrame = f
+			
 			f:SetScript("OnMouseDown", function(self)
 				func(v, k)
 				addNewFilterOptions:ResetFrames({[lineID] = true})
@@ -1067,6 +1076,11 @@ do
 					end
 				else
 					keys = {}
+					for key in pairs(iEET.allPossibleKeys) do
+						if key ~= "event" and key ~= "time" then
+							keys[key] = keyTypes[key] or "str"
+						end
+					end
 				end
 				keys.any = "str"
 				keys.time = "number"
