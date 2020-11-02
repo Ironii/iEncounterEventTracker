@@ -1,4 +1,4 @@
--- TODO : add k:v searches without event reqs
+-- TODO : add from/to filters
 local _, iEET = ...
 local spairs = iEET.spairs
 local tinsert, tremove, sformat, tconcat = table.insert, table.remove, string.format, table.concat
@@ -142,6 +142,7 @@ do
 		editbox = {},
 		fs = {},
 		scrollframe = {},
+		checkbox = {},
 	}
 	local modeColors = {
 		any = {
@@ -184,6 +185,8 @@ do
 			elseif f.frameType == "editbox" then
 				f:SetBackdropColor(0,0,0,0)
 				f:SetBackdropBorderColor(0,0,0,.5)
+			elseif f.frameType == "checkbox" then
+				f:SetChecked(false)
 			end
 			return f
 		end
@@ -277,8 +280,6 @@ do
 				f.id = id
 				f.frameType = "fs"
 				f.usedBy = usedBy
-				f:SetJustifyH("left")
-				f:SetJustifyV("top")
 				f:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
 				f:SetTextColor(1,1,1,1)
 				return f
@@ -335,6 +336,28 @@ do
 				end
 				f:SetScript('OnMouseWheel', contentScrollFunc)
 				f.slider:SetScript('OnMouseWheel', contentScrollFunc)
+				return f
+			elseif frameType == "checkbox" then
+				local id = #frames.checkbox+1
+				frames.checkbox[id] = CreateFrame("CheckButton", nil, holderFrame, "BackdropTemplate")
+				local f = frames.checkbox[id]
+				f.id = id
+				f.frameType = "checkbox"
+				f.usedBy = usedBy
+				f:SetBackdrop(iEET.backdrop);
+				f = _resetFrame(f, true)
+				f.text = f:CreateFontString()
+				f.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+				f.text:SetPoint('bottomleft', f, 'bottomright', 3,0)
+				f:SetScript("PostClick", function(self)
+					if self:GetChecked() then
+						f:SetBackdropColor(0,1,0,.25)
+						f:SetBackdropBorderColor(0,0,0,1)
+					else
+						f:SetBackdropColor(0,0,0,.25)
+						f:SetBackdropBorderColor(1,0,0,1)
+					end
+				end)
 				return f
 			else
 				iEET:print(string.format("Error: '%s' frame type not found.", frameType or "nil"))
@@ -852,6 +875,8 @@ do
 			fs:SetParent(bg)
 			fs:SetPoint("topleft", bg, "topleft", 3,-3)
 			fs:SetWidth(totalWidth-6)
+			fs:SetJustifyH("left")
+			fs:SetJustifyV("top")
 			local str = ""
 			if not data.events then
 				str = "Events: any"
@@ -870,6 +895,9 @@ do
 				for k,v in ipairs(data.filters) do
 					str = sformat("%s\n%s", str, formatFilterPreviews(v))
 				end
+			end
+			if data.timestamps.before then
+				str = sformat("%s\nShow everything >%ss< before and >%ss< after.", str, data.timestamps.before, data.timestamps.after)
 			end
 			fs:SetText(str)
 			fs:Show()
@@ -1090,8 +1118,25 @@ do
 				local latestLine
 				local keyCount = count(keys)
 				local usedKeyCount = 0
+				local timestamps = {before = false, after = false}
 				local addNewFilter = addNewFilterOptions:GetFrame("button", pageID)
 				local nextButton = addNewFilterOptions:GetFrame("button", pageID)
+				local fromTo = addNewFilterOptions:GetFrame("checkbox", pageID)
+				local function checkOK()
+					for k,v in pairs(filterData) do
+						if not v.isReady then
+							nextButton:Hide()
+							return
+						end
+					end
+					if fromTo:GetChecked() then
+						if not (timestamps.before and timestamps.after) then
+							nextButton:Hide()
+							return
+						end
+					end
+					nextButton:Show()
+				end
 				local function getAlreadyUsedKeys()
 					local t = {}
 					local i = 0
@@ -1113,6 +1158,9 @@ do
 								iEET:print(sformat("%s is no longer valid key, removing it.", k))
 							end
 						end
+					end
+					if iEETConfig.filtering[configID].timestamps then
+						timestamps = iEETConfig.filtering[configID].timestamps
 					end
 					getAlreadyUsedKeys()
 				end
@@ -1149,13 +1197,7 @@ do
 							addNewFilter:SetPoint("top", bg, "top", 0, -30)
 						end
 					end
-					for k,v in pairs(filterData) do
-						if not v.isReady then
-							nextButton:Hide()
-							return
-						end
-					end
-					nextButton:Show()
+					checkOK()
 				end
 				do
 					if configID and not isEmpty then
@@ -1197,7 +1239,128 @@ do
 						latestLine = lines[pageID.."1"]
 					end
 				end
-				
+
+				local fromToBG = addNewFilterOptions:GetFrame("bg", pageID)
+				fromToBG:ClearAllPoints()
+				fromToBG:SetParent(bg)
+				fromToBG:Show()
+				fromToBG:SetPoint("top", latestLine, "bottom", 0, -80)
+				fromToBG:SetSize(totalWidth-6, 1)
+
+				fromTo:ClearAllPoints()
+				fromTo:SetParent(bg)
+				fromTo:Show()
+				fromTo.text:SetText("Use as from/to filter")
+				fromTo:SetSize(10,10)
+				fromTo:SetPoint("topleft", fromToBG, "topleft", 180, 0)
+				fromTo:SetBackdropBorderColor(0,0,0,1)
+				fromTo:SetBackdropColor(0,0,0,.25)
+				fromTo:SetScript("OnClick", function(self)
+					local editBoxID = pageID.."editBox"
+					if self:GetChecked() then
+						if not timestamps.before then
+							timestamps = {before = 1.5, after = 1.5}
+						end
+						do -- BEFORE
+							local editboxBefore = addNewFilterOptions:GetFrame("editbox", editBoxID)
+							editboxBefore:SetParent(bg)
+							editboxBefore:Show()
+							editboxBefore:SetSize(40, 14)
+							editboxBefore:ClearAllPoints()
+							editboxBefore:SetBackdropColor(0,0,0,.25)
+							editboxBefore:SetBackdropBorderColor(1,0,0,.1)
+							editboxBefore:SetPoint("top", fromToBG, "bottom", 0, -20)
+							editboxBefore:SetBackdropColor(0,0,0,0)
+							editboxBefore:SetScript('OnTextChanged', function(self)
+								local text = self:GetText()
+								text = tonumber(text)
+								if not text then
+									self:SetBackdropColor(1,0,0,.5)
+									timestamps.before = false
+								else
+									self:SetBackdropColor(0,0,0,0)
+									timestamps.before = text
+								end
+								checkOK()
+							end)
+							editboxBefore:SetScript('OnEnterPressed', function(self)
+								self:ClearFocus()
+							end)
+							editboxBefore:SetText(timestamps.before)
+							local beforeFSPart1 = addNewFilterOptions:GetFrame("fs", editBoxID)
+							beforeFSPart1:ClearAllPoints()
+							beforeFSPart1:SetParent(bg)
+							beforeFSPart1:SetPoint("bottomright", editboxBefore, "bottomleft", -3,0)
+							beforeFSPart1:SetWidth(totalWidth/3)
+							beforeFSPart1:SetJustifyH("right")
+							beforeFSPart1:SetJustifyV("bottom")
+							beforeFSPart1:SetText("Show all events")
+							beforeFSPart1:Show()
+							local beforeFSPart2 = addNewFilterOptions:GetFrame("fs", editBoxID)
+							beforeFSPart2:ClearAllPoints()
+							beforeFSPart2:SetParent(bg)
+							beforeFSPart2:SetPoint("bottomleft", editboxBefore, "bottomright", 3,0)
+							beforeFSPart2:SetWidth(totalWidth/3)
+							beforeFSPart2:SetJustifyH("left")
+							beforeFSPart2:SetJustifyV("bottom")
+							beforeFSPart2:SetText("seconds BEFORE this event.")
+							beforeFSPart2:Show()
+						end
+						do -- AFTER
+							local editboxAfter = addNewFilterOptions:GetFrame("editbox", editBoxID)
+							editboxAfter:SetParent(bg)
+							editboxAfter:Show()
+							editboxAfter:SetSize(40, 14)
+							editboxAfter:ClearAllPoints()
+							editboxAfter:SetBackdropColor(0,0,0,.25)
+							editboxAfter:SetBackdropBorderColor(1,0,0,.1)
+							editboxAfter:SetPoint("top", fromToBG, "bottom", 0, -40)
+							editboxAfter:SetBackdropColor(0,0,0,0)
+							editboxAfter:SetScript('OnTextChanged', function(self)
+								local text = self:GetText()
+								text = tonumber(text)
+								if not text then
+									timestamps.after = false
+									self:SetBackdropColor(1,0,0,.5)
+								else
+									timestamps.after = text
+									self:SetBackdropColor(0,0,0,0)
+								end
+								checkOK()
+							end)
+							editboxAfter:SetScript('OnEnterPressed', function(self)
+								self:ClearFocus()
+							end)
+							editboxAfter:SetText(timestamps.after)
+							local beforeFSPart1 = addNewFilterOptions:GetFrame("fs", editBoxID)
+							beforeFSPart1:ClearAllPoints()
+							beforeFSPart1:SetParent(bg)
+							beforeFSPart1:SetPoint("bottomright", editboxAfter, "bottomleft", -3,0)
+							beforeFSPart1:SetWidth(totalWidth/3)
+							beforeFSPart1:SetJustifyH("right")
+							beforeFSPart1:SetJustifyV("bottom")
+							beforeFSPart1:SetText("Show all events")
+							beforeFSPart1:Show()
+							local beforeFSPart2 = addNewFilterOptions:GetFrame("fs", editBoxID)
+							beforeFSPart2:ClearAllPoints()
+							beforeFSPart2:SetParent(bg)
+							beforeFSPart2:SetPoint("bottomleft", editboxAfter, "bottomright", 3,0)
+							beforeFSPart2:SetWidth(totalWidth/3)
+							beforeFSPart2:SetJustifyH("left")
+							beforeFSPart2:SetJustifyV("bottom")
+							beforeFSPart2:SetText("seconds AFTER this event.")
+							beforeFSPart2:Show()
+							checkOK()
+						end
+					else
+						timestamps = {before = false, after = false}
+						checkOK()
+						addNewFilterOptions:ResetFrames({[editBoxID] = true})
+					end
+				end)
+				if timestamps.before then
+					fromTo:Click()
+				end
 				addNewFilter:SetParent(bg)
 				addNewFilter:Show()
 				addNewFilter:SetSize(125, 20)
@@ -1234,6 +1397,7 @@ do
 					latestLine = lines[lineID]
 					self:ClearAllPoints()
 					self:SetPoint("top", latestLine, "bottom", 0, -30)
+					fromToBG:SetPoint("topleft", latestLine, "bottomleft", 0, -80)
 				end)
 
 				nextButton:SetParent(bg)
@@ -1251,7 +1415,7 @@ do
 					GameTooltip:Hide()
 				end)
 				nextButton:SetScript("OnMouseDown", function()
-					local t = {[pageID] = true, keyValPage = true}
+					local t = {[pageID] = true, keyValPage = true, [pageID.."editBox"] = true}
 					for k in pairs(bg.subUsedBys) do
 						t[k] = true
 					end
@@ -1263,9 +1427,9 @@ do
 					end
 					addNewFilterOptions:ResetFrames(t)
 					if configID and iEETConfig.filtering[configID] then -- should be useless nil check
-						iEETConfig.filtering[configID] = {events = count(currentlySelectedEvents) > 0 and tcopy(currentlySelectedEvents) or false, filters = filters}
+						iEETConfig.filtering[configID] = {events = count(currentlySelectedEvents) > 0 and tcopy(currentlySelectedEvents) or false, filters = filters, timestamps = timestamps.before and timestamps or {}}
 					else
-						tinsert(iEETConfig.filtering, {events = count(currentlySelectedEvents) > 0 and tcopy(currentlySelectedEvents) or false, filters = filters})
+						tinsert(iEETConfig.filtering, {events = count(currentlySelectedEvents) > 0 and tcopy(currentlySelectedEvents) or false, filters = filters, timestamps = timestamps.before and timestamps or {}})
 					end
 					addNewFilterOptions:GetPage("filterOverview")
 				end)
@@ -1285,7 +1449,7 @@ do
 					GameTooltip:Hide()
 				end)
 				cancel:SetScript("OnMouseDown", function()
-					local t = {keyValMainPage = true, keyValPage = true}
+					local t = {keyValMainPage = true, keyValPage = true, [pageID.."editBox"] = true}
 					for k in pairs(bg.subUsedBys) do
 						t[k] = true
 					end

@@ -267,47 +267,58 @@ local function checkValid(arg, searchValue, operator)
 	return false
 end
 local collapses = iEET.collapses
-local function defaultFiltering(args, keyIDList, filters, eventID)
+local function defaultFiltering(args, keyIDList, filters, eventID, timestampsOnly, timestamps)
 	if not eventID then
 		iEET:print("Error - filtering without eventID: " .. args[1])
 		return true -- debug
 	end
 	-- check if we are ignoring current event based on some filtering before checking "real" filters
-	if keyIDList.unitID then
-		local _unitID = args[keyIDList.unitID]
-		if _unitID and iEET.ignoring.unitIDs[collapses[_unitID] or _unitID] then
-			return false
-		end
-	end
-	do
-		local sc = checkForSpecialCategory(nil, args[1])
-		if iEET.ignoring.specialCategories[sc] then return false end
-	end
-	if keyIDList.spellID then
-		local sc = checkForSpecialCategory(args[keyIDList.spellID], args[1])
-		local _spellID = args[keyIDList.spellID]
-		if (_spellID and iEET.ignoring.spellIDs[_spellID]) or (sc and iEET.ignoring.specialCategories[sc]) then
-			return false
-		end
-	end
-	if keyIDList.sourceName then
-		local _sourceName = args[keyIDList.sourceName]
-		if _sourceName and iEET.ignoring.npcNames[_sourceName] then
-			return false
-		end
-	end
-	if iEET.generalSearch then
-		for _,v in pairs(args) do
-			if checkValid(v, iEET.generalSearch, "contains") then
-				return true
+	if not timestampsOnly then
+		if keyIDList.unitID then
+			local _unitID = args[keyIDList.unitID]
+			if _unitID and iEET.ignoring.unitIDs[collapses[_unitID] or _unitID] then
+				return false
 			end
 		end
-	elseif #iEETConfig.filtering == 0 then return true end
+		do
+			local sc = checkForSpecialCategory(nil, args[1])
+			if iEET.ignoring.specialCategories[sc] then return false end
+		end
+		if keyIDList.spellID then
+			local sc = checkForSpecialCategory(args[keyIDList.spellID], args[1])
+			local _spellID = args[keyIDList.spellID]
+			if (_spellID and iEET.ignoring.spellIDs[_spellID]) or (sc and iEET.ignoring.specialCategories[sc]) then
+				return false
+			end
+		end
+		if keyIDList.sourceName then
+			local _sourceName = args[keyIDList.sourceName]
+			if _sourceName and iEET.ignoring.npcNames[_sourceName] then
+				return false
+			end
+		end
+		if iEET.generalSearch then
+			for _,v in pairs(args) do
+				if checkValid(v, iEET.generalSearch, "contains") then
+					return true
+				end
+			end
+		elseif #iEETConfig.filtering == 0 then return true end
+	end
+	if timestamps then
+		local _time = args[keyIDList.time]
+		for _, v in pairs(timestamps) do
+			if _time >= v.from and _time <= v.to then
+				return true -- Show everything if between the timestamps
+			end
+		end
+	end
 	local shouldShow = false
 	for _,singleFilter in pairs(filters) do
+		if not timestampsOnly or (timestampsOnly and singleFilter.timestamps.before) then
 			shouldShow = false
 			if singleFilter.events and not singleFilter.events[eventID] then
-			elseif not singleFilter.filters then 
+			elseif not singleFilter.filters then
 				return true
 			else
 				for _, f in pairs(singleFilter.filters) do
@@ -326,7 +337,15 @@ local function defaultFiltering(args, keyIDList, filters, eventID)
 					end
 				end
 			end
-			if shouldShow then return true end
+			if shouldShow then
+				if timestampsOnly then
+					local _time = args[keyIDList.time]
+					return true, singleFilter.timestamps.before and _time - singleFilter.timestamps.before or nil, singleFilter.timestamps.after and _time + singleFilter.timestamps.after or nil
+				else
+					return true
+				end
+			end
+		end
 	end
 	return false -- No valid filter found, don't show
 end

@@ -1,5 +1,5 @@
 local _, iEET = ...
-iEET.version = 2.005
+iEET.version = 2.006
 
 iEET.data = {}
 local sformat = string.format
@@ -1019,7 +1019,7 @@ do
 		return c
 	end
 	local collapses = iEET.collapses
-	local function shouldShow(data, filters, guid)
+	local function shouldShow(data, filters, guid, timestampsOnly, timestamps)
 		local e = data[1]
 		if e == 27 or e == 37 then return true end -- Always show ENCOUNTER_START and MANUAL_START
 		if not iEETConfig.tracking[e] then return false end
@@ -1029,7 +1029,7 @@ do
 			iEET:print(string.format("Error: Filtering function for event id %d not found.", e))
 			return false
 		end
-		return iEET.eventFunctions[e].filtering(data, filters)
+		return iEET.eventFunctions[e].filtering(data, filters, timestampsOnly, timestamps)
 	end
 	function iEET:loopData(generalSearch, dontReload, spellID, specialCat, eventGUID) -- TODO fix normal editbox
 		if #iEETConfig.filtering > 0 then
@@ -1073,9 +1073,55 @@ do
 				['specialCategories'] = {},
 			}
 		end
+		-- Check for timestamps
+		local needTimestamps = {}
+		for k,v in pairs(iEETConfig.filtering) do
+			if v.timestamps.before then
+				tinsert(needTimestamps, tcopy(v))
+			end
+		end
+		if #needTimestamps > 0 then
+			local stamps = {}
+			for k,v in ipairs(iEET.data) do -- need to sort twice because of event +/- filtering, yay.
+				local show, from, to = shouldShow(v,needTimestamps,nil, true)
+				if show and from then -- nil checking for always shown events
+					tinsert(stamps, {from = from, to = to})
+				end
+			end
+			if #stamps > 0 then -- found at least some timestamps, remove overlapping
+				local sortedStamps = {}
+				local currentMin
+				local currentMax
+				local isFirst = true
+				for _, v in spairs(stamps, function(t,a,b) return t[a].from < t[b].from end) do
+					if isFirst then
+						isFirst = false
+						currentMin = v.from
+						currentMax = v.to
+					else
+						if v.from > currentMax then
+							tinsert(sortedStamps, {from = currentMin, to = currentMax})
+							currentMin = v.from
+							currentMax = v.to
+						elseif v.from < currentMax then
+							if v.to > currentMax then
+								currentMax = v.to
+							end
+						end
+					end
+				end
+				tinsert(sortedStamps, {from = currentMin, to = currentMax})
+				needTimestamps = nil
+				needTimestamps = sortedStamps
+			else
+				needTimestamps = nil
+			end
+		else
+			needTimestamps = nil
+		end
 		local filters = tcopy(iEETConfig.filtering)
 		for k,v in ipairs(iEET.data) do
-			if shouldShow(v,filters,eventGUID) then
+			if shouldShow(v,filters,eventGUID, nil, needTimestamps) then
 				if not iEET.eventFunctions[v[1]] and iEET.eventFunctions[v[1]].gui then
 					iEET:print("Error: handlers for event id %d not found, ignoring it.", v[1])
 				else
@@ -1151,10 +1197,29 @@ function iEET:Hyperlinks(link, linkVal)
 	GameTooltip:ClearLines()
 	if col == 1 or col == 2 or col == 3 then
 		if col == 1 then
+			local _timeToShow
+			if accurateTime then
+				local m = math.floor(accurateTime/60)
+				if not m then
+					m = 0
+				end
+				local s = math.floor(accurateTime%60)
+				_timeToShow = sformat('%d:%02d', m, s)
+			end
 			GameTooltip:AddLine(accurateTime or "Error")
+			GameTooltip:AddLine(_timeToShow or "Error")
 			GameTooltip:AddLine(t[2] or "Error")
 		elseif col == 2 then
+			if accurateTime then
+				local m = math.floor(accurateTime/60)
+				if not m then
+					m = 0
+				end
+				local s = math.floor(accurateTime%60)
+				_timeToShow = sformat('%d:%02d', m, s)
+			end
 			GameTooltip:AddLine(accurateTime or "Error")
+			GameTooltip:AddLine(_timeToShow or "Error")
 		else
 			GameTooltip:AddLine(iEET.events.fromID[eventID].l or "Error")
 			GameTooltip:AddLine("Event ID: "..eventID)
