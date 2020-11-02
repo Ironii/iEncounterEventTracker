@@ -9,7 +9,6 @@ local cleuEventsToTrack = {
 	['SPELL_AURA_APPLIED_DOSE'] = '+SA_DOSE',
 	['SPELL_AURA_REMOVED_DOSE'] = '-SA_DOSE',
 	['SPELL_AURA_REFRESH'] = 'SAURA_R',
-	['SPELL_CAST_FAILED'] = 'SC_FAILED',
 	['SPELL_CREATE'] = 'SPELL_CREATE',
 	['SPELL_SUMMON'] = 'SPELL_SUMMON',
 	['SPELL_HEAL'] = 'SPELL_HEAL',
@@ -24,7 +23,6 @@ local cleuEventsToTrack = {
 	['SPELL_PERIODIC_AURA_APPLIED_DOSE'] = '+SPA_DOSE',
 	['SPELL_PERIODIC_AURA_REMOVED_DOSE'] = '-SPA_DOSE',
 	['SPELL_PERIODIC_AURA_REFRESH'] = 'SPAURA_R',
-	['SPELL_PERIODIC_CAST_FAILED'] = 'SPC_FAILED',
 	['SPELL_PERIODIC_CREATE'] = 'SP_CREATE',
 	['SPELL_PERIODIC_SUMMON'] = 'SP_SUMMON',
 	['SPELL_PERIODIC_HEAL'] = 'SP_HEAL',
@@ -1226,7 +1224,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 			nil, -- 6
 			{spellID = args[defaultCLEUData.spellID], casterName = args[defaultCLEUData.sourceName]} -- 7
 	end
-	for _,v in pairs({1,2,8,9,10,11,14,15,16,17,20,21,22,23,24}) do
+	for _,v in pairs({1,2,9,10,11,14,15,16,17,20,22,23,24}) do
 		iEET.eventFunctions[v] = {
 			data = defaultCLEUData,
 			gui = defaultCLEUGUI,
@@ -1547,6 +1545,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 			end,
 			chatLink = function(col, data) return end
 		}
+	end
+	do -- SPELL_HEAL, SPELL_DAMAGE, SPELL_MISS
 	end
 	function addon:COMBAT_LOG_EVENT_UNFILTERED()
 		local args = {CombatLogGetCurrentEventInfo()}

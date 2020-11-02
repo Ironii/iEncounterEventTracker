@@ -46,10 +46,6 @@ end
 function iEET:OnscreenAddMessages(data)
   if not iEETConfig.onscreen.enabled or iEETConfig.onscreen.ignoredEvents[data[1]] then return end
   if not iEET.onscreen then iEET:CreateOnscreenFrame() end
-	if not iEET.eventFunctions[data[1]] and iEET.eventFunctions[data[1]].gui then
-		iEET:print("Error: handlers for event id %d not found, ignoring it.", data[1])
-		return
-	end
 	local intervallGUID, specialCategory, col4, col5, col6, col8, collectorData = iEET.eventFunctions[data[1]].gui(data)
 	local _time = data[2]
 	local timeFromStart

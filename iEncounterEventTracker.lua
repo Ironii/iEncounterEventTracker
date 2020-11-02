@@ -151,14 +151,12 @@ iEET.events = {
 		-- Casts
 		['SPELL_CAST_START'] = 1, -- CLEU
 		['SPELL_CAST_SUCCESS'] = 2, -- CLEU
-		['SPELL_CAST_FAILED'] = 8, -- CLEU
 		['UNIT_SPELLCAST_SUCCEEDED'] = 26,
 		['UNIT_SPELLCAST_START'] = 39,
 		['UNIT_SPELLCAST_STOP'] = 61,
 		-- Channels
 		['SPELL_PERIODIC_CAST_START'] = 14, -- CLEU
 		['SPELL_PERIODIC_CAST_SUCCESS'] = 15, -- CLEU
-		['SPELL_PERIODIC_CAST_FAILED'] = 21, -- CLEU
 		['UNIT_SPELLCAST_CHANNEL_START'] = 40,
 		['UNIT_SPELLCAST_CHANNEL_STOP'] = 60,
 
@@ -272,12 +270,6 @@ iEET.events = {
 			c = true,
 			t = "aura",
 		},
-		[8] = {
-			l = 'SPELL_CAST_FAILED',
-			s = 'SC_FAILED',
-			c = true,
-			t = "cast"
-		},
 		[9] = {
 			l = 'SPELL_CREATE',
 			s = 'SPELL_CREATE',
@@ -349,12 +341,6 @@ iEET.events = {
 			s = 'SPAURA_R',
 			c = true,
 			t = "aura",
-		},
-		[21] = {
-			l = 'SPELL_PERIODIC_CAST_FAILED',
-			s = 'SPC_FAILED',
-			c = true,
-			t = "channel",
 		},
 		[22] = {
 			l = 'SPELL_PERIODIC_CREATE',
@@ -675,7 +661,6 @@ function iEET:LoadDefaults()
 			[5] = true, -- SPELL_AURA_APPLIED_DOSE
 			[6] = true, -- SPELL_AURA_REMOVED_DOSE
 			[7] = true, -- SPELL_AURA_REFRESH
-			[8] = true, -- SPELL_CAST_FAILED
 			[9] = true, -- SPELL_CREATE
 			[10] = true, -- SPELL_SUMMON
 			[11] = true, -- SPELL_HEAL
@@ -689,7 +674,6 @@ function iEET:LoadDefaults()
 			[18] = true, -- SPELL_PERIODIC_AURA_APPLIED_DOSE
 			[19] = true, -- SPELL_PERIODIC_AURA_REMOVED_DOSE
 			[20] = true, -- SPELL_PERIODIC_AURA_REFRESH
-			[21] = true, -- SPELL_PERIODIC_CAST_FAILED
 			[22] = true, -- SPELL_PERIODIC_CREATE
 			[23] = true, -- SPELL_PERIODIC_SUMMON
 			[24] = true, -- SPELL_PERIODIC_HEAL
@@ -870,39 +854,41 @@ do
 			end
 		end
 		for k,v in ipairs(iEET.data) do
-			local intervallGUID, specialCategory, col4, col5, col6, col8, collectorData = iEET.eventFunctions[v[1]].gui(v)
-			local _time = v[2]
-			local timeFromStart
-			if starttime == 0 then
-				timeFromStart = 0
-			else
-				timeFromStart = _time - starttime
-			end
-			if specialCategory == iEET.specialCategories.StartLogging then
-				starttime = _time
-			end
-			if intervallGUID == guidToSearch then
-				local interval
-				local count
-				if not intervals[intervallGUID] then
-					intervals[intervallGUID] = _time
-					counts[intervallGUID] = 1
-					count = 1
+			if iEET.eventFunctions[v[1]] then -- in case log has some removed events
+				local intervallGUID, specialCategory, col4, col5, col6, col8, collectorData = iEET.eventFunctions[v[1]].gui(v)
+				local _time = v[2]
+				local timeFromStart
+				if starttime == 0 then
+					timeFromStart = 0
 				else
-					interval = _time - intervals[intervallGUID]
-					intervals[intervallGUID] = _time
-					counts[intervallGUID] = counts[intervallGUID] + 1
-					count = counts[intervallGUID]
+					timeFromStart = _time - starttime
 				end
-				_id = k
-				_eventID = v[1]
-				local color = iEET:getColor(intervallGUID)
-				iEET:addMessages(2, 1, getHyperlink(sformat("%.1f",timeFromStart), 1, timeFromStart), color)
-				iEET:addMessages(2, 2, getHyperlink(interval and sformat("%.1f",interval) or nil, 2, interval), color)
-				iEET:addMessages(2, 3, getHyperlink(iEET.events.fromID[eventID].s, 3), color)
-				iEET:addMessages(2, 5, getHyperlink(col5, 5), color)
-				iEET:addMessages(2, 6, getHyperlink(col6, 6), color)
-				iEET:addMessages(2, 7, getHyperlink(count, 7), color)
+				if specialCategory == iEET.specialCategories.StartLogging then
+					starttime = _time
+				end
+				if intervallGUID == guidToSearch then
+					local interval
+					local count
+					if not intervals[intervallGUID] then
+						intervals[intervallGUID] = _time
+						counts[intervallGUID] = 1
+						count = 1
+					else
+						interval = _time - intervals[intervallGUID]
+						intervals[intervallGUID] = _time
+						counts[intervallGUID] = counts[intervallGUID] + 1
+						count = counts[intervallGUID]
+					end
+					_id = k
+					_eventID = v[1]
+					local color = iEET:getColor(intervallGUID)
+					iEET:addMessages(2, 1, getHyperlink(sformat("%.1f",timeFromStart), 1, timeFromStart), color)
+					iEET:addMessages(2, 2, getHyperlink(interval and sformat("%.1f",interval) or nil, 2, interval), color)
+					iEET:addMessages(2, 3, getHyperlink(iEET.events.fromID[eventID].s, 3), color)
+					iEET:addMessages(2, 5, getHyperlink(col5, 5), color)
+					iEET:addMessages(2, 6, getHyperlink(col6, 6), color)
+					iEET:addMessages(2, 7, getHyperlink(count, 7), color)
+				end
 			end
 		end
 	end
@@ -1019,14 +1005,13 @@ do
 	local collapses = iEET.collapses
 	local function shouldShow(data, filters, guid, timestampsOnly, timestamps)
 		local e = data[1]
+		if not (iEET.eventFunctions[e]) then -- removed event or the author fucked up
+			return false
+		end
 		if e == 27 or e == 37 then return true end -- Always show ENCOUNTER_START and MANUAL_START
 		if not iEETConfig.tracking[e] then return false end
 		if guid then return iEET.eventFunctions[e].gui(data, true) == guid end
 		if iEET.currentlyIgnoringFilters then return true end
-		if not (iEET.eventFunctions[e] and iEET.eventFunctions[e].filtering) then
-			iEET:print(string.format("Error: Filtering function for event id %d not found.", e))
-			return false
-		end
 		return iEET.eventFunctions[e].filtering(data, filters, timestampsOnly, timestamps)
 	end
 	function iEET:loopData(generalSearch, dontReload, spellID, specialCat, eventGUID)
@@ -1120,54 +1105,50 @@ do
 		local filters = tcopy(iEETConfig.filtering)
 		for k,v in ipairs(iEET.data) do
 			if shouldShow(v,filters,eventGUID, nil, needTimestamps) then
-				if not iEET.eventFunctions[v[1]] and iEET.eventFunctions[v[1]].gui then
-					iEET:print("Error: handlers for event id %d not found, ignoring it.", v[1])
+				local intervallGUID, specialCategory, col4, col5, col6, col8, collectorData = iEET.eventFunctions[v[1]].gui(v)
+				local _time = v[2]
+				local timeFromStart
+				if starttime == 0 then
+					timeFromStart = 0
 				else
-					local intervallGUID, specialCategory, col4, col5, col6, col8, collectorData = iEET.eventFunctions[v[1]].gui(v)
-					local _time = v[2]
-					local timeFromStart
-					if starttime == 0 then
-						timeFromStart = 0
-					else
-						timeFromStart = _time - starttime
-					end
-					if specialCategory == iEET.specialCategories.StartLogging then
-						starttime = _time
-					end
-					if specialCategory == iEET.specialCategories.StartLogging or (not spellID and not specialCat) or (collectorData and collectorData.spellID and collectorData.spellID == spellID) or (specialCat and specialCategory == specialCat) then
-						if not dontReload then
-							if collectorData then
-								local collapsed = collectorData.unitID and collapses[collectorData.unitID] or collectorData.unitID
-								if collectorData.unitID and not iEET.collector.unitIDs[collapsed] then
-									iEET.collector.unitIDs[collapsed] = true
-								end
-								if collectorData.spellID and not iEET.collector.spellIDs[collectorData.spellID] and not specialCategory then
-									iEET.collector.spellIDs[collectorData.spellID] = true
-									iEET:addToEncounterAbilities(collectorData.spellID, col4)
-								end
-								if collectorData.casterName and not iEET.collector.npcNames[collectorData.casterName] then
-									iEET.collector.npcNames[collectorData.casterName] = true
-								end
-								if specialCategory and not iEET.collector.specialCategories[specialCategory] then
-									iEET.collector.specialCategories[specialCategory] = true
-									iEET:addToEncounterAbilities(collectorData.spellID, col4, specialCategory)
-								end
+					timeFromStart = _time - starttime
+				end
+				if specialCategory == iEET.specialCategories.StartLogging then
+					starttime = _time
+				end
+				if specialCategory == iEET.specialCategories.StartLogging or (not spellID and not specialCat) or (collectorData and collectorData.spellID and collectorData.spellID == spellID) or (specialCat and specialCategory == specialCat) then
+					if not dontReload then
+						if collectorData then
+							local collapsed = collectorData.unitID and collapses[collectorData.unitID] or collectorData.unitID
+							if collectorData.unitID and not iEET.collector.unitIDs[collapsed] then
+								iEET.collector.unitIDs[collapsed] = true
+							end
+							if collectorData.spellID and not iEET.collector.spellIDs[collectorData.spellID] and not specialCategory then
+								iEET.collector.spellIDs[collectorData.spellID] = true
+								iEET:addToEncounterAbilities(collectorData.spellID, col4)
+							end
+							if collectorData.casterName and not iEET.collector.npcNames[collectorData.casterName] then
+								iEET.collector.npcNames[collectorData.casterName] = true
+							end
+							if specialCategory and not iEET.collector.specialCategories[specialCategory] then
+								iEET.collector.specialCategories[specialCategory] = true
+								iEET:addToEncounterAbilities(collectorData.spellID, col4, specialCategory)
 							end
 						end
-						local interval
-						local count
-						if not intervals[intervallGUID] then
-							intervals[intervallGUID] = _time
-							counts[intervallGUID] = 1
-							count = 1
-						else
-							interval = _time - intervals[intervallGUID]
-							intervals[intervallGUID] = _time
-							counts[intervallGUID] = counts[intervallGUID] + 1
-							count = counts[intervallGUID]
-						end
-						iEET:addToContent(intervallGUID, v[1], k, timeFromStart, interval, col4, col5, col6, count, col8)
 					end
+					local interval
+					local count
+					if not intervals[intervallGUID] then
+						intervals[intervallGUID] = _time
+						counts[intervallGUID] = 1
+						count = 1
+					else
+						interval = _time - intervals[intervallGUID]
+						intervals[intervallGUID] = _time
+						counts[intervallGUID] = counts[intervallGUID] + 1
+						count = counts[intervallGUID]
+					end
+					iEET:addToContent(intervallGUID, v[1], k, timeFromStart, interval, col4, col5, col6, count, col8)
 				end
 			end
 		end
@@ -1475,13 +1456,10 @@ function iEET:ImportData(dataKey, prevNext)
 			end
 			tempTable[key] = d
 		end
-		if not (iEET.eventFunctions[eventID] and iEET.eventFunctions[eventID].import) then
-			iEET:print(sformat("Error: importing functions for event id %d is missing", eventID))
-		end
-		if iEET.eventFunctions[eventID].import then
+		if iEET.eventFunctions[eventID] then -- in case the log has old data, don't import it (can't show it anyway without gui funcs)
 			tempTable = iEET.eventFunctions[eventID].import(tempTable)
+			table.insert(iEET.data, tempTable)
 		end
-		table.insert(iEET.data, tempTable)
 	end
 	local msg
 	if iEET.editbox:GetText() ~= 'Search' then
