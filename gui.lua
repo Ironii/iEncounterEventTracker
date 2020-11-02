@@ -867,7 +867,7 @@ end
 function iEET:toggleCopyFrame(forceShow)
 	if not iEET.frame then iEET:CreateMainFrame() end
 	if not iEET.copyFrame and not InCombatLockdown() then
-		iEET.copyFrame = CreateFrame('EditBox', 'iEETCopyFrame', UIParent)
+		iEET.copyFrame = CreateFrame('EditBox', 'iEETCopyFrame', UIParent, "BackdropTemplate")
 		iEET.copyFrame:SetBackdrop({
 				bgFile = "Interface\\Buttons\\WHITE8x8",
 				edgeFile = "Interface\\Buttons\\WHITE8x8",

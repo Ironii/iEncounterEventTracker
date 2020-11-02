@@ -1383,14 +1383,12 @@ function iEET:copyCurrent(formatStyle) -- TODO : rewrite with event specific exp
 					if spellName then
 						local s = ''
 						if formatStyle == iEET.ENUMS.SPREADSHEETS.GOOGLE then -- Google Spreadsheet
-							s = '=HYPERLINK("http://bfa.wowhead.com/spell=%s", "%s")'
+							s = '=HYPERLINK("http://shadowlands.wowhead.com/spell=%s", "%s")'
 						elseif formatStyle == iEET.ENUMS.SPREADSHEETS.OPENOFFICE then -- Openoffice Math
-							s = '=HYPERLINK("http://bfa.wowhead.com/spell=%s"; "%s")'
+							s = '=HYPERLINK("http://shadowlands.wowhead.com/spell=%s"; "%s")'
 						elseif formatStyle == iEET.ENUMS.SPREADSHEETS.EXCEL then -- Excel
-							s = '=HYPERLINK("http://bfa.wowhead.com/spell=%s", "%s")'
+							s = '=HYPERLINK("http://shadowlands.wowhead.com/spell=%s", "%s")'
 						end
-						--add ExtraData to 9th column
-						--lineData = lineData .. string.format('=HYPERLINK("http://bfa.wowhead.com/spell=%s", "%s")', spellID, spellName) .. '\t'
 						lineData = lineData .. string.format(s, spellID, spellName) .. '\t'
 					else
 						lineData = lineData .. lineInfo .. '\t'
