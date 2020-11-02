@@ -1366,7 +1366,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					local guid = sformat("%s-%s-%s", args[d.event], (args[d.sourceGUID] or args[d.sourceName] or ""), args[d.spellID]) -- Create unique string from event + sourceGUID
 					if getGUID then return guid end
 					return guid, -- 1
-					nil, -- 2 TODO ADD SPECIAL
+					checkForSpecialCategory(args[d.spellID]), -- 2
 					args[d.spellName], -- 3
 					args[d.sourceName], -- 4,
 					args[d.destName], -- 5
@@ -1824,7 +1824,7 @@ do -- RAID_BOSS_WHISPER
 		chatLink = defaults.chats.chatLink,
 	}
 	local d = iEET.eventFunctions[eventID].data
-	function addon:RAID_BOSS_WHISPER(msg, sourceName) -- im not sure if there is sourceName, needs testing -- TODO : proc CHAT_MSG_ADDON
+	function addon:RAID_BOSS_WHISPER(msg, sourceName) -- TODO : im not sure if there is sourceName, needs testing
 		local t = {
 			[d.event] = eventID,
 			[d.time] = GetTime(),
@@ -1968,7 +1968,7 @@ do -- PLAY_MOVIE
 		data = d,
 		gui = function(args, getGUID)
 			if getGUID then return args[d.event] end
-			return args[d.event], nil, iEET.fakeSpells.PlayMovie, args[d.movieID]
+			return args[d.event], nil, iEET.fakeSpells.PlayMovie.name, args[d.movieID]
 		end,
 		filtering = function(args, filters, ...)
 			return defaultFiltering(args, d, filters, eventID, ...)
@@ -1999,7 +1999,7 @@ do -- CINEMATIC_START
 		data = d,
 		gui = function(args, getGUID)
 			if getGUID then return args[d.event] end
-			return args[d.event], nil, iEET.fakeSpells.CinematicStart, tostring(args[d.canBeCancelled])
+			return args[d.event], nil, iEET.fakeSpells.CinematicStart.name, tostring(args[d.canBeCancelled])
 		end,
 		filtering = function(args, filters, ...)
 			return defaultFiltering(args, d, filters, eventID, ...)
@@ -2030,7 +2030,7 @@ do -- CINEMATIC_STOP
 		data = d,
 		gui = function(args, getGUID)
 			if getGUID then return args[d.event] end
-			return args[d.event], nil, iEET.fakeSpells.CinematicStop
+			return args[d.event], nil, iEET.fakeSpells.CinematicStop.name
 		end,
 		filtering = function(args, filters, ...)
 			return defaultFiltering(args, d, filters, eventID, ...)

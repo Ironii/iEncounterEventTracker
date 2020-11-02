@@ -20,6 +20,8 @@ iEET.npcIgnoreList = {
 	[100876] = true,	--Val'kyr Battlemaiden
 	[106848] = true,	--Transformed abomination
 	[111748] = true,	--Shadowy Reflection (Blood Artifact)
+	[148797] = true,	--Magus of the Dead
+	[163366] = true,	--Magus of the Dead
 
 --Demon Hunter
 

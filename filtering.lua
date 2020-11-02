@@ -1,4 +1,3 @@
--- TODO : add from/to filters
 local _, iEET = ...
 local spairs = iEET.spairs
 local tinsert, tremove, sformat, tconcat = table.insert, table.remove, string.format, table.concat
@@ -379,10 +378,6 @@ do
 			f:SetBackdropBorderColor(modeColors[mode].border[1], modeColors[mode].border[2], modeColors[mode].border[3], modeColors[mode].border[4])
 		end
 	end
-end
-function addNewFilterOptions:Clear() -- TODO , remove all filters
-end
-function addNewFilterOptions:Save() -- TODO , save and refresh data
 end
 do
 	local titleTexts = {
@@ -896,7 +891,7 @@ do
 					str = sformat("%s\n%s", str, formatFilterPreviews(v))
 				end
 			end
-			if data.timestamps.before then
+			if data.timestamps and data.timestamps.before then
 				str = sformat("%s\nShow everything >%ss< before and >%ss< after.", str, data.timestamps.before, data.timestamps.after)
 			end
 			fs:SetText(str)

@@ -846,7 +846,7 @@ do
 	local function getHyperlink(str, col, accurateTime)
 		return string.format("\124HiEET%02d%03d%06d%s\124h%s\124h", col, _eventID, _id, accurateTime or " ", trim(str, col))
 	end
-	function iEET:addSpellDetails(link, linkVal) -- TODO : REWRITE
+	function iEET:addSpellDetails(link, linkVal)
 		local col = tonumber(link:sub(5,6))
 		local eventID = tonumber(link:sub(7,9))
 		local id = tonumber(link:sub(10,15))
@@ -903,8 +903,6 @@ do
 				iEET:addMessages(2, 5, getHyperlink(col5, 5), color)
 				iEET:addMessages(2, 6, getHyperlink(col6, 6), color)
 				iEET:addMessages(2, 7, getHyperlink(count, 7), color)
-				--iEET:addMessages(2, 8, getHyperlink(col8, 8), color)
-				--iEET:addToContent(intervallGUID, v[1], k, timeFromStart, interval, col4, col5, col6, count, col8)
 			end
 		end
 	end
@@ -1031,7 +1029,7 @@ do
 		end
 		return iEET.eventFunctions[e].filtering(data, filters, timestampsOnly, timestamps)
 	end
-	function iEET:loopData(generalSearch, dontReload, spellID, specialCat, eventGUID) -- TODO fix normal editbox
+	function iEET:loopData(generalSearch, dontReload, spellID, specialCat, eventGUID)
 		if #iEETConfig.filtering > 0 then
 			if iEET.encounterInfo then
 				iEET.encounterInfo:SetBackdropBorderColor(0.64,0,0,1)
@@ -1076,7 +1074,7 @@ do
 		-- Check for timestamps
 		local needTimestamps = {}
 		for k,v in pairs(iEETConfig.filtering) do
-			if v.timestamps.before then
+			if v.timestamps and  v.timestamps.before then
 				tinsert(needTimestamps, tcopy(v))
 			end
 		end
@@ -1143,7 +1141,7 @@ do
 								if collectorData.unitID and not iEET.collector.unitIDs[collapsed] then
 									iEET.collector.unitIDs[collapsed] = true
 								end
-								if collectorData.spellID and not iEET.collector.spellIDs[collectorData.spellID] then
+								if collectorData.spellID and not iEET.collector.spellIDs[collectorData.spellID] and not specialCategory then
 									iEET.collector.spellIDs[collectorData.spellID] = true
 									iEET:addToEncounterAbilities(collectorData.spellID, col4)
 								end
