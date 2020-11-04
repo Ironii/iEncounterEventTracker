@@ -1,11 +1,7 @@
 local _, iEET = ...
 local spairs = iEET.spairs
 
-local _maxLengths = {
-  [4] = 20,
-  [5] = 18,
-  [6] = 14,
-}
+local maxLengths = iEET.frameSizes.maxLengths
 
 local function _addMessages(col, msg)
   if msg and _maxLengths[col] then msg = msg:sub(1, _maxLengths[col]) end
@@ -19,8 +15,8 @@ local function _addToContent(timestamp,event,casterName,targetName,spellName,spe
   _addMessages(4, spellName)
 	_addMessages(5, casterName)
 	_addMessages(6, targetName)
-	_addMessages(7, count)
-	_addMessages(8, hp)
+  _addMessages(7, hp)
+  _addMessages(8, count)
 end
 local function _oldLoopData()
   if iEET.encounterInfo then

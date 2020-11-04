@@ -389,6 +389,7 @@ do
 		misc = "Miscellaneous",
 		bigwigs = "BigWigs",
 		dbm = "DeadlyBossMods",
+		dmg = "Damage/Healing"
 	}
 	local sortedEvents = {}
 	for k,v in spairs(iEET.events.fromID, function(t,a,b) return t[b].l > t[a].l end) do
@@ -603,7 +604,10 @@ do
 			destClass = "class",
 			widgetType = "id",
 			widgetID = "id",
-			widgetSetID = "id"
+			widgetSetID = "id",
+			amount = "number",
+			amountOver = "number",
+			absorbed = "number",
 		}
 		local noEditbox = {
 			auraType = true,

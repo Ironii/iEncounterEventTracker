@@ -2,32 +2,37 @@
 
 local _, iEET = ...
 local cleuEventsToTrack = {
-	['SPELL_CAST_START'] = 'SC_START',
-	['SPELL_CAST_SUCCESS'] = 'SC_SUCCESS',
-	['SPELL_AURA_APPLIED'] = '+SAURA',
-	['SPELL_AURA_REMOVED'] = '-SAURA',
-	['SPELL_AURA_APPLIED_DOSE'] = '+SA_DOSE',
-	['SPELL_AURA_REMOVED_DOSE'] = '-SA_DOSE',
-	['SPELL_AURA_REFRESH'] = 'SAURA_R',
-	['SPELL_CREATE'] = 'SPELL_CREATE',
-	['SPELL_SUMMON'] = 'SPELL_SUMMON',
-	['SPELL_HEAL'] = 'SPELL_HEAL',
-	['SPELL_DISPEL'] = 'SPELL_DISPEL',
-	['SPELL_INTERRUPT'] = 'S_INTERRUPT',
-	['SPELL_STOLEN'] = 'SPELL_STOLEN',
+	['SPELL_CAST_START'] = true,
+	['SPELL_CAST_SUCCESS'] = true,
+	['SPELL_AURA_APPLIED'] = true,
+	['SPELL_AURA_REMOVED'] = true,
+	['SPELL_AURA_APPLIED_DOSE'] = true,
+	['SPELL_AURA_REMOVED_DOSE'] = true,
+	['SPELL_AURA_REFRESH'] = true,
+	['SPELL_CREATE'] = true,
+	['SPELL_SUMMON'] = true,
+	['SPELL_DISPEL'] = true,
+	['SPELL_INTERRUPT'] = true,
+	['SPELL_STOLEN'] = true,
 
-	['SPELL_PERIODIC_CAST_START'] = 'SPC_START',
-	['SPELL_PERIODIC_CAST_SUCCESS'] = 'SPC_SUCCESS',
-	['SPELL_PERIODIC_AURA_APPLIED'] = '+SPAURA',
-	['SPELL_PERIODIC_AURA_REMOVED'] = '-SPAURA',
-	['SPELL_PERIODIC_AURA_APPLIED_DOSE'] = '+SPA_DOSE',
-	['SPELL_PERIODIC_AURA_REMOVED_DOSE'] = '-SPA_DOSE',
-	['SPELL_PERIODIC_AURA_REFRESH'] = 'SPAURA_R',
-	['SPELL_PERIODIC_CREATE'] = 'SP_CREATE',
-	['SPELL_PERIODIC_SUMMON'] = 'SP_SUMMON',
-	['SPELL_PERIODIC_HEAL'] = 'SP_HEAL',
+	['SPELL_PERIODIC_CAST_START'] = true,
+	['SPELL_PERIODIC_CAST_SUCCESS'] = true,
+	['SPELL_PERIODIC_AURA_APPLIED'] = true,
+	['SPELL_PERIODIC_AURA_REMOVED'] = true,
+	['SPELL_PERIODIC_AURA_APPLIED_DOSE'] = true,
+	['SPELL_PERIODIC_AURA_REMOVED_DOSE'] = true,
+	['SPELL_PERIODIC_AURA_REFRESH'] = true,
+	['SPELL_PERIODIC_CREATE'] = true,
+	['SPELL_PERIODIC_SUMMON'] = true,
+	['SPELL_PERIODIC_HEAL'] = true,
 
-	['UNIT_DIED'] = 'UNIT_DIED',
+	['UNIT_DIED'] = true,
+
+	['SPELL_HEAL'] = true,
+	['SPELL_MISSED'] = true,
+	['SPELL_DAMAGE'] = true,
+	['ENVIRONMENTAL_DAMAGE'] = true,
+	['ENVIRONMENTAL_MISSED'] = true,
 }
 local seenWidgets = {}
 do
@@ -54,7 +59,7 @@ do
 	end
 end
 -- upvalues
-local tonumber, tinsert, GetTime, UnitGUID, UnitName, sformat, UnitClass, GetRaidRosterInfo, sfind = tonumber, table.insert, GetTime, UnitGUID, UnitName, string.format, UnitClass, GetRaidRosterInfo, string.find
+local tonumber, tinsert, GetTime, UnitGUID, UnitName, sformat, UnitClass, GetRaidRosterInfo, sfind, mfloor = tonumber, table.insert, GetTime, UnitGUID, UnitName, string.format, UnitClass, GetRaidRosterInfo, string.find, math.floor
 
 local addon = CreateFrame('frame')
 addon:RegisterEvent('ENCOUNTER_START')
@@ -139,7 +144,6 @@ defaults.unitEvents.import = function(args)
 end
 defaults.unitEvents.hyperlink = function(col, data)
 	local d = defaults.unitEvents.data
-	if col == 7 or col == 8 then return end
 	if col == 4 then
 		if C_Spell.DoesSpellExist(data[d.spellID]) then -- TODO : CHECK if it requires caching first, live/ptr check
 			addToTooltip(data[d.spellID],
@@ -158,6 +162,10 @@ defaults.unitEvents.hyperlink = function(col, data)
 			formatKV("Source name", data[d.sourceName]),
 			formatKV("Source GUID", data[d.sourceGUID]),
 			formatKV("Unit ID", data[d.unitID])
+		)
+	else -- col 7
+		addToTooltip(nil,
+			formatKV("Health", data[d.hp])
 		)
 	end
 	return true
@@ -211,7 +219,7 @@ local function defaultUnitHandler(event, unitID, castGUID, spellID, spellName, r
 			local maxhp = UnitHealthMax(unitID)
 			local php = nil
 			if chp and maxhp then
-				php = math.floor(chp/maxhp*1000+0.5)/10
+				php = mfloor(chp/maxhp*10000+0.5)/100
 			end
 			if not iEET.npcIgnoreList[tonumber(npcID)] then
 				if returnOnly then
@@ -652,12 +660,16 @@ do -- UNIT_SPELLCAST_INTERRUPTIBLE
 			return defaultFiltering(args, d, filters, eventID, ...)
 		end,
 		hyperlink = function(col, data)
-			if col == 7 or col == 8 or col == 4 then return end
-			addToTooltip(nil,
-				formatKV("Source name", data[d.sourceName]),
-				formatKV("Source GUID", data[d.sourceGUID]),
-				formatKV("Unit ID", data[d.unitID])
-			)
+			if col == 8 or col == 4 then return end
+			if col == 7 then
+				addToTooltip(nil, formatKV("Health", data[d.hp]))
+			else
+				addToTooltip(nil,
+					formatKV("Source name", data[d.sourceName]),
+					formatKV("Source GUID", data[d.sourceGUID]),
+					formatKV("Unit ID", data[d.unitID])
+				)
+			end
 			return true
 		end,
 		chatLink = function(col, data) return end,
@@ -707,12 +719,16 @@ do -- UNIT_SPELLCAST_NOT_INTERRUPTIBLE
 			return defaultFiltering(args, d, filters, eventID, ...)
 		end,
 		hyperlink = function(col, data)
-			if col == 7 or col == 8 or col == 4 then return end
-			addToTooltip(nil,
-				formatKV("Source name", data[d.sourceName]),
-				formatKV("Source GUID", data[d.sourceGUID]),
-				formatKV("Unit ID", data[d.unitID])
-			)
+			if col == 8 or col == 4 then return end
+			if col == 7 then
+				addToTooltip(nil, formatKV("Health", data[d.hp]))
+			else
+				addToTooltip(nil,
+					formatKV("Source name", data[d.sourceName]),
+					formatKV("Source GUID", data[d.sourceGUID]),
+					formatKV("Unit ID", data[d.unitID])
+				)
+			end
 			return true
 		end,
 		chatLink = function(col, data) return end,
@@ -767,8 +783,10 @@ do -- UNIT_TARGET
 			return defaultFiltering(args, d, filters, eventID, ...)
 		end,
 		hyperlink = function(col, data)
-			if col == 4 or col == 7 or col == 8 then return end
-			if col == 5 then 
+			if col == 4 then return end
+			if col == 7 then
+				addToTooltip(nil, formatKV("Health", data[d.hp]))
+			elseif col == 5 then 
 				addToTooltip(nil,
 					formatKV("Source name", data[d.sourceName]),
 					formatKV("Source GUID", data[d.sourceGUID]),
@@ -853,7 +871,6 @@ do -- UNIT_POWER_UPDATE
 			return defaultFiltering(args, d, filters, eventID, ...)
 		end,
 		hyperlink = function(col, data)
-			if col == 7 or col == 8 then return end
 			if col == 4 then
 				addToTooltip(nil, formatKV("Power type", data[d.powerType]), data[d.tooltip])
 			elseif col == 5 or col == 6 then 
@@ -862,6 +879,8 @@ do -- UNIT_POWER_UPDATE
 					formatKV("Source GUID", data[d.sourceGUID]),
 					formatKV("Unit ID", data[d.unitID])
 			)
+			else -- 7
+				addToTooltip(nil, formatKV("Health", data[d.hp]))
 			end
 			return true
 		end,
@@ -903,7 +922,7 @@ do -- UNIT_POWER_UPDATE
 		local maxPower = UnitPowerMax(unitID,iEET.savedPowers[powerType].i)
 		local pUP = 0
 		if currentPower and maxPower then
-			pUP = math.floor(currentPower/maxPower*1000+0.5)/10
+			pUP = mfloor(currentPower/maxPower*10000+0.5)/100
 		end
 		local tooltipText = string.format('%s %s%%\n%s/%s\n%s',iEET.savedPowers[powerType].n, pUP, currentPower, maxPower, change) --PowerName 50%;50/100;+20
 		local t = {
@@ -954,7 +973,7 @@ do -- UNIT_ENTERING_VEHICLE
 			return defaultFiltering(args, d, filters, eventID, ...)
 		end,
 		hyperlink = function(col, data)
-			if col == 6 or col == 7 or col == 8 then return end
+			if col == 6 or col == 7 then return end
 			if col == 4 then
 				addToTooltip(nil,
 					formatKV("unitID", data[d.unitID]),
@@ -1039,7 +1058,7 @@ do -- UNIT_ENTERED_VEHICLE
 			return defaultFiltering(args, d, filters, eventID, ...)
 		end,
 		hyperlink = function(col, data)
-			if col == 6 or col == 7 or col == 8 then return end
+			if col == 6 or col == 7 then return end
 			if col == 4 then
 				addToTooltip(nil,
 					formatKV("unitID", data[d.unitID]),
@@ -1289,7 +1308,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 						args[d.spellName], -- 3
 						args[d.sourceName], -- 4
 						args[d.destName], -- 5
-						nil, -- 6
+						args[d.extraSpellName], -- 6
 						{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
 				end,
 				import = function(args)
@@ -1303,7 +1322,6 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					return defaultFiltering(args, d, filters, eventID, ...)
 				end,
 				hyperlink = function(col, data)
-					if col == 7 or col == 8 then return end
 					if col == 4 then
 						if C_Spell.DoesSpellExist(data[d.spellID]) then -- TODO : CHECK if it requires caching first, live/ptr check
 							addToTooltip(data[d.spellID],
@@ -1330,7 +1348,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 								formatKV("Source class", class),
 								formatKV("Source role", data[d.sourceRole])
 							)
-					else -- 6
+					elseif col == 6 then
 						local class
 						if data[d.destClass] then
 							class = GetClassInfo(data[d.destClass])
@@ -1341,6 +1359,11 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 							formatKV("Target class", class),
 							formatKV("Target role", data[d.destRole])
 						)
+					else -- 7
+						addToTooltip(data[d.extraSpellID],
+								formatKV("Extra spell ID", data[d.extraSpellID]),
+								formatKV("Extra spell name", data[d.extraSpellName])
+							)
 					end
 					return true
 				end,
@@ -1368,7 +1391,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					args[d.spellName], -- 3
 					args[d.sourceName], -- 4,
 					args[d.destName], -- 5
-					(args[d.auraType] == "1" and "+" or "-"), -- 6
+					(args[d.auraType] == "1" and "BUFF" or "DEBUFF"), -- 6
 					{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
 				end,
 				import = function(args)
@@ -1447,7 +1470,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					args[d.spellName], -- 3
 					args[d.sourceName], -- 4
 					args[d.destName], -- 5
-					(args[d.auraType] == "1" and "+" or "-"), -- 6
+					sformat("%s (%s)",args[d.stacks] or "Error", args[d.auraType] == "1" and "BUFF" or "DEBUFF"), -- 6
 					{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
 				end,
 				import = function(args)
@@ -1461,7 +1484,6 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					return defaultFiltering(args, d, filters, k, ...)
 				end,
 				hyperlink = function(col, data)
-					if col == 7 then return end
 					if col == 4 then
 						if C_Spell.DoesSpellExist(data[d.spellID]) then -- TODO : CHECK if it requires caching first, live/ptr check
 							addToTooltip(data[d.spellID],
@@ -1495,7 +1517,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 							formatKV("Target class", class),
 							formatKV("Target role", data[d.destRole])
 						)
-					else -- 8
+					else -- 7
 						addToTooltip(nil,
 							formatKV("Aura type", data[d.auraType] == "1" and "BUFF" or "DEBUFF"),
 							formatKV("Stacks", data[d.stacks])
@@ -1546,13 +1568,286 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 			chatLink = function(col, data) return end
 		}
 	end
-	do -- SPELL_HEAL, SPELL_DAMAGE, SPELL_MISS
+	do -- SPELL_HEAL, SPELL_DAMAGE
+		local d = tcopy(defaultCLEUData)
+		d["amount"] = 13
+		d["amountOver"] = 14
+		d["absorbed"] = 15
+		for _,k in pairs({11,73}) do
+			iEET.eventFunctions[k] = {
+				data = d,
+				gui = function(args, getGUID)
+					local guid = sformat("%s-%s-%s", args[d.event], (args[d.sourceGUID] or args[d.sourceName] or ""), args[d.spellID]) -- Create unique string from event + sourceGUID
+					if getGUID then return guid end
+					return guid, -- 1
+					checkForSpecialCategory(args[d.spellID]), -- 2
+					args[d.spellName], -- 3
+					args[d.sourceName], -- 4,
+					args[d.destName], -- 5
+					args[d.amount], -- 6
+					{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
+				end,
+				import = function(args)
+					args[d.sourceClass] = tonumber(args[d.sourceClass])
+					args[d.destClass] = tonumber(args[d.destClass])
+					args[d.spellID] = tonumber(args[d.spellID])
+					args[d.amount] = tonumber(args[d.amount])
+					args[d.amountOver] = tonumber(args[d.amountOver])
+					args[d.absorbed] = tonumber(args[d.absorbed])
+					return args
+				end,
+				filtering = function(args, filters, ...)
+					return defaultFiltering(args, d, filters, k, ...)
+				end,
+				hyperlink = function(col, data)
+					if col == 4 then
+						if C_Spell.DoesSpellExist(data[d.spellID]) then -- TODO : CHECK if it requires caching first, live/ptr check
+							addToTooltip(data[d.spellID], formatKV("Spell ID", data[d.spellID]))
+						else
+							addToTooltip(nil,
+								formatKV("Spell ID", data[d.spellID]),
+								formatKV("Spell name", data[d.spellName])
+							)
+						end
+					elseif col == 5 then
+						local class
+						if data[d.sourceClass] then
+							class = GetClassInfo(data[d.sourceClass])
+						end
+						addToTooltip(nil,
+							formatKV("Source name", data[d.sourceName]),
+							formatKV("Source GUID", data[d.sourceGUID]),
+							formatKV("Source class", class),
+							formatKV("Source role", data[d.sourceRole])
+							)
+					elseif col == 6 then
+						local class
+						if data[d.destClass] then
+							class = GetClassInfo(data[d.destClass])
+						end
+						addToTooltip(nil,
+							formatKV("Target name", data[d.destName]),
+							formatKV("Target GUID", data[d.destGUID]),
+							formatKV("Target class", class),
+							formatKV("Target role", data[d.destRole])
+						)
+					else -- 7
+						addToTooltip(nil,
+							formatKV("Amount", data[d.amount]),
+							formatKV(k == 11 and "Overheal" or "Overkill", data[d.amountOver]),
+							formatKV("Absorbed", data[d.absorbed])
+						)
+					end
+					return true
+				end,
+				chatLink = function(col, data)
+					-- ignore column for now
+					if not data[d.spellID] then return end
+					return GetSpellLink(data[d.spellID])
+				end,
+			}
+		end
+	end
+	do -- SPELL_MISSED
+		local eventID = 72
+		local d = tcopy(defaultCLEUData)
+		d["missType"] = 13
+		iEET.eventFunctions[eventID] = {
+			data = d,
+			gui = function(args, getGUID)
+				local guid = sformat("%s-%s-%s", args[d.event], (args[d.sourceGUID] or args[d.sourceName] or ""), args[d.spellID]) -- Create unique string from event + sourceGUID
+				if getGUID then return guid end
+				return guid, -- 1
+				checkForSpecialCategory(args[d.spellID]), -- 2
+				args[d.spellName], -- 3
+				args[d.sourceName], -- 4,
+				args[d.destName], -- 5
+				args[d.missType], -- 6
+				{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
+			end,
+			import = function(args)
+				args[d.sourceClass] = tonumber(args[d.sourceClass])
+				args[d.destClass] = tonumber(args[d.destClass])
+				args[d.spellID] = tonumber(args[d.spellID])
+				return args
+			end,
+			filtering = function(args, filters, ...)
+				return defaultFiltering(args, d, filters, eventID, ...)
+			end,
+			hyperlink = function(col, data)
+				if col == 4 then
+					if C_Spell.DoesSpellExist(data[d.spellID]) then -- TODO : CHECK if it requires caching first, live/ptr check
+						addToTooltip(data[d.spellID], formatKV("Spell ID", data[d.spellID]))
+					else
+						addToTooltip(nil,
+							formatKV("Spell ID", data[d.spellID]),
+							formatKV("Spell name", data[d.spellName])
+						)
+					end
+				elseif col == 5 then
+					local class
+					if data[d.sourceClass] then
+						class = GetClassInfo(data[d.sourceClass])
+					end
+					addToTooltip(nil,
+						formatKV("Source name", data[d.sourceName]),
+						formatKV("Source GUID", data[d.sourceGUID]),
+						formatKV("Source class", class),
+						formatKV("Source role", data[d.sourceRole])
+						)
+				elseif col == 6 then
+					local class
+					if data[d.destClass] then
+						class = GetClassInfo(data[d.destClass])
+					end
+					addToTooltip(nil,
+						formatKV("Target name", data[d.destName]),
+						formatKV("Target GUID", data[d.destGUID]),
+						formatKV("Target class", class),
+						formatKV("Target role", data[d.destRole])
+					)
+				else -- 7
+					addToTooltip(nil, formatKV("Miss type", data[d.missType]))
+				end
+				return true
+			end,
+			chatLink = function(col, data)
+				-- ignore column for now
+				if not data[d.spellID] then return end
+				return GetSpellLink(data[d.spellID])
+			end,
+			}
+	end
+	do -- ENVIRONMENTAL_DAMAGE
+		local eventID = 74
+		local d = {
+			["event"] = 1,
+			["time"] = 2,
+			["environmentalType"] = 3,
+			["destGUID"] = 4,
+			["destName"] = 5,
+			["destClass"] = 6,
+			["destRole"] = 7,
+			["amount"] = 8,
+			["amountOver"] = 9,
+			["absorbed"] = 10,
+		}
+		iEET.eventFunctions[eventID] = {
+			data = d,
+			gui = function(args, getGUID)
+				local guid = sformat("%s-%s", args[d.event], args[d.environmentalType] or "") -- Create unique string from event + sourceGUID
+				if getGUID then return guid end
+				return guid, -- 1
+				nil, -- 2
+				args[d.environmentalType], -- 3
+				nil, -- 4,
+				args[d.destName], -- 5
+				args[d.amount], -- 6
+				{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
+			end,
+			import = function(args)
+				args[d.destClass] = tonumber(args[d.destClass])
+				return args
+			end,
+			filtering = function(args, filters, ...)
+				return defaultFiltering(args, d, filters, eventID, ...)
+			end,
+			hyperlink = function(col, data)
+				if col == 5 then return end
+				if col == 4 then
+					addToTooltip(nil, formatKV("Envenvironmental Type", data[d.environmentalType]))
+				elseif col == 6 then
+					local class
+					if data[d.destClass] then
+						class = GetClassInfo(data[d.destClass])
+					end
+					addToTooltip(nil,
+						formatKV("Target name", data[d.destName]),
+						formatKV("Target GUID", data[d.destGUID]),
+						formatKV("Target class", class),
+						formatKV("Target role", data[d.destRole])
+					)
+				else -- 7
+					addToTooltip(nil,
+						formatKV("Amount", data[d.amount]),
+						formatKV("Overkill", data[d.amountOver]),
+						formatKV("Absorbed", data[d.absorbed])
+					)
+				end
+				return true
+			end,
+			chatLink = function(col, data)
+				-- ignore column for now
+				if not data[d.spellID] then return end
+				return GetSpellLink(data[d.spellID])
+			end,
+			}
+	end
+	do -- ENVIRONMENTAL_MISSED
+		local eventID = 75
+		local d = {
+			["event"] = 1,
+			["time"] = 2,
+			["environmentalType"] = 3,
+			["destGUID"] = 4,
+			["destName"] = 5,
+			["destClass"] = 6,
+			["destRole"] = 7,
+			["missType"] = 8,
+		}
+		iEET.eventFunctions[eventID] = {
+			data = d,
+			gui = function(args, getGUID)
+				local guid = sformat("%s-%s", args[d.event], args[d.environmentalType] or "") -- Create unique string from event + sourceGUID
+				if getGUID then return guid end
+				return guid, -- 1
+				nil, -- 2
+				args[d.environmentalType], -- 3
+				args[d.missType], -- 4,
+				args[d.destName], -- 5
+				nil, -- 6
+				{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
+			end,
+			import = function(args)
+				args[d.destClass] = tonumber(args[d.destClass])
+				return args
+			end,
+			filtering = function(args, filters, ...)
+				return defaultFiltering(args, d, filters, eventID, ...)
+			end,
+			hyperlink = function(col, data)
+				if col == 5 then return end
+				if col == 4 then
+					addToTooltip(nil, formatKV("Envenvironmental Type", data[d.environmentalType]))
+				elseif col == 6 then
+					local class
+					if data[d.destClass] then
+						class = GetClassInfo(data[d.destClass])
+					end
+					addToTooltip(nil,
+						formatKV("Target name", data[d.destName]),
+						formatKV("Target GUID", data[d.destGUID]),
+						formatKV("Target class", class),
+						formatKV("Target role", data[d.destRole])
+					)
+				else -- 7
+					addToTooltip(nil, formatKV("Miss type", data[d.missType]))
+				end
+				return true
+			end,
+			chatLink = function(col, data)
+				-- ignore column for now
+				if not data[d.spellID] then return end
+				return GetSpellLink(data[d.spellID])
+			end,
+			}
 	end
 	function addon:COMBAT_LOG_EVENT_UNFILTERED()
 		local args = {CombatLogGetCurrentEventInfo()}
 		-- args[2] = sub event
 		if cleuEventsToTrack[args[2]] then
 			local eventID = iEET.events.toID[args[2]]
+			if not iEET.eventFunctions[eventID] then print(eventID, args[2]) end
 			local d = iEET.eventFunctions[eventID].data
 			local unitType, _, serverID, instanceID, zoneID, npcID, spawnID
 			if args[4] then -- sourceGUID, fix for arena id's
@@ -1587,29 +1882,68 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 						destRole = iEET.raidComp[args[8]].role
 					end
 				end
-				local t = {
-					[d.event] = eventID, -- event
-					[d.time] = GetTime(), -- time
-					[d.sourceGUID] = args[4], -- sourceGUID
-					[d.sourceName] = args[5], -- sourceName
-					[d.sourceClass] = sourceClass,
-					[d.sourceRole] = sourceRole,
-					[d.spellName] = args[13], -- spellName
-					[d.spellID] = args[12], -- spellID
-					[d.destGUID] = args[8], -- destGUID
-					[d.destName] = args[9], -- destName
-					[d.destClass] = destClass,
-					[d.destRole] = destRole,
-				}
-				if eventID == 12 or eventID == 13 or eventID == 62 then -- SPELL_DISPEL, SPELL_INTERRUPT, SPELL_STOLEN
-					t[d.extraSpellID] = args[15]
-					t[d.extraSpellName] = args[16]
-				end
-				if auraEvents[eventID] or doseEvents[eventID] then
-					t[d.auraType] = args[15] == 'DEBUFF' and '0' or '1'
-				end
-				if doseEvents[eventID] then
-					t[d.stacks] = args[16]
+				local t = {}
+				if eventID == 74 or eventID == 75 then -- ENVIRONMENTAL_DAMAGE, ENVIRONMENTAL_MISSED
+					if eventID == 74 then -- ENVIRONMENTAL_DAMAGE
+						t = {
+							[d.event] = eventID, -- event
+							[d.time] = GetTime(), -- time
+							[d.environmentalType] = args[12],
+							[d.destGUID] = args[8], -- destGUID
+							[d.destName] = args[9], -- destName
+							[d.destClass] = destClass,
+							[d.destRole] = destRole,
+							[d.amount] = args[13],
+							[d.amountOver] = args[14],
+							[d.absorbed] = args[18],
+						}
+					else -- ENVIRONMENTAL_MISSED
+						t = {
+							[d.event] = eventID, -- event
+							[d.time] = GetTime(), -- time
+							[d.environmentalType] = args[12],
+							[d.missType] = args[13],
+							[d.destGUID] = args[8], -- destGUID
+							[d.destName] = args[9], -- destName
+							[d.destClass] = destClass,
+							[d.destRole] = destRole,
+						}
+					end
+				else
+					t = {
+						[d.event] = eventID, -- event
+						[d.time] = GetTime(), -- time
+						[d.sourceGUID] = args[4], -- sourceGUID
+						[d.sourceName] = args[5], -- sourceName
+						[d.sourceClass] = sourceClass,
+						[d.sourceRole] = sourceRole,
+						[d.spellName] = args[13], -- spellName
+						[d.spellID] = args[12], -- spellID
+						[d.destGUID] = args[8], -- destGUID
+						[d.destName] = args[9], -- destName
+						[d.destClass] = destClass,
+						[d.destRole] = destRole,
+					}
+					if eventID == 12 or eventID == 13 or eventID == 62 then -- SPELL_DISPEL, SPELL_INTERRUPT, SPELL_STOLEN
+						t[d.extraSpellID] = args[15]
+						t[d.extraSpellName] = args[16]
+					end
+					if auraEvents[eventID] or doseEvents[eventID] then
+						t[d.auraType] = args[15] == 'DEBUFF' and '0' or '1'
+						if doseEvents[eventID] then
+							t[d.stacks] = args[16]
+						end
+					elseif eventID == 11 or eventID == 73 then -- SPELL_HEAL, SPELL_DAMAGE
+						t[d.amount] = args[15]
+						t[d.amountOver] = args[16]
+						if eventID == 11 then -- SPELL_HEAL
+							t[d.absorbed] = args[17]
+						else -- SPELL_DAMAGE
+							t[d.absorbed] = args[20]
+						end
+					elseif eventID == 72 then -- SPELL_MISSED
+						t[d.missType] = args[15]
+					end
 				end
 				tinsert(iEET.data, t)
 				iEET:OnscreenAddMessages(t)
@@ -1787,7 +2121,7 @@ do -- RAID_BOSS_EMOTE
 		end,
 		import = function(args) return args end,
 		hyperlink = function(col, data)
-			if col == 7 or col == 8 then return end
+			if col == 7 then return end
 			if col == 4 then
 				addToTooltip(nil,data[d.message])
 			elseif col == 5 then
@@ -1860,7 +2194,7 @@ do -- CHAT_MSG_RAID_BOSS_EMOTE
 		end,
 		import = function(args) return args end,
 		hyperlink = function(col, data)
-			if col == 7 or col == 8 then return end
+			if col == 7 then return end
 			if col == 4 then
 				addToTooltip(nil,data[d.message])
 			elseif col == 5 then
@@ -2718,7 +3052,7 @@ do -- UPDATE_UI_WIDGET
 			return defaultFiltering(args, d, filters, eventID, ...)
 		end,
 		hyperlink = function(col, data)
-			if col == 7 or col == 8 then return end
+			if col == 7 then return end
 			addToTooltip(nil,
 				formatKV("Widget id", data[d.widgetID]),
 				formatKV("Widget type", data[d.widgetType]),

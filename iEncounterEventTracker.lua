@@ -1,5 +1,5 @@
 local _, iEET = ...
-iEET.version = 2.006
+iEET.version = 2.007
 
 iEET.data = {}
 local sformat = string.format
@@ -14,6 +14,16 @@ local function tcopy(data)
 	end
 	return t
 end
+local function converTime(_time)
+	if not _time then return end
+	_time = math.floor(_time)
+	local m = math.floor(_time/60)
+	if not m then
+		m = 0
+	end
+	local s = math.floor(_time%60)
+	return sformat('%d:%02d', m, s)
+end
 --local isAlpha = select(4, GetBuildInfo()) >= 70000 and true or false
 iEET.ignoring = { -- so ignore list resets on relog, don't want to save it, atleast not yet
 	unitIDs = {},
@@ -22,9 +32,30 @@ iEET.ignoring = { -- so ignore list resets on relog, don't want to save it, atle
 	npcNames = {},
 }
 iEET.ENUMS = {}
---iEET.font = isAlpha and 'Fonts\\ARIALN.TTF' or 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
+iEET.frameSizes = {
+	sizes = {
+		[1] = 40,
+		[2] = 40,
+		[3] = 105,
+		[4] = 131,
+		[5] = 120,
+		[6] = 97,
+		[7] = 70,
+		[8] = 40,
+	},
+	maxLengths = {
+		[1] = 5,
+		[2] = 5,
+		[3] = 16,
+		[4] = 20,
+		[5] = 18,
+		[6] = 15,
+		[7] = 10,
+		[8] = 5,
+		["encounterAbilities"] = 25,
+	},
+}
 iEET.font = 'Interface\\AddOns\\iEncounterEventTracker\\FiraMono-Regular.otf'
---iEET.fontsize = isAlpha and 11 or 9
 iEET.fontsize = 9
 iEET.spacing = 1
 iEET.justifyH = 'LEFT'
@@ -57,13 +88,6 @@ end
 iEET.unitPowerUnits = {}
 iEET.encounterShortList = {}
 iEET.maxScrollRange = 0
-iEET.longStrings = {
-	['sI'] = "Spell ID",
-	['cN'] = "Source name",
-	['tN'] = "Target name",
-	['sG'] = "Source GUID",
-	['tG'] = "Target GUID",
-}
 iEET.fakeSpells = {
 	InterruptShield = {
 		name = Spell:CreateFromSpellID(140021):GetSpellName() or "Interrupt Shield",
@@ -226,6 +250,12 @@ iEET.events = {
 		['DBM_TimerStop'] = 69,
 		['DBM_TimerFadeUpdate'] = 70,
 		['DBM_TimerUpdate'] = 71,
+
+		--Damage
+		['SPELL_MISSED'] = 72, -- CLEU
+		['SPELL_DAMAGE'] = 73,  -- CLEU
+		['ENVIRONMENTAL_DAMAGE'] = 74, -- CLEU
+		['ENVIRONMENTAL_MISSED'] = 75, -- CLEU
 	},
 	['fromID'] = {
 		[1] = {
@@ -597,6 +627,30 @@ iEET.events = {
 			s = "DBM_TUpdate",
 			t = "dbm"
 		},
+		[72] = {
+			l = "SPELL_MISSED",
+			s = "SPELL_MISSED",
+			t = "dmg",
+			c = true,
+		},
+		[73] = {
+			l = "SPELL_DAMAGE",
+			s = "SPELL_DAMAGE",
+			t = "dmg",
+			c = true,
+		},
+		[74] = {
+			l = "ENVIRONMENTAL_DAMAGE",
+			s = "E_DAMAGE",
+			t = "dmg",
+			c = true,
+		},
+		[75] = {
+			l = "ENVIRONMENTAL_MISSED",
+			s = "E_MISSED",
+			t = "dmg",
+			c = true,
+		},
 	},
 }
 iEET.addonUsers = {}
@@ -741,6 +795,11 @@ function iEET:LoadDefaults()
 			[69] = true, -- DBM_TimerStop
 			[70] = true, -- DBM_TimerFadeUpdate
 			[71] = true, -- DBM_TimerUpdate
+
+			[72] = true, -- SPELL_MISSED
+			[73] = true, -- SPELL_DAMAGE
+			[74] = true, -- ENVIRONMENTAL_DAMAGE
+			[75] = true, -- ENVIRONMENTAL_MISSED
 		},
 		['version'] = iEET.version,
 		['autoSave'] = true,
@@ -806,15 +865,13 @@ end
 do
 	local _id
 	local _eventID
-	local maxLengths = {
-		[5] = 18,
-		[6] = 14,
-		[7] = 4,
-		[8] = 4,
-	}
+	local maxLengths = iEET.frameSizes.maxLengths
 	local function trim(str, col)
 		if not str then return " " end
-		if type(str) ~= "string" then return tostring(str) end
+		if type(str) ~= "string" then
+			str = tostring(str)
+			return tostring(str:sub(1, maxLengths[col]))
+		end
 		if str == "" then return " " end
 		str = str:gsub('|c........', '') -- Colors
 		str = str:gsub('|r', '') -- Colors
@@ -822,9 +879,7 @@ do
 		str = str:gsub('%%', '%%%%')
 		str = str:gsub('|h', '') -- Spells
 		str = str:gsub('|H', '') -- Spells
-		if maxLengths[col] then
-			str = str:sub(1, maxLengths[col])
-		end
+		str = str:sub(1, maxLengths[col])
 		return str
 	end
 	local function getHyperlink(str, col, accurateTime)
@@ -848,14 +903,14 @@ do
 		local starttime = 0
 		local intervals = {}
 		local counts = {}
-		for i = 1, 7 do
-			if i ~= 4 then
+		for i = 1, 8 do
+			if i ~= 4 and i ~= 3 then
 				iEET['detailContent' .. i]:Clear()
 			end
 		end
 		for k,v in ipairs(iEET.data) do
 			if iEET.eventFunctions[v[1]] then -- in case log has some removed events
-				local intervallGUID, specialCategory, col4, col5, col6, col8, collectorData = iEET.eventFunctions[v[1]].gui(v)
+				local intervallGUID, specialCategory, col4, col5, col6, col7, collectorData = iEET.eventFunctions[v[1]].gui(v)
 				local _time = v[2]
 				local timeFromStart
 				if starttime == 0 then
@@ -884,10 +939,10 @@ do
 					local color = iEET:getColor(intervallGUID)
 					iEET:addMessages(2, 1, getHyperlink(sformat("%.1f",timeFromStart), 1, timeFromStart), color)
 					iEET:addMessages(2, 2, getHyperlink(interval and sformat("%.1f",interval) or nil, 2, interval), color)
-					iEET:addMessages(2, 3, getHyperlink(iEET.events.fromID[eventID].s, 3), color)
 					iEET:addMessages(2, 5, getHyperlink(col5, 5), color)
 					iEET:addMessages(2, 6, getHyperlink(col6, 6), color)
-					iEET:addMessages(2, 7, getHyperlink(count, 7), color)
+					iEET:addMessages(2, 7, getHyperlink(col7, 7), color)
+					iEET:addMessages(2, 8, getHyperlink(count, 8), color)
 				end
 			end
 		end
@@ -896,16 +951,13 @@ end
 do
 	local _id
 	local _eventID
-	local maxLengths = {
-		[4] = 20,
-		[5] = 18,
-		[6] = 14,
-		[7] = 4,
-		[8] = 4,
-	}
+	local maxLengths = iEET.frameSizes.maxLengths
 	local function trim(str, col)
 		if not str then return " " end
-		if type(str) ~= "string" then return tostring(str) end
+		if type(str) ~= "string" then
+			str = tostring(str)
+			return str:sub(1, maxLengths[col]) 
+		end
 		if str == "" then return " " end
 		str = str:gsub('|c........', '') -- Colors
 		str = str:gsub('|r', '') -- Colors
@@ -914,15 +966,13 @@ do
 		str = str:gsub('|h', '') -- Spells
 		str = str:gsub('|H', '') -- Spells
 		str = str:gsub('\r', '')
-		if maxLengths[col] then
-			str = str:sub(1, maxLengths[col])
-		end
+		str = str:sub(1, maxLengths[col])
 		return str
 	end
 	local function getHyperlink(str, col, accurateTime)
 		return string.format("\124HiEET%02d%03d%06d%s\124h%s\124h", col, _eventID, _id, accurateTime or " ", trim(str, col))
 	end
-	function iEET:addToContent(intervallGUID, eventID, id, _time, interval, col4, col5, col6, count, col8)
+	function iEET:addToContent(intervallGUID, eventID, id, _time, interval, col4, col5, col6, col7, count)
 		local color = iEET:getColor(intervallGUID)
 		_id = id
 		_eventID = eventID
@@ -932,8 +982,8 @@ do
 		iEET:addMessages(1, 4, getHyperlink(col4, 4), color)
 		iEET:addMessages(1, 5, getHyperlink(col5, 5), color)
 		iEET:addMessages(1, 6, getHyperlink(col6, 6), color)
-		iEET:addMessages(1, 7, getHyperlink(count, 7), color)
-		iEET:addMessages(1, 8, getHyperlink(col8, 8), color)
+		iEET:addMessages(1, 7, getHyperlink(col7, 7), color)
+		iEET:addMessages(1, 8, getHyperlink(count, 8), color)
 	end
 end
 do
@@ -973,11 +1023,12 @@ do
 			end
 			return UNKNOWN
 		end
-	function iEET:addToEncounterAbilities(spellID, col4, specialCat)
+		local maxLength = iEET.frameSizes.maxLengths.encounterAbilities
+	function iEET:addToEncounterAbilities(spellID, col4, specialCat, timeFromStart)
 		if specialCat then
 			iEET.commonAbilitiesContent:AddMessage(string.format('\124HiEETCommon%s\124h%s\124r',specialCat,getSpecialCatName(specialCat)), .6,.6,.6)
 		elseif spellID and col4 then
-			iEET.encounterAbilitiesContent:AddMessage(string.format('\124HiEETEncounter%s\124h%s\124r',spellID,col4), 1,1,1)
+			iEET.encounterAbilitiesContent:AddMessage(string.format('\124HiEETEncounter%s\124h%s (%s)\124r',spellID, col4:sub(1, maxLength), converTime(timeFromStart) or "Error"), 1,1,1)
 		end
 	end
 	end
@@ -1105,7 +1156,7 @@ do
 		local filters = tcopy(iEETConfig.filtering)
 		for k,v in ipairs(iEET.data) do
 			if shouldShow(v,filters,eventGUID, nil, needTimestamps) then
-				local intervallGUID, specialCategory, col4, col5, col6, col8, collectorData = iEET.eventFunctions[v[1]].gui(v)
+				local intervallGUID, specialCategory, col4, col5, col6, col7, collectorData = iEET.eventFunctions[v[1]].gui(v)
 				local _time = v[2]
 				local timeFromStart
 				if starttime == 0 then
@@ -1125,7 +1176,7 @@ do
 							end
 							if collectorData.spellID and not iEET.collector.spellIDs[collectorData.spellID] and not specialCategory then
 								iEET.collector.spellIDs[collectorData.spellID] = true
-								iEET:addToEncounterAbilities(collectorData.spellID, col4)
+								iEET:addToEncounterAbilities(collectorData.spellID, col4, nil, timeFromStart)
 							end
 							if collectorData.casterName and not iEET.collector.npcNames[collectorData.casterName] then
 								iEET.collector.npcNames[collectorData.casterName] = true
@@ -1148,7 +1199,7 @@ do
 						counts[intervallGUID] = counts[intervallGUID] + 1
 						count = counts[intervallGUID]
 					end
-					iEET:addToContent(intervallGUID, v[1], k, timeFromStart, interval, col4, col5, col6, count, col8)
+					iEET:addToContent(intervallGUID, v[1], k, timeFromStart, interval, col4, col5, col6, col7, count)
 				end
 			end
 		end
@@ -1174,19 +1225,10 @@ function iEET:Hyperlinks(link, linkVal)
 		return 
 	end
 	GameTooltip:ClearLines()
-	if col == 1 or col == 2 or col == 3 then
+	if col == 1 or col == 2 or col == 3  or col == 8 then
 		if col == 1 then
-			local _timeToShow
-			if accurateTime then
-				local m = math.floor(accurateTime/60)
-				if not m then
-					m = 0
-				end
-				local s = math.floor(accurateTime%60)
-				_timeToShow = sformat('%d:%02d', m, s)
-			end
 			GameTooltip:AddLine(accurateTime or "Error")
-			GameTooltip:AddLine(_timeToShow or "Error")
+			GameTooltip:AddLine(converTime(accurateTime) or "Error")
 			GameTooltip:AddLine(t[2] or "Error")
 		elseif col == 2 then
 			if accurateTime then
@@ -1199,9 +1241,10 @@ function iEET:Hyperlinks(link, linkVal)
 			end
 			GameTooltip:AddLine(accurateTime or "Error")
 			GameTooltip:AddLine(_timeToShow or "Error")
-		else
+		elseif col == 3 then
 			GameTooltip:AddLine(iEET.events.fromID[eventID].l or "Error")
 			GameTooltip:AddLine("Event ID: "..eventID)
+		else -- col 8 (count), TODO : maybe add count desc?
 		end
 	elseif not (iEET.eventFunctions[eventID] and iEET.eventFunctions[eventID].hyperlink) then
 		iEET:print(sformat("Error: hyperlink function for event id %s not found.", eventID or "nil"))

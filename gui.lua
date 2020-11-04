@@ -103,8 +103,8 @@ function iEET:ScrollContent(delta, fixedValue)
 end
 function iEET:ScrollDetails(delta)
 	if delta == -1 then
-		for i = 1, 7 do
-			if i == 4 then
+		for i = 1, 8 do
+			if i == 4 or i == 3 then
 			else
 				if IsShiftKeyDown() then
 					for scrollFix=1, 15 do
@@ -116,8 +116,8 @@ function iEET:ScrollDetails(delta)
 			end
 		end
 	else
-		for i = 1, 7 do
-			if i == 4 then
+		for i = 1, 8 do
+			if i == 4 or i == 3 then
 			else
 				if IsShiftKeyDown() then
 					for scrollFix=1, 15 do
@@ -156,7 +156,7 @@ end
 
 function iEET:CreateMainFrame()
 	iEET.frame = CreateFrame("Frame", "iEETFrame", UIParent)
-	iEET.frame:SetSize(598,834)
+	iEET.frame:SetSize(636,834)
 	iEET.frame:SetPoint('CENTER', UIParent, 'CENTER', iEETConfig.spawnOffset,0)
 	if iEETConfig.scales.main then
 		iEET.frame:SetScale(iEETConfig.scales.main)
@@ -184,7 +184,7 @@ function iEET:CreateMainFrame()
 	iEET.frame:SetFrameStrata('HIGH')
 	iEET.frame:SetFrameLevel(1)
 	iEET.top = CreateFrame('FRAME', nil, iEET.frame, "BackdropTemplate")
-	iEET.top:SetSize(605, 25)
+	iEET.top:SetSize(643, 25)
 	iEET.top:SetPoint('BOTTOMLEFT', iEET.frame, 'TOPLEFT', 0, -1)
 	iEET.top:SetBackdrop(iEET.backdrop);
 	iEET.top:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
@@ -280,7 +280,7 @@ function iEET:CreateMainFrame()
 	iEET.nextEncounter.text:SetText('>')
 	iEET.nextEncounter.text:Show()
 	iEET.detailtop = CreateFrame('FRAME', nil, iEET.frame, "BackdropTemplate")
-	iEET.detailtop:SetSize(433, 25)
+	iEET.detailtop:SetSize(402, 25)
 	iEET.detailtop:SetPoint('RIGHT', iEET.top, 'LEFT', 1, 0)
 	iEET.detailtop:SetBackdrop({
 		bgFile = "Interface\\Buttons\\WHITE8x8",
@@ -335,23 +335,13 @@ function iEET:CreateMainFrame()
 	iEET.encounterAbilities:SetFrameLevel(1)
 	iEET.encounterAbilities:EnableMouse(true)
 	local lastframe = false
-	local slices = {
-		[1] = 40,
-		[2] = 40,
-		[3] = 105,
-		[4] = 131,
-		[5] = 120,
-		[6] = 97,
-		[7] = 36,
-		[8] = 36,
-	};
-	for i=1, 8 do ---bigcontent
+	for i, v in ipairs(iEET.frameSizes.sizes) do ---bigcontent
 		---anhorframe
 		local anchorID = 'contentAnchor' .. i
 		local contentID = 'content' .. i
 		iEET[anchorID] = CreateFrame('FRAME', nil , iEET.frame, "BackdropTemplate")
 		local f = iEET[anchorID]
-		f:SetSize(slices[i], 834)
+		f:SetSize(v, 834)
 		if not lastframe then
 			f:SetPoint('TOPLEFT', iEET.frame, 'TOPLEFT', 0, 0)
 		else
@@ -374,7 +364,7 @@ function iEET:CreateMainFrame()
 		---
 		iEET[contentID] = CreateFrame('ScrollingMessageFrame', nil, f)
 		local fc = iEET[contentID]
-		fc:SetSize(slices[i]-8,828)
+		fc:SetSize(v-8,828)
 		fc:SetPoint('CENTER', f, 'CENTER', 0, 0)
 		fc:SetFont(iEET.font, iEET.fontsize)
 		fc:SetFading(false)
@@ -428,14 +418,14 @@ function iEET:CreateMainFrame()
 		fc:EnableMouse(true)
 	end
 	lastframe = false
-	for i=7, 1, -1 do ---detail content
+	for i=8, 1, -1 do ---detail content
 		---anhorframe
-		if i ~= 4 then
+		if i ~= 4 and i ~= 3 then
 			local anchorID = 'detailAnchor' .. i
 			local contentID = 'detailContent' .. i
 			iEET[anchorID] = CreateFrame('FRAME', nil, iEET.frame, "BackdropTemplate")
 			local f = iEET[anchorID]
-			f:SetSize(slices[i], 400)
+			f:SetSize(iEET.frameSizes.sizes[i], 400)
 			if not lastframe then
 				f:SetPoint('TOPRIGHT', iEET.frame, 'TOPLEFT', 1, 0)
 			else
@@ -459,7 +449,7 @@ function iEET:CreateMainFrame()
 			
 			iEET[contentID] = CreateFrame('ScrollingMessageFrame', nil, f)
 			local fc = iEET[contentID]
-			fc:SetSize(slices[i]-8,392)
+			fc:SetSize(iEET.frameSizes.sizes[i]-8,392)
 			fc:SetPoint('CENTER', f, 'CENTER', 0, 0)
 			fc:SetFont(iEET.font, iEET.fontsize)
 			fc:SetFading(false)
@@ -732,7 +722,7 @@ function iEET:CreateMainFrame()
 		end
 	end)
 	iEET.editbox:SetAutoFocus(false)
-	iEET.editbox:SetWidth(213)
+	iEET.editbox:SetWidth(251)
 	iEET.editbox:SetHeight(21)
 	iEET.editbox:SetTextInsets(2, 2, 1, 0)
 	iEET.editbox:SetPoint('RIGHT', iEET.top, 'RIGHT', -24,0)
@@ -905,7 +895,7 @@ function iEET:toggleCopyFrame(forceShow)
 end
 function iEET:CreateOnscreenFrame()
 	iEET.onscreen = CreateFrame("Frame", "iEETOnscreen", UIParent)
-	iEET.onscreen:SetSize(598,iEETConfig.onscreen.lines*11+2)
+	iEET.onscreen:SetSize(636,iEETConfig.onscreen.lines*11+2)
 	iEET.onscreen:SetPoint(iEETConfig.onscreen.position.from, UIParent, iEETConfig.onscreen.position.to, iEETConfig.onscreen.position.x,iEETConfig.onscreen.position.y)
 	if iEETConfig.scales.onscreen then
 		iEET.onscreen:SetScale(iEETConfig.scales.onscreen)
@@ -913,22 +903,12 @@ function iEET:CreateOnscreenFrame()
 	iEET.onscreen:SetFrameStrata('HIGH')
 	iEET.onscreen:SetFrameLevel(1)
 	local lastframe = false
-	local slices = {
-		[1] = 40,
-		[2] = 40,
-		[3] = 105,
-		[4] = 131,
-		[5] = 120,
-		[6] = 97,
-		[7] = 36,
-		[8] = 36,
-	};
-	for i=1, 8 do
+	for i, v in ipairs(iEET.frameSizes.sizes) do
 		local fa = 'onscreenAnchor' .. i
 		local fc = 'onscreenContent' .. i
 		---anchor frame
 		iEET[fa] = CreateFrame('FRAME', nil , iEET.onscreen, "BackdropTemplate")
-		iEET[fa]:SetSize(slices[i], iEETConfig.onscreen.lines*11)
+		iEET[fa]:SetSize(v, iEETConfig.onscreen.lines*11)
 		if not lastframe then
 			iEET[fa]:SetPoint('TOPLEFT', iEET.onscreen, 'TOPLEFT', 0, 0)
 			lastframe = fa
@@ -951,7 +931,7 @@ function iEET:CreateOnscreenFrame()
 		iEET[fa]:SetBackdropBorderColor(iEETConfig.colors.onscreen.border.r,iEETConfig.colors.onscreen.border.g,iEETConfig.colors.onscreen.border.b,iEETConfig.colors.onscreen.border.a)
 		---
 		iEET[fc] = CreateFrame('ScrollingMessageFrame', nil, iEET[fa])
-		iEET[fc]:SetSize(slices[i]-8,iEETConfig.onscreen.lines*11)
+		iEET[fc]:SetSize(v-8,iEETConfig.onscreen.lines*11)
 		iEET[fc]:SetPoint('CENTER', iEET[fa], 'CENTER', 0, 0)
 		iEET[fc]:SetFont(iEET.font, iEET.fontsize)
 		iEET[fc]:SetFading(false)
