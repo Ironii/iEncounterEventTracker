@@ -1568,85 +1568,166 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 			chatLink = function(col, data) return end
 		}
 	end
-	do -- SPELL_HEAL, SPELL_DAMAGE
+	do -- SPELL_HEAL
 		local d = tcopy(defaultCLEUData)
 		d["amount"] = 13
 		d["amountOver"] = 14
 		d["absorbed"] = 15
-		for _,k in pairs({11,73}) do
-			iEET.eventFunctions[k] = {
-				data = d,
-				gui = function(args, getGUID)
-					local guid = sformat("%s-%s-%s", args[d.event], (args[d.sourceGUID] or args[d.sourceName] or ""), args[d.spellID]) -- Create unique string from event + sourceGUID
-					if getGUID then return guid end
-					return guid, -- 1
-					checkForSpecialCategory(args[d.spellID]), -- 2
-					args[d.spellName], -- 3
-					args[d.sourceName], -- 4,
-					args[d.destName], -- 5
-					args[d.amount], -- 6
-					{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
-				end,
-				import = function(args)
-					args[d.sourceClass] = tonumber(args[d.sourceClass])
-					args[d.destClass] = tonumber(args[d.destClass])
-					args[d.spellID] = tonumber(args[d.spellID])
-					args[d.amount] = tonumber(args[d.amount])
-					args[d.amountOver] = tonumber(args[d.amountOver])
-					args[d.absorbed] = tonumber(args[d.absorbed])
-					return args
-				end,
-				filtering = function(args, filters, ...)
-					return defaultFiltering(args, d, filters, k, ...)
-				end,
-				hyperlink = function(col, data)
-					if col == 4 then
-						if C_Spell.DoesSpellExist(data[d.spellID]) then -- TODO : CHECK if it requires caching first, live/ptr check
-							addToTooltip(data[d.spellID], formatKV("Spell ID", data[d.spellID]))
-						else
-							addToTooltip(nil,
-								formatKV("Spell ID", data[d.spellID]),
-								formatKV("Spell name", data[d.spellName])
-							)
-						end
-					elseif col == 5 then
-						local class
-						if data[d.sourceClass] then
-							class = GetClassInfo(data[d.sourceClass])
-						end
+		local eventID = 11
+		iEET.eventFunctions[eventID] = {
+			data = d,
+			gui = function(args, getGUID)
+				local guid = sformat("%s-%s-%s", args[d.event], (args[d.sourceGUID] or args[d.sourceName] or ""), args[d.spellID]) -- Create unique string from event + sourceGUID
+				if getGUID then return guid end
+				return guid, -- 1
+				checkForSpecialCategory(args[d.spellID]), -- 2
+				args[d.spellName], -- 3
+				args[d.sourceName], -- 4,
+				args[d.destName], -- 5
+				args[d.amount], -- 6
+				{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
+			end,
+			import = function(args)
+				args[d.sourceClass] = tonumber(args[d.sourceClass])
+				args[d.destClass] = tonumber(args[d.destClass])
+				args[d.spellID] = tonumber(args[d.spellID])
+				args[d.amount] = tonumber(args[d.amount])
+				args[d.amountOver] = tonumber(args[d.amountOver])
+				args[d.absorbed] = tonumber(args[d.absorbed])
+				return args
+			end,
+			filtering = function(args, filters, ...)
+				return defaultFiltering(args, d, filters, eventID, ...)
+			end,
+			hyperlink = function(col, data)
+				if col == 4 then
+					if C_Spell.DoesSpellExist(data[d.spellID]) then -- TODO : CHECK if it requires caching first, live/ptr check
+						addToTooltip(data[d.spellID], formatKV("Spell ID", data[d.spellID]))
+					else
 						addToTooltip(nil,
-							formatKV("Source name", data[d.sourceName]),
-							formatKV("Source GUID", data[d.sourceGUID]),
-							formatKV("Source class", class),
-							formatKV("Source role", data[d.sourceRole])
-							)
-					elseif col == 6 then
-						local class
-						if data[d.destClass] then
-							class = GetClassInfo(data[d.destClass])
-						end
-						addToTooltip(nil,
-							formatKV("Target name", data[d.destName]),
-							formatKV("Target GUID", data[d.destGUID]),
-							formatKV("Target class", class),
-							formatKV("Target role", data[d.destRole])
-						)
-					else -- 7
-						addToTooltip(nil,
-							formatKV("Amount", data[d.amount]),
-							formatKV(k == 11 and "Overheal" or "Overkill", data[d.amountOver]),
-							formatKV("Absorbed", data[d.absorbed])
+							formatKV("Spell ID", data[d.spellID]),
+							formatKV("Spell name", data[d.spellName])
 						)
 					end
-					return true
-				end,
-				chatLink = function(col, data)
-					-- ignore column for now
-					if not data[d.spellID] then return end
-					return GetSpellLink(data[d.spellID])
-				end,
-			}
-		end
+				elseif col == 5 then
+					local class
+					if data[d.sourceClass] then
+						class = GetClassInfo(data[d.sourceClass])
+					end
+					addToTooltip(nil,
+						formatKV("Source name", data[d.sourceName]),
+						formatKV("Source GUID", data[d.sourceGUID]),
+						formatKV("Source class", class),
+						formatKV("Source role", data[d.sourceRole])
+						)
+				elseif col == 6 then
+					local class
+					if data[d.destClass] then
+						class = GetClassInfo(data[d.destClass])
+					end
+					addToTooltip(nil,
+						formatKV("Target name", data[d.destName]),
+						formatKV("Target GUID", data[d.destGUID]),
+						formatKV("Target class", class),
+						formatKV("Target role", data[d.destRole])
+					)
+				else -- 7
+					addToTooltip(nil,
+						formatKV("Amount", data[d.amount]),
+						formatKV("Overheal", data[d.amountOver]),
+						formatKV("Absorbed", data[d.absorbed])
+					)
+				end
+				return true
+			end,
+			chatLink = function(col, data)
+				-- ignore column for now
+				if not data[d.spellID] then return end
+				return GetSpellLink(data[d.spellID])
+			end,
+		}
+	end
+	do -- SPELL_DAMAGE
+		local d = tcopy(defaultCLEUData)
+		d["amount"] = 13
+		d["amountOver"] = 14
+		d["absorbed"] = 15
+		d["spellSchool"] = 16
+		local eventID = 73
+		iEET.eventFunctions[eventID] = {
+			data = d,
+			gui = function(args, getGUID)
+				local guid = sformat("%s-%s-%s", args[d.event], (args[d.sourceGUID] or args[d.sourceName] or ""), args[d.spellID]) -- Create unique string from event + sourceGUID
+				if getGUID then return guid end
+				return guid, -- 1
+				checkForSpecialCategory(args[d.spellID]), -- 2
+				args[d.spellName], -- 3
+				args[d.sourceName], -- 4,
+				args[d.destName], -- 5
+				args[d.amount], -- 6
+				{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
+			end,
+			import = function(args)
+				args[d.sourceClass] = tonumber(args[d.sourceClass])
+				args[d.destClass] = tonumber(args[d.destClass])
+				args[d.spellID] = tonumber(args[d.spellID])
+				args[d.amount] = tonumber(args[d.amount])
+				args[d.amountOver] = tonumber(args[d.amountOver])
+				args[d.absorbed] = tonumber(args[d.absorbed])
+				args[d.spellSchool] = tonumber(args[d.spellSchool])
+				return args
+			end,
+			filtering = function(args, filters, ...)
+				return defaultFiltering(args, d, filters, eventID, ...)
+			end,
+			hyperlink = function(col, data)
+				if col == 4 then
+					if C_Spell.DoesSpellExist(data[d.spellID]) then -- TODO : CHECK if it requires caching first, live/ptr check
+						addToTooltip(data[d.spellID], formatKV("Spell ID", data[d.spellID]))
+					else
+						addToTooltip(nil,
+							formatKV("Spell ID", data[d.spellID]),
+							formatKV("Spell name", data[d.spellName])
+						)
+					end
+				elseif col == 5 then
+					local class
+					if data[d.sourceClass] then
+						class = GetClassInfo(data[d.sourceClass])
+					end
+					addToTooltip(nil,
+						formatKV("Source name", data[d.sourceName]),
+						formatKV("Source GUID", data[d.sourceGUID]),
+						formatKV("Source class", class),
+						formatKV("Source role", data[d.sourceRole])
+						)
+				elseif col == 6 then
+					local class
+					if data[d.destClass] then
+						class = GetClassInfo(data[d.destClass])
+					end
+					addToTooltip(nil,
+						formatKV("Target name", data[d.destName]),
+						formatKV("Target GUID", data[d.destGUID]),
+						formatKV("Target class", class),
+						formatKV("Target role", data[d.destRole])
+					)
+				else -- 7
+					addToTooltip(nil,
+						formatKV("Amount", data[d.amount]),
+						formatKV("Overkill", data[d.amountOver]),
+						formatKV("Absorbed", data[d.absorbed]),
+						formatKV("Spell school", sformat("%s (%s)", data[d.spellSchool] and GetSchoolString(data[d.spellSchool]) or "", data[d.spellSchool]))
+					)
+				end
+				return true
+			end,
+			chatLink = function(col, data)
+				-- ignore column for now
+				if not data[d.spellID] then return end
+				return GetSpellLink(data[d.spellID])
+			end,
+		}
 	end
 	do -- SPELL_MISSED
 		local eventID = 72
@@ -1731,6 +1812,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 			["amount"] = 8,
 			["amountOver"] = 9,
 			["absorbed"] = 10,
+			["spellSchool"] = 11,
 		}
 		iEET.eventFunctions[eventID] = {
 			data = d,
@@ -1747,6 +1829,10 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 			end,
 			import = function(args)
 				args[d.destClass] = tonumber(args[d.destClass])
+				args[d.amount] = tonumber(args[d.amount])
+				args[d.amountOver] = tonumber(args[d.amountOver])
+				args[d.absorbed] = tonumber(args[d.absorbed])
+				args[d.spellSchool] = tonumber(args[d.spellSchool])
 				return args
 			end,
 			filtering = function(args, filters, ...)
@@ -1771,7 +1857,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					addToTooltip(nil,
 						formatKV("Amount", data[d.amount]),
 						formatKV("Overkill", data[d.amountOver]),
-						formatKV("Absorbed", data[d.absorbed])
+						formatKV("Absorbed", data[d.absorbed]),
+						formatKV("Spell school", sformat("%s (%s)", data[d.spellSchool] and GetSchoolString(data[d.spellSchool]) or "", data[d.spellSchool]))
 					)
 				end
 				return true
@@ -1896,6 +1983,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 							[d.amount] = args[13],
 							[d.amountOver] = args[14],
 							[d.absorbed] = args[18],
+							[d.spellSchool] = args[15],
 						}
 					else -- ENVIRONMENTAL_MISSED
 						t = {
@@ -1940,6 +2028,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 							t[d.absorbed] = args[17]
 						else -- SPELL_DAMAGE
 							t[d.absorbed] = args[20]
+							t[d.spellSchool] = args[17]
 						end
 					elseif eventID == 72 then -- SPELL_MISSED
 						t[d.missType] = args[15]
