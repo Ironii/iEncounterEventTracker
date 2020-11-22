@@ -1666,6 +1666,17 @@ do
 					end
 					addNewFilterOptions:Close()
 					iEET:loopData()
+					local hasDisabledEvents = false
+					for k,v in pairs(iEETConfig.tracking) do
+						if not v then 
+							hasDisabledEvents = true
+							iEET.eventlist:SetBackdropBorderColor(1,0,0,1)
+							break
+						end
+					end
+					if not hasDisabledEvents then
+						iEET.eventlist:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
+					end
 				end)
 				local disableAll = addNewFilterOptions:GetFrame("button", "eventMainPage")
 				disableAll:SetParent(bg)

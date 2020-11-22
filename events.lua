@@ -170,6 +170,15 @@ defaults.unitEvents.hyperlink = function(col, data)
 	end
 	return true
 end
+defaults.unitEvents.spreadsheet = function(data)
+	local d = defaults.unitEvents.data
+	return data[d.spellID], -- spellID
+	data[d.spellName], -- Col 4
+	data[d.sourceName], -- Col 5
+	data[d.unitID], -- Col 6
+	data[d.hp], -- Col 7
+	{formatKV("castGUID",data[d.castGUID]), formatKV("sourceGUID",data[d.sourceGUID])} -- Extra
+end
 defaults.unitEvents.chatLink = function(col, data)
 	-- ignore column for now
 	local d = defaults.unitEvents.data
@@ -193,7 +202,7 @@ defaults.chats.gui = function(args, getGUID)
 		args[d.sourceName], -- 4
 		nil, -- 5
 		nil, -- 6
-		{casterName = args[d.sourceName]} -- 7
+		{formatKV("casterName",args[d.sourceName])} -- 7
 end
 defaults.chats.hyperlink = function(col, data)
 	if col == 4 then
@@ -203,6 +212,12 @@ defaults.chats.hyperlink = function(col, data)
 		addToTooltip(nil, data[defaults.chats.data.sourceName])
 		return true
 	end
+end
+defaults.chats.spreadsheet = function(data)
+	local d = defaults.chats.data
+	return nil, -- spellID
+	data[d.message], -- Col 4
+	data[d.sourceName] -- Col 5
 end
 defaults.chats.chatLink = function(col, data)	return end
 
@@ -385,7 +400,7 @@ function addon:ADDON_LOADED(addonName)
 		addon:UnregisterEvent('ADDON_LOADED')
 	end
 end
-do
+do -- CHAT_MSG_ADDON
 	local eventID = 63
 	iEET.eventFunctions[eventID] = {
 		data = defaults.chats.data, 
@@ -398,6 +413,7 @@ do
 			return args
 		end,
 		chatLink = function(col, data) return end,
+		spreadsheet = defaults.chats.spreadsheet,
 	}
 	local d = iEET.eventFunctions[eventID].data
 	function addon:CHAT_MSG_ADDON(prefix,msg,chatType,sender)
@@ -470,6 +486,14 @@ do -- ENCOUNTER_START
 		chatLink = function(col, data)
 			-- TODO: maybe add link to encounter journal?
 			return
+		end,
+		spreadsheet = function(data)
+			return nil, -- spellID
+			sformat("Logger: %s", data[d.logger]), -- Col 4
+			data[d.encounterName], -- Col 5
+			data[d.encounterID], -- Col 6
+			nil, -- Col 7
+			{formatKV("mapID",data[d.mapID])} -- Extra
 		end
 	}
 	function addon:ENCOUNTER_START(encounterID, encounterName, difficultyID, raidSize,...)
@@ -538,6 +562,14 @@ do -- ENCOUNTER_END
 				formatKV("Kill", data[d.kill])
 			)
 			return true
+		end,
+		spreadsheet = function(data)
+			return nil, -- spellID
+			sformat("Logger: %s", data[d.logger]), -- Col 4
+			data[d.encounterName], -- Col 5
+			data[d.encounterID], -- Col 6
+			data[d.kill] == 1 and "Victory!" or "Wipe", -- Col 7
+			{formatKV("mapID",data[d.mapID])} -- Extra
 		end,
 		chatLink = function(col, data) return end
 	}
@@ -672,6 +704,14 @@ do -- UNIT_SPELLCAST_INTERRUPTIBLE
 			end
 			return true
 		end,
+		spreadsheet = function(data)
+			return nil, -- spellID
+			"Interruptible", -- Col 4
+			data[d.sourceName], -- Col 5
+			data[d.unitID], -- Col 6
+			data[d.hp], -- Col 7
+			{formatKV("sourceGUID",data[d.sourceGUID])} -- Extra
+		end,
 		chatLink = function(col, data) return end,
 	}
 	function addon:UNIT_SPELLCAST_INTERRUPTIBLE(unitID)
@@ -730,6 +770,14 @@ do -- UNIT_SPELLCAST_NOT_INTERRUPTIBLE
 				)
 			end
 			return true
+		end,
+		spreadsheet = function(data)
+			return nil, -- spellID
+			"Not interruptible", -- Col 4
+			data[d.sourceName], -- Col 5
+			data[d.unitID], -- Col 6
+			data[d.hp], -- Col 7
+			{sourceGUID = data[d.sourceGUID]} -- Extra
 		end,
 		chatLink = function(col, data) return end,
 	}
@@ -805,6 +853,14 @@ do -- UNIT_TARGET
 				)
 			end
 			return true
+		end,
+		spreadsheet = function(data)
+			return nil, -- spellID
+			iEET.fakeSpells.UnitTargetChanged.name, -- Col 4
+			sformat("%s (%s)", data[d.unitID], data[d.sourceName]), -- Col 5
+			data[d.dest] or "NONE", -- Col 6
+			data[d.hp], -- Col 7
+			{formatKV("sourceGUID",data[d.sourceGUID]), formatKV("destGUID",data[d.destGUID]), formatKV("destClass",data[d.destClass]), formatKV("destRole",data[d.destRole])} -- Extra
 		end,
 		chatLink = function(col, data) return end
 	}
@@ -885,6 +941,14 @@ do -- UNIT_POWER_UPDATE
 			return true
 		end,
 		chatLink = function(col, data) return end,
+		spreadsheet = function(data)
+			return nil, -- spellID
+			iEET.fakeSpells.PowerUpdate.name, -- Col 4
+			data[d.sourceName], -- Col 5
+			data[d.unitID], -- Col 6
+			data[d.hp], -- Col 7
+			{formatKV("sourceGUID",data[d.sourceGUID]), formatKV("Power type", data[d.powerType]), formatKV("Tooltip", data[d.tooltip])} -- Extra
+		end,
 	}
 	function addon:UNIT_POWER_UPDATE(unitID, powerType)
 		local isValid, sourceGUID, sourceName, php = defaultUnitHandler(eventID, unitID, nil, nil, nil, true)
@@ -998,6 +1062,20 @@ do -- UNIT_ENTERING_VEHICLE
 			return args
 		end,
 		chatLink = function(col, data) return end,
+		spreadsheet = function(data)
+			return nil, -- spellID
+			iEET.fakeSpells.VehicleEntering.name, -- Col 4
+			data[d.sourceName], -- Col 5
+			data[d.unitID], -- Col 6
+			nil, -- Col 7
+			{formatKV("hasVehicleUI", data[d.hasVehicleUI]),
+			formatKV("isControlSeat", data[d.isControlSeat]),
+			formatKV("vehicleID", data[d.vehicleID]),
+			formatKV("vehicleGUID", data[d.vehicleGUID]),
+			formatKV("mayChooseExit", data[d.mayChooseExit]),
+			formatKV("hasPitch", data[d.hasPitch]),
+			formatKV("slots", data[d.slots])} -- Extra
+		end,
 	}
 	function addon:UNIT_ENTERING_VEHICLE(unitID, hasVehicleUI,isControlSeat,vehicleID, vehicleGUID, mayChooseExit, hasPitch)
 		local sourceGUID = UnitGUID(unitID)
@@ -1083,6 +1161,20 @@ do -- UNIT_ENTERED_VEHICLE
 			return args
 		end,
 		chatLink = function(col, data) return end,
+		spreadsheet = function(data)
+			return nil, -- spellID
+			iEET.fakeSpells.VehicleEntered.name, -- Col 4
+			data[d.sourceName], -- Col 5
+			data[d.unitID], -- Col 6
+			nil, -- Col 7
+			{formatKV("hasVehicleUI", data[d.hasVehicleUI]),
+			formatKV("isControlSeat", data[d.isControlSeat]),
+			formatKV("vehicleID", data[d.vehicleID]),
+			formatKV("vehicleGUID", data[d.vehicleGUID]),
+			formatKV("mayChooseExit", data[d.mayChooseExit]),
+			formatKV("hasPitch", data[d.hasPitch]),
+			formatKV("slots", data[d.slots])} -- Extra
+		end,
 	}
 	function addon:UNIT_ENTERED_VEHICLE(unitID, hasVehicleUI,isControlSeat,vehicleID, vehicleGUID, mayChooseExit, hasPitch)
 		local sourceGUID = UnitGUID(unitID)
@@ -1149,6 +1241,14 @@ do -- UNIT_EXITING_VEHICLE
 			return args
 		end,
 		chatLink = function(col, data) return end,
+		spreadsheet = function(data)
+			return nil, -- spellID
+			iEET.fakeSpells.VehicleExiting.name, -- Col 4
+			data[d.sourceName], -- Col 5
+			data[d.unitID], -- Col 6
+			nil, -- Col 7
+			{formatKV("sourceGUID", data[d.sourceGUID])} -- Extra
+		end,
 	}
 	function addon:UNIT_EXITING_VEHICLE(unitID)
 		local sourceGUID = UnitGUID(unitID)
@@ -1203,6 +1303,14 @@ do -- UNIT_EXITED_VEHICLE
 			return args
 		end,
 		chatLink = function(col, data) return end,
+		spreadsheet = function(data)
+			return nil, -- spellID
+			iEET.fakeSpells.VehicleExited.name, -- Col 4
+			data[d.sourceName], -- Col 5
+			data[d.unitID], -- Col 6
+			nil, -- Col 7
+			{formatKV("sourceGUID", data[d.sourceGUID])} -- Extra
+		end,
 	}	
 	function addon:UNIT_EXITED_VEHICLE(unitID)
 		local sourceGUID = UnitGUID(unitID)
@@ -1219,6 +1327,15 @@ do -- UNIT_EXITED_VEHICLE
 	end
 end
 do -- COMBAT_LOG_EVENT_UNFILTERED
+	local classColors = {}
+	for i = 1, GetNumClasses() do
+		local _, className = GetClassInfo(i)
+		classColors[i] = RAID_CLASS_COLORS[className].colorStr
+	end
+	local function formatClassColor(id, txt)
+		if not id or not iEETConfig.classColors then return txt end
+		return sformat("|c%s%s|r", classColors[id] or "ffffffff", txt)
+	end
 	local defaultCLEUData = {
 		["event"] = 1,
 		["time"] = 2,
@@ -1238,8 +1355,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 		return guid, -- 1
 			checkForSpecialCategory(args[defaultCLEUData.spellID]), -- 2
 			args[defaultCLEUData.spellName], -- 3
-			args[defaultCLEUData.sourceName], -- 4
-			args[defaultCLEUData.destName], -- 5
+			formatClassColor(args[defaultCLEUData.sourceClass], args[defaultCLEUData.sourceName]), -- 4
+			formatClassColor(args[defaultCLEUData.destClass], args[defaultCLEUData.destName]), -- 5
 			nil, -- 6
 			{spellID = args[defaultCLEUData.spellID], casterName = args[defaultCLEUData.sourceName]} -- 7
 	end
@@ -1290,6 +1407,22 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				if not data[defaultCLEUData.spellID] then return end
 				return GetSpellLink(data[defaultCLEUData.spellID])
 			end,
+			spreadsheet = function(data)
+				local class
+				if data[defaultCLEUData.destClass] then
+					class = GetClassInfo(data[defaultCLEUData.destClass])
+				end
+				return data[defaultCLEUData.spellID], -- spellID
+				data[defaultCLEUData.spellName], -- Col 4
+				data[defaultCLEUData.sourceName], -- Col 5
+				data[defaultCLEUData.destName], -- Col 6
+				nil, -- Col 7
+				{formatKV("sourceGUID", data[defaultCLEUData.sourceGUID]),
+				formatKV("destName", data[defaultCLEUData.destName]),
+				formatKV("destGUID", data[defaultCLEUData.destGUID]),
+				formatKV("destClass", class),
+				formatKV("destRole", data[defaultCLEUData.destRole])} -- Extra
+			end,
 		}
 	end
 	do -- SPELL_DISPEL, SPELL_INTERRUPT, SPELL_STOLEN
@@ -1306,8 +1439,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					return guid, -- 1
 						checkForSpecialCategory(args[d.spellID]), -- 2
 						args[d.spellName], -- 3
-						args[d.sourceName], -- 4
-						args[d.destName], -- 5
+						formatClassColor(args[defaultCLEUData.sourceClass], args[defaultCLEUData.sourceName]), -- 4
+						formatClassColor(args[defaultCLEUData.destClass], args[defaultCLEUData.destName]), -- 5
 						args[d.extraSpellName], -- 6
 						{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
 				end,
@@ -1367,6 +1500,24 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					end
 					return true
 				end,
+				spreadsheet = function(data)
+					local class
+					if data[d.destClass] then
+						class = GetClassInfo(data[d.destClass])
+					end
+					return data[d.spellID], -- spellID
+					data[d.spellName], -- Col 4
+					data[d.sourceName], -- Col 5
+					data[d.destName], -- Col 6
+					nil, -- Col 7
+					{formatKV("sourceGUID", data[d.sourceGUID]),
+					formatKV("destName", data[d.destName]),
+					formatKV("destGUID", data[d.destGUID]),
+					formatKV("destClass", class),
+					formatKV("destRole", data[d.destRole]),
+					formatKV("extraSpellID", data[d.extraSpellID]),
+					formatKV("extraSpellName", data[d.extraSpellName])} -- Extra
+				end,
 				chatLink = function(col, data)
 					-- ignore column for now
 					if not data[d.spellID] then return end
@@ -1389,8 +1540,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					return guid, -- 1
 					checkForSpecialCategory(args[d.spellID]), -- 2
 					args[d.spellName], -- 3
-					args[d.sourceName], -- 4,
-					args[d.destName], -- 5
+					formatClassColor(args[d.sourceClass], args[d.sourceName]), -- 4,
+					formatClassColor(args[d.destClass], args[d.destName]), -- 5
 					(args[d.auraType] == "1" and "BUFF" or "DEBUFF"), -- 6
 					{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
 				end,
@@ -1441,6 +1592,22 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					end
 					return true
 				end,
+				spreadsheet = function(data)
+					local class
+					if data[d.destClass] then
+						class = GetClassInfo(data[d.destClass])
+					end
+					return data[d.spellID], -- spellID
+					data[d.spellName], -- Col 4
+					data[d.sourceName], -- Col 5
+					data[d.destName], -- Col 6
+					data[d.auraType] == "1" and "BUFF" or "DEBUFF", -- Col 7
+					{formatKV("sourceGUID", data[d.sourceGUID]),
+					formatKV("destName", data[d.destName]),
+					formatKV("destGUID", data[d.destGUID]),
+					formatKV("destClass", class),
+					formatKV("destRole", data[d.destRole])} -- Extra
+				end,
 				chatLink = function(col, data)
 					-- ignore column for now
 					if not data[d.spellID] then return end
@@ -1468,8 +1635,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					return guid, -- 1
 					nil, -- 2 TODO ADD SPECIAL
 					args[d.spellName], -- 3
-					args[d.sourceName], -- 4
-					args[d.destName], -- 5
+					formatClassColor(args[d.sourceClass], args[d.sourceName]), -- 4,
+					formatClassColor(args[d.destClass], args[d.destName]), -- 5
 					sformat("%s (%s)",args[d.stacks] or "Error", args[d.auraType] == "1" and "BUFF" or "DEBUFF"), -- 6
 					{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
 				end,
@@ -1530,6 +1697,23 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					if not data[d.spellID] then return end
 					return GetSpellLink(data[d.spellID])
 				end,
+				spreadsheet = function(data)
+					local class
+					if data[d.destClass] then
+						class = GetClassInfo(data[d.destClass])
+					end
+					return data[d.spellID], -- spellID
+					data[d.spellName], -- Col 4
+					data[d.sourceName], -- Col 5
+					data[d.destName], -- Col 6
+					data[d.auraType] == "1" and "BUFF" or "DEBUFF", -- Col 7
+					{formatKV("sourceGUID", data[d.sourceGUID]),
+					formatKV("destName", data[d.destName]),
+					formatKV("destGUID", data[d.destGUID]),
+					formatKV("destClass", class),
+					formatKV("destRole", data[d.destRole]),
+					formatKV("Stacks", data[d.stacks])} -- Extra
+				end,
 			}
 		end
 	end
@@ -1565,6 +1749,14 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 						)
 				return true
 			end,
+			spreadsheet = function(data)
+				return nil, -- spellID
+				iEET.fakeSpells.Death.name, -- Col 4
+				data[d.destName], -- Col 5
+				nil, -- Col 6
+				nil, -- Col 7
+				{formatKV("destGUID", data[d.destGUID])} -- Extra
+			end,
 			chatLink = function(col, data) return end
 		}
 	end
@@ -1582,8 +1774,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				return guid, -- 1
 				checkForSpecialCategory(args[d.spellID]), -- 2
 				args[d.spellName], -- 3
-				args[d.sourceName], -- 4,
-				args[d.destName], -- 5
+				formatClassColor(args[d.sourceClass], args[d.sourceName]), -- 4,
+				formatClassColor(args[d.destClass], args[d.destName]), -- 5
 				args[d.amount], -- 6
 				{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
 			end,
@@ -1645,6 +1837,25 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				if not data[d.spellID] then return end
 				return GetSpellLink(data[d.spellID])
 			end,
+			spreadsheet = function(data)
+				local class
+				if data[d.destClass] then
+					class = GetClassInfo(data[d.destClass])
+				end
+				return data[d.spellID], -- spellID
+				data[d.spellName], -- Col 4
+				data[d.sourceName], -- Col 5
+				data[d.destName], -- Col 6
+				data[d.amount], -- Col 7
+				{formatKV("sourceGUID", data[d.sourceGUID]),
+				formatKV("destName", data[d.destName]),
+				formatKV("destGUID", data[d.destGUID]),
+				formatKV("destClass", class),
+				formatKV("destRole", data[d.destRole]),
+				formatKV("amount", data[d.amount]),
+				formatKV("overheal", data[d.amountOver]),
+				formatKV("absorbed", data[d.absorbed])} -- Extra
+			end,
 		}
 	end
 	do -- SPELL_DAMAGE
@@ -1662,8 +1873,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				return guid, -- 1
 				checkForSpecialCategory(args[d.spellID]), -- 2
 				args[d.spellName], -- 3
-				args[d.sourceName], -- 4,
-				args[d.destName], -- 5
+				formatClassColor(args[d.sourceClass], args[d.sourceName]), -- 4,
+				formatClassColor(args[d.destClass], args[d.destName]), -- 5
 				args[d.amount], -- 6
 				{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
 			end,
@@ -1722,6 +1933,26 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				end
 				return true
 			end,
+			spreadsheet = function(data)
+				local class
+				if data[d.destClass] then
+					class = GetClassInfo(data[d.destClass])
+				end
+				return data[d.spellID], -- spellID
+				data[d.spellName], -- Col 4
+				data[d.sourceName], -- Col 5
+				data[d.destName], -- Col 6
+				data[d.amount], -- Col 7
+				{formatKV("sourceGUID", data[d.sourceGUID]),
+				formatKV("destName", data[d.destName]),
+				formatKV("destGUID", data[d.destGUID]),
+				formatKV("destClass", class),
+				formatKV("destRole", data[d.destRole]),
+				formatKV("amount", data[d.amount]),
+				formatKV("overkill", data[d.amountOver]),
+				formatKV("absorbed", data[d.absorbed]),
+				formatKV("spellSchool", sformat("%s (%s)", data[d.spellSchool] and GetSchoolString(data[d.spellSchool]) or "", data[d.spellSchool]))} -- Extra
+			end,
 			chatLink = function(col, data)
 				-- ignore column for now
 				if not data[d.spellID] then return end
@@ -1741,8 +1972,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				return guid, -- 1
 				checkForSpecialCategory(args[d.spellID]), -- 2
 				args[d.spellName], -- 3
-				args[d.sourceName], -- 4,
-				args[d.destName], -- 5
+				formatClassColor(args[d.sourceClass], args[d.sourceName]), -- 4,
+				formatClassColor(args[d.destClass], args[d.destName]), -- 5
 				args[d.missType], -- 6
 				{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
 			end,
@@ -1797,6 +2028,22 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				if not data[d.spellID] then return end
 				return GetSpellLink(data[d.spellID])
 			end,
+			spreadsheet = function(data)
+				local class
+				if data[d.destClass] then
+					class = GetClassInfo(data[d.destClass])
+				end
+				return data[d.spellID], -- spellID
+				data[d.spellName], -- Col 4
+				data[d.sourceName], -- Col 5
+				data[d.destName], -- Col 6
+				data[d.missType], -- Col 7
+				{formatKV("sourceGUID", data[d.sourceGUID]),
+				formatKV("destName", data[d.destName]),
+				formatKV("destGUID", data[d.destGUID]),
+				formatKV("destClass", class),
+				formatKV("destRole", data[d.destRole])} -- Extra
+			end,
 			}
 	end
 	do -- ENVIRONMENTAL_DAMAGE
@@ -1823,7 +2070,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				nil, -- 2
 				args[d.environmentalType], -- 3
 				nil, -- 4,
-				args[d.destName], -- 5
+				formatClassColor(args[d.destClass], args[d.destName]), -- 5,
 				args[d.amount], -- 6
 				{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
 			end,
@@ -1868,6 +2115,24 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				if not data[d.spellID] then return end
 				return GetSpellLink(data[d.spellID])
 			end,
+			spreadsheet = function(data)
+				local class
+				if data[d.destClass] then
+					class = GetClassInfo(data[d.destClass])
+				end
+				return nil, -- spellID
+				data[d.environmentalType], -- Col 4
+				nil, -- Col 5
+				data[d.destName], -- Col 6
+				data[d.amount], -- Col 7
+				{formatKV("destName", data[d.destName]),
+				formatKV("destGUID", data[d.destGUID]),
+				formatKV("destClass", class),
+				formatKV("destRole", data[d.destRole]),
+				formatKV("overkill", data[d.amountOver]),
+				formatKV("absorbed", data[d.absorbed]),
+				formatKV("spellSchool", sformat("%s (%s)", data[d.spellSchool] and GetSchoolString(data[d.spellSchool]) or "", data[d.spellSchool]))} -- Extra
+			end,
 			}
 	end
 	do -- ENVIRONMENTAL_MISSED
@@ -1891,7 +2156,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				nil, -- 2
 				args[d.environmentalType], -- 3
 				args[d.missType], -- 4,
-				args[d.destName], -- 5
+				formatClassColor(args[d.destClass], args[d.destName]), -- 5
 				nil, -- 6
 				{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
 			end,
@@ -1926,6 +2191,21 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				-- ignore column for now
 				if not data[d.spellID] then return end
 				return GetSpellLink(data[d.spellID])
+			end,
+			spreadsheet = function(data)
+				local class
+				if data[d.destClass] then
+					class = GetClassInfo(data[d.destClass])
+				end
+				return nil, -- spellID
+				data[d.environmentalType], -- Col 4
+				nil, -- Col 5
+				data[d.destName], -- Col 6
+				data[d.amount], -- Col 7
+				{formatKV("destName", data[d.destName]),
+				formatKV("destGUID", data[d.destGUID]),
+				formatKV("destClass", class),
+				formatKV("destRole", data[d.destRole])} -- Extra
 			end,
 			}
 	end
@@ -2066,6 +2346,14 @@ do -- INSTANCE_ENCOUNTER_ENGAGE_UNIT
 			return true
 		end,
 		chatLink = function(col, data) return end,
+		spreadsheet = function(data)
+			return nil, -- spellID
+			iEET.fakeSpells.SpawnNPCs.name, -- Col 4
+			nil, -- Col 5
+			nil, -- Col 6
+			nil, -- Col 7
+			{formatKV("tooltip", data[d.npcs])} -- Extra
+		end,
 	}
 	function addon:INSTANCE_ENCOUNTER_ENGAGE_UNIT()
 		local newUnits = {}
@@ -2125,6 +2413,7 @@ do -- CHAT_MSG_MONSTER_EMOTE
 			return args
 		end,
 		chatLink = defaults.chats.chatLink,
+		spreadsheet = defaults.chats.spreadsheet
 	}
 	local d = iEET.eventFunctions[eventID].data
 	function addon:CHAT_MSG_MONSTER_EMOTE(msg, sourceName)
@@ -2149,6 +2438,7 @@ do -- CHAT_MSG_MONSTER_SAY
 		hyperlink = defaults.chats.hyperlink,
 		import = function(args) return args end,
 		chatLink = defaults.chats.chatLink,
+		spreadsheet = defaults.chats.spreadsheet,
 	}
 	local d = iEET.eventFunctions[eventID].data
 	function addon:CHAT_MSG_MONSTER_SAY(msg, sourceName)
@@ -2175,6 +2465,7 @@ do -- CHAT_MSG_MONSTER_YELL
 			return defaultFiltering(args, defaults.chats.data, filters, eventID, ...)
 		end,
 		chatLink = defaults.chats.chatLink,
+		spreadsheet = defaults.chats.spreadsheet,
 	}
 	local d = iEET.eventFunctions[eventID].data
 	function addon:CHAT_MSG_MONSTER_YELL(msg, sourceName)
@@ -2220,6 +2511,14 @@ do -- RAID_BOSS_EMOTE
 			end
 			return true
 		end,
+		spreadsheet = function(data)
+			return nil, -- spellID
+			data[d.message], -- Col 4
+			data[d.sourceName], -- Col 5
+			data[d.destName], -- Col 6
+			nil, -- Col 7
+			nil -- Extra
+		end,
 		chatLink = defaults.chats.chatLink,
 	}
 	function addon:RAID_BOSS_EMOTE(msg, sourceName,_,_,destName)
@@ -2245,6 +2544,7 @@ do -- RAID_BOSS_WHISPER
 		end,
 		hyperlink = defaults.chats.hyperlink,
 		chatLink = defaults.chats.chatLink,
+		spreadsheet = defaults.chats.spreadsheet,
 	}
 	local d = iEET.eventFunctions[eventID].data
 	function addon:RAID_BOSS_WHISPER(msg, sourceName) -- TODO : im not sure if there is sourceName, needs testing
@@ -2294,6 +2594,7 @@ do -- CHAT_MSG_RAID_BOSS_EMOTE
 			return true
 		end,
 		chatLink = defaults.chats.chatLink,
+		spreadsheet = defaults.chats.spreadsheet,
 	}
 	function addon:CHAT_MSG_RAID_BOSS_EMOTE(msg, sourceName,_,_,destName,...)
 		local t = {
@@ -2318,6 +2619,7 @@ do -- CHAT_MSG_RAID_BOSS_WHISPER
 		import = function(args) return args end,
 		hyperlink = defaults.chats.hyperlink,
 		chatLink = defaults.chats.chatLink,
+		spreadsheet = defaults.chats.spreadsheet,
 	}
 	local d = iEET.eventFunctions[eventID].data
 	function addon:CHAT_MSG_RAID_BOSS_WHISPER(msg, sourceName)
@@ -2349,6 +2651,7 @@ do -- PLAYER_REGEN_DISABLED
 		hyperlink = function(col, data) return end, -- Nothing to show
 		import = function(args) return args end,
 		chatLink = function(col, data) return end,
+		spreadsheet = function(data) return end
 	}
 	function addon:PLAYER_REGEN_DISABLED()
 		local t = {
@@ -2374,6 +2677,7 @@ do -- PLAYER_REGEN_ENABLED
 		hyperlink = function (col, data) return end, -- Nothing to show
 		import = function(args) return args end,
 		chatLink = function(col, data) return end,
+		spreadsheet = function(data) return end,
 	}
 	function addon:PLAYER_REGEN_ENABLED()
 		local t = {
@@ -2404,6 +2708,9 @@ do -- PLAY_MOVIE
 		end,
 		import = function(args) return args end,
 		chatLink = function(col, data) return end,
+		spreadsheet = function(data)
+			return nil, iEET.fakeSpells.PlayMovie.name, data[d.movideID]
+		end
 	}
 	function addon:PLAY_MOVIE(movieID)
 		local t = {
@@ -2435,6 +2742,9 @@ do -- CINEMATIC_START
 		end,
 		import = function(args) return args end,
 		chatLink = function(col, data) return end,
+		spreadsheet = function(data)
+			return nil, iEET.fakeSpells.CinematicStart.name, data[d.canBeCancelled]
+		end
 	}
 	function addon:CINEMATIC_START(canBeCancelled)
 		local t = {
@@ -2461,6 +2771,7 @@ do -- CINEMATIC_STOP
 		hyperlink = function(col, data) return end, -- Nothing to show
 		import = function(args) return args end,
 		chatLink = function(col, data) return end,
+		spreadsheet = function(data) return nil, iEET.fakeSpells.CinematicStop.name end,
 	}
 	function addon:CINEMATIC_STOP()
 		local t = {
@@ -2535,6 +2846,14 @@ do -- BigWigs
 			end,
 			import = function(args) return args end,
 			chatLink = function(col, data) return end,
+			spreadsheet = function(data)
+				return nil, -- spellID
+				data[d.bw_text], -- Col 4
+				data[d.bw_cd] and "~" or "", -- Col 5
+				data[d.bw_duration], -- Col 6
+				data[d.bw_key], -- Col 7
+				nil -- Extra
+			end,
 		}
 	end
 	do -- BigWigs_Message
@@ -2564,6 +2883,14 @@ do -- BigWigs
 			end,
 			import = function(args) return args end,
 			chatLink = function(col, data) return end,
+			spreadsheet = function(data)
+				return nil, -- spellID
+				data[d.bw_text], -- Col 4
+				nil, -- Col 5
+				nil, -- Col 6
+				data[d.bw_key], -- Col 7
+				nil -- Extra
+			end,
 		}
 	end
 	do -- BigWigs_PauseBar
@@ -2591,6 +2918,10 @@ do -- BigWigs
 			end,
 			import = function(args) return args end,
 			chatLink = function(col, data) return end,
+			spreadsheet = function(data)
+				return nil, -- spellID
+				data[d.bw_text] -- Col 4
+			end,
 		}
 	end
 	do -- BigWigs_ResumeBar
@@ -2618,6 +2949,10 @@ do -- BigWigs
 			end,
 			import = function(args) return args end,
 			chatLink = function(col, data) return end,
+			spreadsheet = function(data)
+				return nil, -- spellID
+				data[d.bw_text] -- Col 4
+			end,
 		}
 	end
 	do -- BigWigs_StopBar
@@ -2645,6 +2980,10 @@ do -- BigWigs
 			end,
 			import = function(args) return args end,
 			chatLink = function(col, data) return end,
+			spreadsheet = function(data)
+				return nil, -- spellID
+				data[d.bw_text] -- Col 4
+			end,
 		}
 	end
 	do -- BigWigs_StopBars
@@ -2666,6 +3005,10 @@ do -- BigWigs
 			hyperlink = function(col, data) return end, -- Nothing to show
 			import = function(args) return args end,
 			chatLink = function(col, data) return end,
+			spreadsheet = function(data)
+				return nil, -- spellID
+				"BigWigs_StopBars" -- Col 4
+			end,
 		}
 	end
 	function iEET:BigWigsData(event,...)
@@ -2850,6 +3193,7 @@ do -- CUSTOM
 		hyperlink = defaults.chats.hyperlink,
 		import = function(args) return args end,
 		chatLink = function(col, data) return end,
+		spreadsheet = defaults.chats.spreadsheet,
 	}
 	local d = iEET.eventFunctions[eventID].data
 	function iEET_AddCustom(msg)
@@ -2889,6 +3233,10 @@ do -- Manual logging (start/end)
 		hyperlink = function(args, filters) return end, -- Nothing to show
 		import = function(args) return args end,
 		chatLink = function(col, data) return end,
+		spreadsheet = function(data)
+			return nil, -- spellID
+			iEET.fakeSpells.StartLogging.name -- Col 4
+		end,
 	}
 	iEET.eventFunctions[38] = {  -- END LOGGING
 		data = {
@@ -2904,6 +3252,10 @@ do -- Manual logging (start/end)
 		hyperlink = function(args, filters) return end, -- Nothing to show
 		import = function(args) return args end,
 		chatLink = function(col, data) return end,
+		spreadsheet = function(data)
+			return nil, -- spellID
+			iEET.fakeSpells.EndLogging.name -- Col 4
+		end,
 	}
 	function iEET:Force(start, name)
 		local t
@@ -3154,6 +3506,21 @@ do -- UPDATE_UI_WIDGET
 			return true
 		end,
 		chatLink = function(col, data) return end,
+		spreadsheet = function(data)
+			local dataToShow = data[d.widgetData]:gsub("Changed values from previous:", "") -- remove stuff so you have a chance to see something of value in ieet main window
+			dataToShow = dataToShow:gsub("Changed values from first:", "")
+			return nil, -- spellID
+			sformat("%s (%s)", data[d.widgetID], data[d.widgetSetID]), -- Col 4
+			dataToShow, -- Col 5
+			data[d.unitID], -- Col 6
+			nil, -- Col 7
+			{formatKV("widgetID", data[d.widgetID]),
+			formatKV("widgetType", data[d.widgetType]),
+			formatKV("widgetSetID", data[d.widgetSetID]),
+			formatKV("sourceName", data[d.sourceName]),
+			formatKV("sourceGUID", data[d.sourceGUID]),
+			formatKV("widgetData", data[d.widgetData])} -- Extra
+		end,
 	}
 	function addon:UPDATE_UI_WIDGET(widgetInfo)
 		-- shown: 0 = hidden, 1 = shown, 2 = was shown, now hidden, let trough
@@ -3219,6 +3586,15 @@ do -- DeadlyBossMods
 				return args
 			end,
 			chatLink = function(col, data) return end,
+			spreadsheet = function(data)
+				return nil, -- spellID
+				data[d.dbm_message], -- Col 4
+				data[d.dbm_messageType], -- Col 5
+				data[d.dbm_spellID], -- Col 6
+				data[d.dbm_modID], -- Col 7
+				{formatKV("icon", data[d.dbm_icon]),
+				formatKV("special", data[d.dbm_special])} -- Extra
+			end,
 		}	
 		function dbmHandlers:DBM_Announce(msg, icon, msgType, spellID, modID, specialWarning)
 			local t = {
@@ -3269,6 +3645,11 @@ do -- DeadlyBossMods
 				return args
 			end,
 			chatLink = function(col, data) return end,
+			spreadsheet = function(data)
+				return nil, -- spellID
+				data[d.dbm_message], -- Col 4
+				data[d.dbm_level] -- Col 5
+			end,
 		}	
 		function dbmHandlers:DBM_Debug(msg, level)
 			local t = {
@@ -3337,6 +3718,21 @@ do -- DeadlyBossMods
 				return args
 			end,
 			chatLink = function(col, data) return end,
+			spreadsheet = function(data)
+				return nil, -- spellID
+				data[d.dbm_message], -- Col 4
+				data[d.dbm_messageType], -- Col 5
+				data[d.dbm_spellID], -- Col 6
+				data[d.dbm_timer], -- Col 7
+				{formatKV("id", data[d.dbm_id]),
+				formatKV("icon", data[d.dbm_icon]),
+				formatKV("modID", data[d.dbm_modID]),
+				formatKV("colorID", data[d.dbm_colorID]),
+				formatKV("keep", data[d.dbm_keep]),
+				formatKV("fade", data[d.dbm_fade]),
+				formatKV("spellName", data[d.dbm_spellName]),
+				formatKV("mobGUID", data[d.dbm_mobGUID])} -- Extra
+			end,
 		}	
 		function dbmHandlers:DBM_TimerStart(id, msg, timer, icon, msgType, spellID, colorID, modID, keep, fade, spellName, mobGUID)
 			local t = {
@@ -3388,6 +3784,10 @@ do -- DeadlyBossMods
 				return args
 			end,
 			chatLink = function(col, data) return end,
+			spreadsheet = function(data)
+				return nil, -- spellID
+				data[d.dbm_id] -- Col 4
+			end,
 		}	
 		function dbmHandlers:DBM_TimerStop(id)
 			local t = {
@@ -3440,6 +3840,13 @@ do -- DeadlyBossMods
 				return args
 			end,
 			chatLink = function(col, data) return end,
+			spreadsheet = function(data)
+				return nil, -- spellID
+				data[d.dbm_id], -- Col 4
+				data[d.dbm_spellID], -- Col 5
+				data[d.dbm_modID], -- Col 6
+				data[d.dbm_fade] -- Col 7
+			end,
 		}	
 		function dbmHandlers:DBM_TimerFadeUpdate(id, spellID, modID, fade)
 			local t = {
@@ -3493,6 +3900,12 @@ do -- DeadlyBossMods
 				return args
 			end,
 			chatLink = function(col, data) return end,
+			spreadsheet = function(data)
+				return nil, -- spellID
+				data[d.dbm_id], -- Col 4
+				data[d.dbm_elapsed], -- Col 5
+				data[d.dbm_total] -- Col 6
+			end,
 		}	
 		function dbmHandlers:DBM_TimerUpdate(id, elapsed, total)
 			local t = {
@@ -3541,7 +3954,7 @@ end
 --[[
 function iEET_CHECK_EVENTS()
 	for k,v in pairs(iEET.eventFunctions) do
-		for _,tName in pairs({"data", "gui", "filtering", "hyperlink", "import", "chatLink"}) do
+		for _,tName in pairs({"data", "gui", "filtering", "hyperlink", "import", "chatLink", "spreadsheet"}) do
 			if not v[tName] then print(k,"Missing", tName) end
 		end
 	end

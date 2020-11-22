@@ -13,8 +13,6 @@ local function trim(str, col)
 		return str:sub(1, maxLengths[col]) 
 	end
 	if str == "" then return " " end
-	str = str:gsub('|c........', '') -- Colors
-	str = str:gsub('|r', '') -- Colors
 	str = str:gsub('|T.+|t', '') -- Textures
 	str = str:gsub('%%', '%%%%')
 	str = str:gsub('|h', '') -- Spells

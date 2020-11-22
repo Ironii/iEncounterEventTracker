@@ -751,6 +751,12 @@ function iEET:CreateMainFrame()
 	iEET.eventlist:SetScript('OnClick',function()
 		iEET:GetPageFromFilters("filterEvents")
 	end)
+	for k,v in pairs(iEETConfig.tracking) do
+		if not v then 
+			iEET.eventlist:SetBackdropBorderColor(1,0,0,1)
+			break
+		end
+	end
 	----Filtering window button:
 	createButton('filteringButton', nil,60,21,'Filters','LEFT','eventlist','RIGHT',1,0)
 	iEET.filteringButton:SetScript('OnClick',function(self, button)

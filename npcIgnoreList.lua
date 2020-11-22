@@ -73,6 +73,7 @@ iEET.npcIgnoreList = {
 	[78065] = true,		--Jade Serpent Statue
 	[99625] = true,		--Wind Spirit
 	[100868] = true,	--Chi'ji
+	[165374] = true, -- Yu'lon
 
 --Paladin
 

@@ -1,5 +1,5 @@
 local _, iEET = ...
-iEET.version = 2.007
+iEET.version = 2.010
 
 iEET.data = {}
 local sformat = string.format
@@ -873,8 +873,6 @@ do
 			return tostring(str:sub(1, maxLengths[col]))
 		end
 		if str == "" then return " " end
-		str = str:gsub('|c........', '') -- Colors
-		str = str:gsub('|r', '') -- Colors
 		str = str:gsub('|T.+|t', '') -- Textures
 		str = str:gsub('%%', '%%%%')
 		str = str:gsub('|h', '') -- Spells
@@ -959,8 +957,6 @@ do
 			return str:sub(1, maxLengths[col]) 
 		end
 		if str == "" then return " " end
-		str = str:gsub('|c........', '') -- Colors
-		str = str:gsub('|r', '') -- Colors
 		str = str:gsub('|T.+|t', '') -- Textures
 		str = str:gsub('%%', '%%%%')
 		str = str:gsub('|h', '') -- Spells
@@ -1394,40 +1390,52 @@ function iEET:massDelete(data)
 	iEET:print(counter .. ' fights deleted.')
 	encounters = nil
 end
-function iEET:copyCurrent(formatStyle) -- TODO : rewrite with event specific export funcs
-	local totalData = ''
-	for line = 1, iEET.content1:GetNumMessages() do
-		local lineData = ''
-		for i = 1, 8 do
-			if i == 4 then
-				local lineInfo = iEET['content' .. i]:GetMessageInfo(line)
-				local spellID = lineInfo:match('^.*:%d-:(%d-):.-:')
-				if tonumber(spellID) then
-					local spellName = lineInfo:match('\124h(.*)\124h$')
-					if spellName then
-						local s = ''
-						if formatStyle == iEET.ENUMS.SPREADSHEETS.GOOGLE then -- Google Spreadsheet
-							s = '=HYPERLINK("http://shadowlands.wowhead.com/spell=%s", "%s")'
-						elseif formatStyle == iEET.ENUMS.SPREADSHEETS.OPENOFFICE then -- Openoffice Math
-							s = '=HYPERLINK("http://shadowlands.wowhead.com/spell=%s"; "%s")'
-						elseif formatStyle == iEET.ENUMS.SPREADSHEETS.EXCEL then -- Excel
-							s = '=HYPERLINK("http://shadowlands.wowhead.com/spell=%s", "%s")'
-						end
-						lineData = lineData .. string.format(s, spellID, spellName) .. '\t'
-					else
-						lineData = lineData .. lineInfo .. '\t'
-					end
-				else
-					lineData = lineData .. lineInfo .. '\t'
-				end
-			else
-				lineData = lineData .. iEET['content' .. i]:GetMessageInfo(line) .. '\t'
+do
+	local _concat = table.concat
+	local function convertToSpreadsheet(formatStyle, d, col1, col2, col3, col8)
+		local spellID, col4, col5, col6, col7, extraData = iEET.eventFunctions[d[1]].spreadsheet(d)
+		if spellID then
+			if formatStyle == iEET.ENUMS.SPREADSHEETS.GOOGLE then -- Google Spreadsheet
+				col4 = sformat('=HYPERLINK("http://wowhead.com/spell=%s", "%s")', spellID, col4)
+			elseif formatStyle == iEET.ENUMS.SPREADSHEETS.OPENOFFICE then -- Openoffice Math
+				col4 = sformat('=HYPERLINK("http://wowhead.com/spell=%s"; "%s")', spellID, col4)
+			elseif formatStyle == iEET.ENUMS.SPREADSHEETS.EXCEL then -- Excel
+				col4 = sformat('=HYPERLINK("http://wowhead.com/spell=%s", "%s")', spellID, col4)
 			end
 		end
-		totalData = totalData .. '\r' .. string.gsub(lineData, '+', '') --+SAURA etc messes excel so remove +, should be enough for excel
+		if extraData then 
+			extraData = _concat(extraData, ", ")
+		end
+		local temp = {col1, col2, col3, col4 or "", col5 or "", col6 or "", col7 or "", col8 or "", extraData or ""}
+		for i,v in ipairs(temp) do -- clean up
+			_v = tostring(v)
+			if i ~= 4 then -- 4 starts with "="
+				if _v:len() > 0 then -- string starting with "+" or "=" fucks up spreadsheets
+					_v = _v:gsub("^+", "\\+")
+					_v = _v:gsub("^=", "\\=")
+				end
+				_v = _v:gsub("\r", " ")
+				_v = _v:gsub("\n", " ")
+			end
+			temp[i] = _v
+		end
+		return _concat(temp, "\t")
 	end
-	iEET:toggleCopyFrame(true)
-	iEET.copyFrame:SetText(totalData)
+	function iEET:copyCurrent(formatStyle) -- TODO : rewrite with event specific export funcs
+		local totalData = ''
+		for line = 1, iEET.content1:GetNumMessages() do
+			local lineData = ''
+			local col1 = iEET.content1:GetMessageInfo(line)
+			local id = tonumber(col1:sub(12,17))
+			local col2 = iEET.content2:GetMessageInfo(line)
+			local col3 = iEET.content3:GetMessageInfo(line)
+			local col8 = iEET.content8:GetMessageInfo(line)
+			local handledSTR = convertToSpreadsheet(formatStyle, iEET.data[id], col1, col2, col3, col8)
+			totalData = sformat("%s\n%s", totalData, handledSTR)
+		end
+		iEET:toggleCopyFrame(true)
+		iEET.copyFrame:SetText(totalData)
+	end
 end
 function iEET:ExportData(auto)
 	if iEET.encounterInfoData then -- nil check

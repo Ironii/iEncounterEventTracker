@@ -25,6 +25,7 @@ iEET.dispels = {
 	--Monk
 	[115310] = 1,	--Revival
 	[115450] = 1,	--Detox
+	[218164] = 1, --Detox (Brewmaster)
 
 	--Paladin
 	[4987] = 1,		--Cleanse
