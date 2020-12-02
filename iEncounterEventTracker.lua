@@ -1,5 +1,5 @@
 local _, iEET = ...
-iEET.version = 2.010
+iEET.version = 2.011
 
 iEET.data = {}
 local sformat = string.format
@@ -959,6 +959,8 @@ do
 		if str == "" then return " " end
 		str = str:gsub('|T.+|t', '') -- Textures
 		str = str:gsub('%%', '%%%%')
+		str = str:gsub("|c........", "")
+		str = str:gsub("|r", "")
 		str = str:gsub('|h', '') -- Spells
 		str = str:gsub('|H', '') -- Spells
 		str = str:gsub('\r', '')

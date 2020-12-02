@@ -59,7 +59,7 @@ do
 	end
 end
 -- upvalues
-local tonumber, tinsert, GetTime, UnitGUID, UnitName, sformat, UnitClass, GetRaidRosterInfo, sfind, mfloor = tonumber, table.insert, GetTime, UnitGUID, UnitName, string.format, UnitClass, GetRaidRosterInfo, string.find, math.floor
+local tonumber, tinsert, GetTime, UnitGUID, UnitName, sformat, UnitClass, GetRaidRosterInfo, sfind, mfloor, smatch, sgsub = tonumber, table.insert, GetTime, UnitGUID, UnitName, string.format, UnitClass, GetRaidRosterInfo, string.find, math.floor, string.match, string.gsub
 
 local addon = CreateFrame('frame')
 addon:RegisterEvent('ENCOUNTER_START')
@@ -2493,7 +2493,7 @@ do -- RAID_BOSS_EMOTE
 				args[d.message], --3
 				args[d.sourceName], -- 4
 				args[d.destName], -- 5
-				nil, -- 6
+				smatch(args[d.message], "spell:(%d+)"), -- 6
 				{casterName = args[d.sourceName]} -- 7
 		end,
 		filtering = function(args, filters, ...)
@@ -2502,8 +2502,8 @@ do -- RAID_BOSS_EMOTE
 		import = function(args) return args end,
 		hyperlink = function(col, data)
 			if col == 7 then return end
-			if col == 4 then
-				addToTooltip(nil,data[d.message])
+			if col == 4 or col == 6 then
+				addToTooltip(smatch(data[d.message], "spell:(%d+)"),(sgsub(data[d.message], "|", "||")))
 			elseif col == 5 then
 				addToTooltip(nil,data[d.sourceName])
 			else -- 6
@@ -2575,7 +2575,7 @@ do -- CHAT_MSG_RAID_BOSS_EMOTE
 				args[d.message], -- 3
 				args[d.sourceName], -- 4
 				args[d.destName], -- 5
-				nil, -- 6
+				smatch(args[d.message], "spell:(%d+)"), -- 6
 				{casterName = args[d.sourceName]} -- 7
 		end,
 		filtering = function(args, filters, ...)
@@ -2584,8 +2584,8 @@ do -- CHAT_MSG_RAID_BOSS_EMOTE
 		import = function(args) return args end,
 		hyperlink = function(col, data)
 			if col == 7 then return end
-			if col == 4 then
-				addToTooltip(nil,data[d.message])
+			if col == 4 or col == 6 then
+				addToTooltip(smatch(data[d.message], "spell:(%d+)"),(sgsub(data[d.message], "|", "||")))
 			elseif col == 5 then
 				addToTooltip(nil,data[d.sourceName])
 			else -- 6
