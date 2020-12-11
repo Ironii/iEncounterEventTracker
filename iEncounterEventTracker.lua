@@ -1,5 +1,5 @@
 local _, iEET = ...
-iEET.version = 2.011
+iEET.version = 2.012
 
 iEET.data = {}
 local sformat = string.format
