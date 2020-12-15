@@ -1025,3 +1025,6 @@ function iEET:ShouldIgnoreEncounter(encounterID)
   local expansion = encounters[encounterID] or iEET.ENUMS.EXPANSIONS.DEFAULT
   return iEETConfig.expansionIgnore[expansion]
 end
+function iEET:GetExpansionForEncounter(encounterID)
+  return encounters[tonumber(encounterID)] or iEET.ENUMS.EXPANSIONS.DEFAULT
+end

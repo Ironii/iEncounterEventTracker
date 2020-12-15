@@ -7,6 +7,8 @@ iEET.npcIgnoreList = {
 	[92993] = true,		--Burning Blade Banner
 	[143985] = true,	-- Absorb-o-Tron
 	[152396] = true, -- Guardian of Azeroth (essence)
+	[175519] = true, -- Frothing Pustule (???, trinket or smh? casts Noxious Bolt (345495))
+	[170190] = true, -- Shadowgrasp Totem (trinket, Shadowgrasp Totem, 179356)
 
 --Death Knight
 	[24207] = true, 	--Army of the Dead
@@ -96,6 +98,7 @@ iEET.npcIgnoreList = {
 	[3527] = true,		--Healing Stream Totem
 	[5925] = true,		--Grounding Totem
 	[6112] = true,		--Windfury Totem
+	[10467] = true,		--Mana Tide Totem
 	[15352] = true,		--Greater Earth Elemental
 	[15438] = true,		--Greater Fire Elemental
 	[29264] = true,		--Spirit wolf

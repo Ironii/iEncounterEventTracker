@@ -1160,7 +1160,7 @@ end
 function iEET:toggleDeleteOptions()
 	if not iEET.deleteOptions then
 		--Delete options main frame
-			local width = 310
+			local width = 412
 		iEET.deleteOptions = {}
 		iEET.deleteOptions.mainFrame = CreateFrame('Frame', 'iEETDeleteFrame', UIParent, "BackdropTemplate")
 		iEET.deleteOptions.mainFrame:SetSize(width,110)
@@ -1222,6 +1222,7 @@ function iEET:toggleDeleteOptions()
 			dif = false,
 			encounter = false,
 			del = false,
+			type = false,
 		}
 		local function setErrorText(check)
 			if check then
@@ -1275,6 +1276,40 @@ function iEET:toggleDeleteOptions()
 					deleteOptionsVars.dif = false
 					iEET.deleteOptions.chooseDifficulty.text:SetText('Any')
 				end, notCheckable = true})
+			elseif menuOption == "type" then
+				local opt = {
+					{k = iEET.ENUMS.EXPANSIONS.VANILLA, v = 'Vanilla - raid'},
+					{k = iEET.ENUMS.EXPANSIONS.VANILLA5MAN, v = 'Vanilla - 5man'},
+					{k = iEET.ENUMS.EXPANSIONS.TBC, v = 'The Burning Crusade - raid'},
+					{k = iEET.ENUMS.EXPANSIONS.TBC5MAN, v = 'The Burning Crusade - 5man'},
+					{k = iEET.ENUMS.EXPANSIONS.WOTLK, v = 'Wrath of the Lich King - raid'},
+					{k = iEET.ENUMS.EXPANSIONS.WOTLK5MAN, v = 'Wrath of the Lich King - 5man'},
+					{k = iEET.ENUMS.EXPANSIONS.CATACLYSM, v = 'Cataclysm - raid'},
+					{k = iEET.ENUMS.EXPANSIONS.CATACLYSM5MAN, v = 'Cataclysm - 5man'},
+					{k = iEET.ENUMS.EXPANSIONS.MOP, v = 'Mist of Pandaria - raid'},
+					{k = iEET.ENUMS.EXPANSIONS.MOP5MAN, v = 'Mist of Pandaria - 5man'},
+					{k = iEET.ENUMS.EXPANSIONS.WOD, v = 'Warlords of Draenor - raid'},
+					{k = iEET.ENUMS.EXPANSIONS.WOD5MAN, v = 'Warlords of Draenor - 5man'},
+					{k = iEET.ENUMS.EXPANSIONS.LEGION, v = 'Legion - raid'},
+					{k = iEET.ENUMS.EXPANSIONS.LEGION5MAN, v = 'Legion - 5man'},
+					{k = iEET.ENUMS.EXPANSIONS.BFA, v = 'Battle for Azeroth - raid'},
+					{k = iEET.ENUMS.EXPANSIONS.BFA5MAN, v = 'Battle for Azeroth - 5man'},
+					{k = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, v = 'Shadowlands - raid'},
+					{k = iEET.ENUMS.EXPANSIONS.SHADOWLANDS5MAN, v = 'Shadowlands - 5man'},
+					{k = false, v = "Any"},
+				}
+				for _, data in ipairs(opt) do
+					local temp = {}
+					temp.text = data.v
+					temp.keepShownOnClick = false
+					temp.isNotRadio = true
+					temp.notCheckable = true
+					temp.func = function()
+						deleteOptionsVars.type = data.k
+						iEET.deleteOptions.encounterType.text:SetText(data.v)
+					end
+					table.insert(t, temp)
+				end
 			else
 				local opt = {
 					[1] = {k = 'deleteAll', v = 'Delete all'},
@@ -1340,7 +1375,7 @@ function iEET:toggleDeleteOptions()
 		iEET.deleteOptions.chooseEncounter:SetBackdrop(iEET.backdrop)
 		iEET.deleteOptions.chooseEncounter:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
 		iEET.deleteOptions.chooseEncounter:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
-		iEET.deleteOptions.chooseEncounter:SetPoint('TOP', iEET.deleteOptions.mainFrame, 'TOP', 0,-18)
+		iEET.deleteOptions.chooseEncounter:SetPoint('TOPRIGHT', iEET.deleteOptions.mainFrame, 'TOP', -1,-18)
 		iEET.deleteOptions.chooseEncounter:SetScript('OnTextChanged', function(self)
 			local text = self:GetText()
 			if tonumber(text) then
@@ -1362,6 +1397,32 @@ function iEET:toggleDeleteOptions()
 		iEET.deleteOptions.chooseEncounter.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
 		iEET.deleteOptions.chooseEncounter.text:SetPoint('BOTTOM', iEET.deleteOptions.chooseEncounter, 'TOP', 0,3)
 		iEET.deleteOptions.chooseEncounter.text:SetText('Encounter ID')
+
+		iEET.deleteOptions.encounterType = CreateFrame('button', nil, iEET.deleteOptions.mainFrame, "BackdropTemplate")
+		iEET.deleteOptions.encounterType:SetBackdrop(iEET.backdrop)
+		iEET.deleteOptions.encounterType:SetBackdropColor(iEETConfig.colors.options.bg.r,iEETConfig.colors.options.bg.g,iEETConfig.colors.options.bg.b,iEETConfig.colors.options.bg.a)
+		iEET.deleteOptions.encounterType:SetBackdropBorderColor(iEETConfig.colors.options.border.r,iEETConfig.colors.options.border.g,iEETConfig.colors.options.border.b,iEETConfig.colors.options.border.a)
+		iEET.deleteOptions.encounterType:SetSize(100,20)
+		iEET.deleteOptions.encounterType:EnableMouse(true)
+		iEET.deleteOptions.encounterType:SetPoint('TOPLEFT', iEET.deleteOptions.mainFrame, 'TOP', 1,-18)
+		iEET.deleteOptions.encounterType.text = iEET.deleteOptions.encounterType:CreateFontString()
+		iEET.deleteOptions.encounterType.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+		iEET.deleteOptions.encounterType.text:SetPoint('CENTER', iEET.deleteOptions.encounterType, 'CENTER', 0,0)
+		iEET.deleteOptions.encounterType.text:SetWidth(100)
+		iEET.deleteOptions.encounterType.text:SetHeight(20)
+		iEET.deleteOptions.encounterType.text:SetText('Any')
+		iEET.deleteOptions.encounterType.title = iEET.deleteOptions.encounterType:CreateFontString()
+		iEET.deleteOptions.encounterType.title:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
+		iEET.deleteOptions.encounterType.title:SetPoint('BOTTOM', iEET.deleteOptions.encounterType, 'TOP', 0,3)
+		iEET.deleteOptions.encounterType.title:SetText('Encounter type')
+		iEET.deleteOptions.encounterType.menu = CreateFrame('Frame', 'iEET_Delete_DeleteType', iEET.deleteOptions.mainFrame, 'UIDropDownMenuTemplate')
+		iEET.deleteOptions.encounterType:SetScript('OnClick',function()
+			if UIDROPDOWNMENU_OPEN_MENU then
+				CloseDropDownMenus()
+				return
+			end
+			EasyMenu(getMenuTable("type"), iEET.deleteOptions.encounterType.menu, iEET.deleteOptions.encounterType, 0 , 0)
+		end)
 
 		iEET.deleteOptions.chooseDeleteMode = CreateFrame('button', nil, iEET.deleteOptions.mainFrame, "BackdropTemplate")
 		iEET.deleteOptions.chooseDeleteMode:SetBackdrop(iEET.backdrop)
@@ -1416,6 +1477,7 @@ function iEET:toggleDeleteOptions()
 		iEET.deleteOptions.errorText:SetPoint('TOP', iEET.deleteOptions.chooseEncounter, 'BOTTOM', 0,-3)
 		iEET.deleteOptions.errorText:SetWidth(width-20)
 		iEET.deleteOptions.errorText:SetJustifyV('MIDDLE')
+		iEET.deleteOptions.errorText:SetJustifyH('center')
 		iEET.deleteOptions.errorText:SetText('')
 		iEET.deleteOptions.errorText:SetTextColor(1,0,0,1)
 	elseif iEET.deleteOptions.mainFrame:IsShown() then

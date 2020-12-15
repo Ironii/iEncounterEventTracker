@@ -1,5 +1,5 @@
 local _, iEET = ...
-iEET.version = 2.012
+iEET.version = 2.013
 
 iEET.data = {}
 local sformat = string.format
@@ -1287,7 +1287,7 @@ function iEET:getNextPrevEncounter(prevNext)
 end
 function iEET:getTooltipForEncounter(key)
 	local temp = {}
-		for k,v in string.gmatch(key, '{(.-)=(.-)}') do
+	for k,v in string.gmatch(key, '{(.-)=(.-)}') do
 		temp[k] = v
 	end
 	return string.format('%s(%s)\n%s%s\n%s\nBy %s', temp.eN,string.sub(GetDifficultyInfo(temp.d),1,1),(temp.k == 1 and '+' or '-'),temp.fT, temp.pT, temp.lN or UNKNOWN)
@@ -1311,6 +1311,13 @@ function iEET:massDelete(data)
 		if specificEncounter then
 			if (not data.dif or (data.dif and key:find('{d='..data.dif..'}'))) and key:find('{eI='..specificEncounter..'}') then
 				encounters[key] = false
+			end
+		elseif data.type then
+			local eID = key:match('{eI=(%d-)}')
+			if iEET:GetExpansionForEncounter(eID) == data.type then
+				if not data.dif or (data.dif and key:find('{d='..data.dif..'}')) then
+					encounters[key] = false
+				end
 			end
 		else
 			if not data.dif or (data.dif and key:find('{d='..data.dif..'}')) then
