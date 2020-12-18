@@ -613,10 +613,18 @@ do -- ENCOUNTER_END
 end
 do -- UNIT_SPELLCAST_SUCCEEDED
 	local eventID = 26
-	iEET.eventFunctions[eventID] = defaults.unitEvents
-	iEET.eventFunctions[eventID].filtering = function(args, filters, ...)
-		return defaultFiltering(args, defaults.unitEvents.data, filters, eventID, ...)
-	end
+	iEET.eventFunctions[eventID] = {
+		defaults.unitEvents,
+		data = defaults.unitEvents.data,
+		gui = defaults.unitEvents.gui,
+		hyperlink = defaults.unitEvents.hyperlink,
+		spreadsheet = defaults.unitEvents.spreadsheet,
+		chatLink = defaults.unitEvents.chatLink,
+		import = defaults.unitEvents.import,
+		filtering = function(args, filters, ...)
+			return defaultFiltering(args, defaults.unitEvents.data, filters, eventID, ...)
+		end
+	}
 	function addon:UNIT_SPELLCAST_SUCCEEDED(unitID, castGUID, spellID)
 		defaultUnitHandler(eventID, unitID, castGUID, spellID)
 	end
@@ -633,30 +641,54 @@ do -- UNIT_SPELLCAST_START
 end
 do -- UNIT_SPELLCAST_STOP
 	local eventID = 61
-	iEET.eventFunctions[eventID] = defaults.unitEvents
-	iEET.eventFunctions[eventID].filtering = function(args, filters, ...)
-		return defaultFiltering(args, defaults.unitEvents.data, filters, eventID, ...)
-	end
+	iEET.eventFunctions[eventID] = {
+		defaults.unitEvents,
+		data = defaults.unitEvents.data,
+		gui = defaults.unitEvents.gui,
+		hyperlink = defaults.unitEvents.hyperlink,
+		spreadsheet = defaults.unitEvents.spreadsheet,
+		chatLink = defaults.unitEvents.chatLink,
+		import = defaults.unitEvents.import,
+		filtering = function(args, filters, ...)
+			return defaultFiltering(args, defaults.unitEvents.data, filters, eventID, ...)
+		end
+	}
 	function addon:UNIT_SPELLCAST_STOP(unitID, castGUID, spellID)
 		defaultUnitHandler(eventID, unitID, castGUID, spellID)
 	end
 end
 do -- UNIT_SPELLCAST_CHANNEL_START
 	local eventID = 40
-	iEET.eventFunctions[eventID] = defaults.unitEvents
-	iEET.eventFunctions[eventID].filtering = function(args, filters, ...)
-		return defaultFiltering(args, defaults.unitEvents.data, filters, eventID, ...)
-	end
+	iEET.eventFunctions[eventID] = {
+		defaults.unitEvents,
+		data = defaults.unitEvents.data,
+		gui = defaults.unitEvents.gui,
+		hyperlink = defaults.unitEvents.hyperlink,
+		spreadsheet = defaults.unitEvents.spreadsheet,
+		chatLink = defaults.unitEvents.chatLink,
+		import = defaults.unitEvents.import,
+		filtering = function(args, filters, ...)
+			return defaultFiltering(args, defaults.unitEvents.data, filters, eventID, ...)
+		end
+	}
 	function addon:UNIT_SPELLCAST_CHANNEL_START(unitID, castGUID, spellID)
 		defaultUnitHandler(eventID, unitID, castGUID, spellID)
 	end
 end
 do -- UNIT_SPELLCAST_CHANNEL_STOP
 	local eventID = 60
-	iEET.eventFunctions[eventID] = defaults.unitEvents
-	iEET.eventFunctions[eventID].filtering = function(args, filters, ...)
-		return defaultFiltering(args, defaults.unitEvents.data, filters, eventID, ...)
-	end
+	iEET.eventFunctions[eventID] = {
+		defaults.unitEvents,
+		data = defaults.unitEvents.data,
+		gui = defaults.unitEvents.gui,
+		hyperlink = defaults.unitEvents.hyperlink,
+		spreadsheet = defaults.unitEvents.spreadsheet,
+		chatLink = defaults.unitEvents.chatLink,
+		import = defaults.unitEvents.import,
+		filtering = function(args, filters, ...)
+			return defaultFiltering(args, defaults.unitEvents.data, filters, eventID, ...)
+		end
+	}
 	function addon:UNIT_SPELLCAST_CHANNEL_STOP(unitID, castGUID, spellID)
 		defaultUnitHandler(eventID, unitID, castGUID, spellID)
 	end
@@ -3951,7 +3983,8 @@ for k,v in pairs(iEET.eventFunctions) do
 		end
 	end
 end
---[[
+
+
 function iEET_CHECK_EVENTS()
 	for k,v in pairs(iEET.eventFunctions) do
 		for _,tName in pairs({"data", "gui", "filtering", "hyperlink", "import", "chatLink", "spreadsheet"}) do
