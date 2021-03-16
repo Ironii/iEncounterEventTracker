@@ -11,8 +11,8 @@ iEET.ignoredSpells = {
 	[216099] = true,	--Aw, Nuts!
 	[222278] = true,	--Grim Resolve
 	[222294] = true,	--Tranquil Presence
-
-
+	[344663] = true,	--Shattered Psyche (Memory of Past Sins trinket:184025)
+	[344909] = true,	--Splintered Heart of Al'ar (trinket:184018)
 
 --Death Knight
 	[145629] = true,	--Anti-Magic Zone

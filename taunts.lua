@@ -19,4 +19,5 @@ iEET.taunts = {
 
 	--Warrior
 	[355] = true, --Taunt
+	[1161] = true, -- Challenging Shout
 }

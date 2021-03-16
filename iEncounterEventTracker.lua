@@ -1,6 +1,6 @@
 local _, iEET = ...
-iEET.version = 2.014
-
+iEET.version = 2.015
+-- TODO: fix dropdown menus going off screen (specifically when there is a lot of fights for one encounter)
 iEET.data = {}
 local sformat = string.format
 local function tcopy(data)
@@ -49,7 +49,7 @@ iEET.frameSizes = {
 		[3] = 16,
 		[4] = 20,
 		[5] = 18,
-		[6] = 15,
+		[6] = 14,
 		[7] = 10,
 		[8] = 5,
 		["encounterAbilities"] = 25,

@@ -9,6 +9,7 @@ iEET.npcIgnoreList = {
 	[152396] = true, -- Guardian of Azeroth (essence)
 	[175519] = true, -- Frothing Pustule (???, trinket or smh? casts Noxious Bolt (345495))
 	[170190] = true, -- Shadowgrasp Totem (trinket, Shadowgrasp Totem, 179356)
+	[176474] = true, -- Inscrutable Quantum Device trinket:179350  (Hologram)
 
 --Death Knight
 	[24207] = true, 	--Army of the Dead

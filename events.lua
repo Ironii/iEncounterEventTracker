@@ -3984,7 +3984,7 @@ for k,v in pairs(iEET.eventFunctions) do
 	end
 end
 
-
+--[[
 function iEET_CHECK_EVENTS()
 	for k,v in pairs(iEET.eventFunctions) do
 		for _,tName in pairs({"data", "gui", "filtering", "hyperlink", "import", "chatLink", "spreadsheet"}) do
