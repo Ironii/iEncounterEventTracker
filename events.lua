@@ -288,7 +288,7 @@ local function checkValid(arg, searchValue, operator)
 	return false
 end
 local collapses = iEET.collapses
-local function defaultFiltering(args, keyIDList, filters, eventID, timestampsOnly, timestamps)
+local function defaultFiltering(args, keyIDList, filters, eventID, timestampsOnly, timestamps, startTime)
 	if not eventID then
 		iEET:print("Error - filtering without eventID: " .. args[1])
 		return true -- debug
@@ -350,6 +350,8 @@ local function defaultFiltering(args, keyIDList, filters, eventID, timestampsOnl
 								break -- Go to next
 							end
 						end
+					elseif f.key == "time" then
+						shouldShow = checkValid(args[keyIDList[f.key]]-startTime, f.val, f.operator)
 					elseif keyIDList[f.key] and checkValid(args[keyIDList[f.key]], f.val, f.operator) then
 						shouldShow = true
 					else
@@ -374,6 +376,7 @@ function addon:ADDON_LOADED(addonName)
 	if addonName == 'iEncounterEventTracker' then
 		C_ChatInfo.RegisterAddonMessagePrefix('iEET')
 		C_ChatInfo.RegisterAddonMessagePrefix('iEETSync')
+		C_ChatInfo.RegisterAddonMessagePrefix('Transcriptor')
 		addon:RegisterEvent('CHAT_MSG_ADDON')
 		iEETConfig = iEETConfig or {}
 		iEET_Data = iEET_Data or {}
@@ -430,6 +433,16 @@ do -- CHAT_MSG_ADDON
 				end
 			end
 		elseif prefix == "iEETSync" then -- TO DO: add syncs to events
+			if not currentlyLogging or sender == UnitName('player') then return end
+			local t = {
+				[d.event] = eventID,
+				[d.time] = GetTime(),
+				[d.sourceName] = sender,
+				[d.message] = msg,
+			}
+			tinsert(iEET.data, t)
+			iEET:OnscreenAddMessages(t)
+		elseif prefix == "Transcriptor" then -- currently duplicate of iEETSync but for the future its already under different block
 			if not currentlyLogging or sender == UnitName('player') then return end
 			local t = {
 				[d.event] = eventID,
@@ -2586,9 +2599,11 @@ do -- RAID_BOSS_WHISPER
 			[d.sourceName] = sourceName,
 			[d.message] = msg,
 		}
+		--[[ -- let bossmods do the syncing
 		if IsInGroup() then
 			C_ChatInfo.SendAddonMessage('iEETSync', sformat("%s-%s", eventID, msg), IsInGroup(LE_PARTY_CATEGORY_INSTANCE) and "INSTANCE_CHAT" or IsInRaid() and "RAID" or "party")
 		end
+		]]
 		tinsert(iEET.data, t)
 		iEET:OnscreenAddMessages(t)
 	end
@@ -2661,9 +2676,11 @@ do -- CHAT_MSG_RAID_BOSS_WHISPER
 			[d.sourceName] = sourceName,
 			[d.message] = msg,
 		}
+		--[[ -- let bossmods do the syncing
 		if IsInGroup() then
 			C_ChatInfo.SendAddonMessage('iEETSync', sformat("%s-%s", eventID, msg), IsInGroup(LE_PARTY_CATEGORY_INSTANCE) and "INSTANCE_CHAT" or IsInRaid() and "RAID" or "party")
 		end
+		--]]
 		tinsert(iEET.data, t)
 		iEET:OnscreenAddMessages(t)
 	end

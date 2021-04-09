@@ -474,6 +474,34 @@ function iEET:CreateMainFrame()
 			fc:SetFrameLevel(2)
 		end
 	end
+	--Spell detail copy thingie
+	iEET.spellDetailsCopy = CreateFrame('EditBox', 'iEETSpellDetailsCopy', iEET.frame, "BackdropTemplate")
+	iEET.spellDetailsCopy:SetBackdrop({
+		bgFile = "Interface\\Buttons\\WHITE8x8",
+		edgeFile = "Interface\\Buttons\\WHITE8x8",
+		edgeSize = 1,
+		insets = {
+			left = -1,
+			right = -1,
+			top = -1,
+			bottom = -1,
+		},
+	});
+	iEET.spellDetailsCopy:SetBackdropColor(iEETConfig.colors.main.bg.r,iEETConfig.colors.main.bg.g,iEETConfig.colors.main.bg.b,iEETConfig.colors.main.bg.a)
+	iEET.spellDetailsCopy:SetBackdropBorderColor(iEETConfig.colors.main.border.r,iEETConfig.colors.main.border.g,iEETConfig.colors.main.border.b,iEETConfig.colors.main.border.a)
+	iEET.spellDetailsCopy:SetScript('OnEnterPressed', function(self)
+		self:ClearFocus()
+	end)
+	iEET.spellDetailsCopy:SetAutoFocus(false)
+	iEET.spellDetailsCopy:SetWidth(402)
+	iEET.spellDetailsCopy:SetHeight(45)
+	iEET.spellDetailsCopy:SetTextInsets(2, 2, 2, 2)
+	iEET.spellDetailsCopy:SetPoint('TOPLEFT', iEET.detailAnchor1, 'BOTTOMLEFT', 0,1)
+	iEET.spellDetailsCopy:SetFrameStrata('HIGH')
+	iEET.spellDetailsCopy:SetFrameLevel(3)
+	iEET.spellDetailsCopy:SetMultiLine(true)
+	iEET.spellDetailsCopy:Show()
+	iEET.spellDetailsCopy:SetFont(iEET.font, iEET.fontsize+1, 'OUTLINE')
 	--SPELL LISTING--
 	do
 		--Slider

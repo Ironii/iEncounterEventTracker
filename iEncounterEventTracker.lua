@@ -1,5 +1,5 @@
 local _, iEET = ...
-iEET.version = 2.015
+iEET.version = 2.016
 -- TODO: fix dropdown menus going off screen (specifically when there is a lot of fights for one encounter)
 iEET.data = {}
 local sformat = string.format
@@ -884,18 +884,20 @@ do
 		return string.format("\124HiEET%02d%03d%06d%s\124h%s\124h", col, _eventID, _id, accurateTime or " ", trim(str, col))
 	end
 	function iEET:addSpellDetails(link, linkVal)
-		local col = tonumber(link:sub(5,6))
-		local eventID = tonumber(link:sub(7,9))
+		--local col = tonumber(link:sub(5,6))
+		--local eventID = tonumber(link:sub(7,9))
 		local id = tonumber(link:sub(10,15))
-		local accurateTime
+		--[[local accurateTime
 		if col == 1 or col == 2 then
 			accurateTime = tonumber(link:sub(16, -1))
 		end
+		--]]
 		local t = iEET.data[id]
 		if not t then
 			iEET:print(sformat("Error: data for id %s not found.", id or "nil"))
 			return 
 		end
+
 		local guidToSearch = iEET.eventFunctions[t[1]].gui(t, true)
 		iEET.detailInfo:SetText(guidToSearch)
 		local starttime = 0
@@ -941,6 +943,24 @@ do
 					iEET:addMessages(2, 6, getHyperlink(col6, 6), color)
 					iEET:addMessages(2, 7, getHyperlink(col7, 7), color)
 					iEET:addMessages(2, 8, getHyperlink(count, 8), color)
+
+					--add data to copy thingie
+					if k == id then -- mainly in case of multiple start times
+						local temp = {}
+						local d = iEET.eventFunctions[_eventID].data
+						for keyName,keyID in spairs(d, function(t,a,b) return t[a] < t[b] end) do -- use spairs in case some keys are removed in the future
+							if keyID == 1 then
+								tinsert(temp, sformat(iEET.events.fromID[_eventID].c and "event: %s(CLEU)" or "event: %s", iEET.events.fromID[_eventID].l))
+							elseif keyID == 2 then
+								tinsert(temp, sformat("time: %s", timeFromStart))
+								tinsert(temp, sformat("interval: %s", interval or "nil"))
+							else
+								local str = tostring(t[keyID])
+								tinsert(temp, sformat("%s: %s", keyName, str:gsub("|", "||")))
+							end
+						end
+						iEET.spellDetailsCopy:SetText(table.concat(temp, ", "))
+					end
 				end
 			end
 		end
@@ -1052,7 +1072,7 @@ do
 		return c
 	end
 	local collapses = iEET.collapses
-	local function shouldShow(data, filters, guid, timestampsOnly, timestamps)
+	local function shouldShow(data, filters, guid, timestampsOnly, timestamps, starttime)
 		local e = data[1]
 		if not (iEET.eventFunctions[e]) then -- removed event or the author fucked up
 			return false
@@ -1061,7 +1081,7 @@ do
 		if not iEETConfig.tracking[e] then return false end
 		if guid then return iEET.eventFunctions[e].gui(data, true) == guid end
 		if iEET.currentlyIgnoringFilters then return true end
-		return iEET.eventFunctions[e].filtering(data, filters, timestampsOnly, timestamps)
+		return iEET.eventFunctions[e].filtering(data, filters, timestampsOnly, timestamps, starttime)
 	end
 	function iEET:loopData(generalSearch, dontReload, spellID, specialCat, eventGUID)
 		if #iEETConfig.filtering > 0 then
@@ -1153,7 +1173,7 @@ do
 		end
 		local filters = tcopy(iEETConfig.filtering)
 		for k,v in ipairs(iEET.data) do
-			if shouldShow(v,filters,eventGUID, nil, needTimestamps) then
+			if shouldShow(v,filters,eventGUID, nil, needTimestamps, starttime) then
 				local intervallGUID, specialCategory, col4, col5, col6, col7, collectorData = iEET.eventFunctions[v[1]].gui(v)
 				local _time = v[2]
 				local timeFromStart
