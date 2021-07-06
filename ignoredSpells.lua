@@ -25,6 +25,10 @@ iEET.ignoredSpells = {
 	[117553] = true,	--Binding Shot
 	[132951] = true,	--Flare
 
+-- Mage
+	[307454] = true, --Radiant Spark Vulnerability (Kyrian)
+	[307747] = true, --Radiant Spark (Kyrian)
+
 --Priest
 	[81782] = true,		--Power Word: Barrier
 

@@ -1,5 +1,5 @@
 local _, iEET = ...
-iEET.version = 2.016
+iEET.version = 2.017
 -- TODO: fix dropdown menus going off screen (specifically when there is a lot of fights for one encounter)
 iEET.data = {}
 local sformat = string.format
@@ -1635,7 +1635,7 @@ SlashCmdList["IEET"] = function(realMsg)
 		}
 		iEET:UpdateColors('main',nil,true) --force update after reset
 		iEET:UpdateColors('options',nil,true) --force update after reset
-	elseif msg == 'force' then
+	elseif msg:match('^force') then
 		local arg = string.sub(realMsg, 6)
 		arg = iEET:TrimWS(arg)
 		local name
@@ -1760,7 +1760,7 @@ end
 function iEET_Debug(v)
 	return iEET[v]
 end
-function iEET_Advanced_Delete(dif, encounter, fightTime) -- Usage: iEET_Advanced_Delete(<difficulty, number, or false for any difficulty>, <encounterID(number) or true, <fight time (delete under), number, seconds>)
+function iEET_Advanced_Delete(dif, encounter, fightTime, zoneID) -- Usage: iEET_Advanced_Delete(<difficulty, number, or false for any difficulty>, <encounterID(number) or true, <fight time (delete under), number, seconds>)
 	--example: iEET_Advanced_Delete(false, true, 60), would delete any fights under 60 seconds
 	if encounter and fightTime then
 		iEET:massDelete({['dif'] = dif, ['encounter'] = encounter, ['del'] = fightTime})

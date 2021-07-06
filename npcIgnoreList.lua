@@ -7,9 +7,13 @@ iEET.npcIgnoreList = {
 	[92993] = true,		--Burning Blade Banner
 	[143985] = true,	-- Absorb-o-Tron
 	[152396] = true, -- Guardian of Azeroth (essence)
-	[175519] = true, -- Frothing Pustule (???, trinket or smh? casts Noxious Bolt (345495))
 	[170190] = true, -- Shadowgrasp Totem (trinket, Shadowgrasp Totem, 179356)
-	[176474] = true, -- Inscrutable Quantum Device trinket:179350  (Hologram)
+	[175519] = true, -- Frothing Pustule (???, trinket or smh? casts Noxious Bolt (345495))
+	[176474] = true, -- Inscrutable Quantum Device trinket:179350  (Hologram)	
+
+-- Covenant/Soulbinds
+	[171396] = true, -- Bron (Kyrian)
+	[178601] = true, -- Kevin's Oozeling (Necrolord, Plague Deviser Marileth)
 
 --Death Knight
 	[24207] = true, 	--Army of the Dead

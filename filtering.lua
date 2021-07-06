@@ -598,6 +598,7 @@ do
 			stacks = "number",
 			auraType = "auraType",
 			spellID = "id",
+			extraSpellID = "id",
 			destRole = "role",
 			sourceRole = "role",
 			sourceClass = "class",

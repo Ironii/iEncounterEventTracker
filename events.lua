@@ -59,7 +59,7 @@ do
 	end
 end
 -- upvalues
-local tonumber, tinsert, GetTime, UnitGUID, UnitName, sformat, UnitClass, GetRaidRosterInfo, sfind, mfloor, smatch, sgsub = tonumber, table.insert, GetTime, UnitGUID, UnitName, string.format, UnitClass, GetRaidRosterInfo, string.find, math.floor, string.match, string.gsub
+local tonumber, tinsert, GetTime, UnitGUID, UnitName, sformat, UnitClass, GetRaidRosterInfo, sfind, mfloor, smatch, sgsub, strsplit = tonumber, table.insert, GetTime, UnitGUID, UnitName, string.format, UnitClass, GetRaidRosterInfo, string.find, math.floor, string.match, string.gsub, strsplit
 
 local addon = CreateFrame('frame')
 addon:RegisterEvent('ENCOUNTER_START')
@@ -3922,7 +3922,7 @@ do -- DeadlyBossMods
 		iEET.eventFunctions[eventID] = {
 			data = d,
 			gui = function(args, getGUID)
-				local guid = sformat("%s-%s-%s", eventID, (args[d.dbm_id] or "")) -- Create unique string from event + id
+				local guid = sformat("%s-%s", eventID, (args[d.dbm_id] or "")) -- Create unique string from event + id
 				if getGUID then return guid end
 				return guid, -- 1
 					iEET.specialCategories.Ignore, -- 2
