@@ -1375,7 +1375,9 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 	local classColors = {}
 	for i = 1, GetNumClasses() do
 		local _, className = GetClassInfo(i)
-		classColors[i] = RAID_CLASS_COLORS[className].colorStr
+		if className and RAID_CLASS_COLORS[className] then
+			classColors[i] = RAID_CLASS_COLORS[className].colorStr
+		end
 	end
 	local function formatClassColor(id, txt)
 		if not id or not iEETConfig.classColors then return txt end
