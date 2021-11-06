@@ -3405,29 +3405,35 @@ do -- UPDATE_UI_WIDGET
 	}
 	local _e = Enum.UIWidgetVisualizationType
 	local _w = C_UIWidgetManager
-	local _widgetHandlers = {
-		[_e.IconAndText] = _w.GetIconAndTextWidgetVisualizationInfo,
-		[_e.CaptureBar] = _w.GetCaptureBarWidgetVisualizationInfo,
-		[_e.StatusBar] = _w.GetStatusBarWidgetVisualizationInfo,
-		[_e.DoubleStatusBar] = _w.GetDoubleStatusBarWidgetVisualizationInfo,
-		[_e.IconTextAndBackground] = _w.GetIconTextAndBackgroundWidgetVisualizationInfo,
-		[_e.DoubleIconAndText] = _w.GetDoubleIconAndTextWidgetVisualizationInfo,
-		[_e.StackedResourceTracker] = _w.GetStackedResourceTrackerWidgetVisualizationInfo,
-		[_e.IconTextAndCurrencies] = _w.GetIconTextAndCurrenciesWidgetVisualizationInfo,
-		[_e.TextWithState] = _w.GetTextWithStateWidgetVisualizationInfo,
-		[_e.HorizontalCurrencies] = _w.GetHorizontalCurrenciesWidgetVisualizationInfo,
-		[_e.BulletTextList] = _w.GetBulletTextListWidgetVisualizationInfo,
-		[_e.ScenarioHeaderCurrenciesAndBackground] = _w.GetScenarioHeaderCurrenciesAndBackgroundWidgetVisualizationInfo,
-		[_e.TextureAndText] = _w.GetTextureAndTextVisualizationInfo,
-		[_e.SpellDisplay] = _w.GetSpellDisplayVisualizationInfo,
-		[_e.DoubleStateIconRow] = _w.GetDoubleStateIconRowVisualizationInfo,
-		[_e.TextureAndTextRow] = _w.GetTextureAndTextRowVisualizationInfo,
-		[_e.ZoneControl] = _w.GetZoneControlVisualizationInfo,
-		[_e.CaptureZone] = _w.GetCaptureZoneVisualizationInfo,
-		[_e.TextureWithAnimation] = _w.GetTextureWithAnimationVisualizationInfo,
-		[_e.DiscreteProgressSteps] = _w.GetDiscreteProgressStepsVisualizationInfo,
-		[_e.ScenarioHeaderTimer] = _w.GetScenarioHeaderTimerWidgetVisualizationInfo,
+	local _handlers = {
+		["IconAndText"] = "GetIconAndTextWidgetVisualizationInfo",
+		["CaptureBar"] = "GetCaptureBarWidgetVisualizationInfo",
+		["StatusBar"] = "GetStatusBarWidgetVisualizationInfo",
+		["DoubleStatusBar"] = "GetDoubleStatusBarWidgetVisualizationInfo",
+		["IconTextAndBackground"] = "GetIconTextAndBackgroundWidgetVisualizationInfo",
+		["DoubleIconAndText"] = "GetDoubleIconAndTextWidgetVisualizationInfo",
+		["StackedResourceTracker"] = "GetStackedResourceTrackerWidgetVisualizationInfo",
+		["IconTextAndCurrencies"] = "GetIconTextAndCurrenciesWidgetVisualizationInfo",
+		["TextWithState"] = "GetTextWithStateWidgetVisualizationInfo",
+		["HorizontalCurrencies"] = "GetHorizontalCurrenciesWidgetVisualizationInfo",
+		["BulletTextList"] = "GetBulletTextListWidgetVisualizationInfo",
+		["ScenarioHeaderCurrenciesAndBackground"] = "GetScenarioHeaderCurrenciesAndBackgroundWidgetVisualizationInfo",
+		["TextureAndText"] = "GetTextureAndTextVisualizationInfo",
+		["SpellDisplay"] = "GetSpellDisplayVisualizationInfo",
+		["DoubleStateIconRow"] = "GetDoubleStateIconRowVisualizationInfo",
+		["TextureAndTextRow"] = "GetTextureAndTextRowVisualizationInfo",
+		["ZoneControl"] = "GetZoneControlVisualizationInfo",
+		["CaptureZone"] = "GetCaptureZoneVisualizationInfo",
+		["TextureWithAnimation"] = "GetTextureWithAnimationVisualizationInfo",
+		["DiscreteProgressSteps"] = "GetDiscreteProgressStepsVisualizationInfo",
+		["ScenarioHeaderTimer"] = "GetScenarioHeaderTimerWidgetVisualizationInfo",
 	}
+	local _widgetHandlers = {}
+	for k, v in pairs(_handlers) do
+		if _e[k] and _w[v] then
+			_widgetHandlers[_e[k]] = _w[v]
+		end
+	end
 	local function tableToString(key, t)
 		local str = sformat("%s", key)
 		for k,v in pairs(t) do
