@@ -14,6 +14,12 @@ iEET.ignoredSpells = {
 	[344663] = true,	--Shattered Psyche (Memory of Past Sins trinket:184025)
 	[344909] = true,	--Splintered Heart of Al'ar (trinket:184018)
 
+--Anima Powers (Shadowlands S2 affix)
+	[357816] = true,	--Satchel of the Hunt
+	[359119] = true,	--Pedestal of Utter Hubris
+	[357582] = true,	--Champion's Mastery
+	[357584] = true,	--Champion's Brutality
+
 --Death Knight
 	[145629] = true,	--Anti-Magic Zone
 	[155166] = true,	--Breath of Sindragosa

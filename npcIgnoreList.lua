@@ -9,7 +9,8 @@ iEET.npcIgnoreList = {
 	[152396] = true, -- Guardian of Azeroth (essence)
 	[170190] = true, -- Shadowgrasp Totem (trinket, Shadowgrasp Totem, 179356)
 	[175519] = true, -- Frothing Pustule (???, trinket or smh? casts Noxious Bolt (345495))
-	[176474] = true, -- Inscrutable Quantum Device trinket:179350  (Hologram)	
+	[176474] = true, -- Inscrutable Quantum Device trinket:179350  (Hologram)
+	[180016] = true, -- Spectral Feline (trinket:186436, Resonant Silver Bell)
 
 -- Covenant/Soulbinds
 	[171396] = true, -- Bron (Kyrian)
@@ -81,6 +82,10 @@ iEET.npcIgnoreList = {
 	[99625] = true,		--Wind Spirit
 	[100868] = true,	--Chi'ji
 	[165374] = true, -- Yu'lon
+	[180744] = true, -- Yu'lon
+	[168033] = true, -- Fallen Monk (Covenant:Venthyr)
+	[168073] = true, -- Fallen Monk (Covenant:Venthyr)
+	[168074] = true, -- Fallen Monk (Covenant:Venthyr)
 
 --Paladin
 
@@ -92,6 +97,7 @@ iEET.npcIgnoreList = {
 	[67236] = true,		--Mindbender
 	[98167] = true,		--Void Tendril
 	[99904] = true,		--T'uure (Holy Artifact)
+	[180113] = true,	--Rattling Mage (Necrolord legendary)
 
 --Rogue
 	[77726] = true,		--Shadow Reflection

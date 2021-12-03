@@ -1,5 +1,14 @@
-local _, iEET = ...
-iEET.version = 2.017
+local addonName, iEET = ...
+do
+	local _v = GetAddOnMetadata(addonName, "version")
+	local _major,_minor,_patch = _v:match("^(%d-)%.(%d-)%.(%d-)$")
+	iEET.version = {
+		str = _v,
+		major = tonumber(_major),
+		minor = tonumber(_minor),
+		patch = tonumber(_patch),
+	}
+end
 -- TODO: fix dropdown menus going off screen (specifically when there is a lot of fights for one encounter)
 iEET.data = {}
 local sformat = string.format
@@ -846,9 +855,11 @@ function iEET:LoadDefaults()
 		if iEETConfig[k] == nil then
 			iEETConfig[k] = v
 		elseif type(v) == 'table' then -- mainly for new events and filtering stuff, no need to go deeper
-			for deeperKey, deeperValue in pairs(v) do
-				if iEETConfig[k][deeperKey] == nil then
-					iEETConfig[k][deeperKey] = deeperValue
+			if not k == "version" then
+				for deeperKey, deeperValue in pairs(v) do
+					if iEETConfig[k][deeperKey] == nil then
+						iEETConfig[k][deeperKey] = deeperValue
+					end
 				end
 			end
 		end
@@ -943,7 +954,6 @@ do
 					iEET:addMessages(2, 6, getHyperlink(col6, 6), color)
 					iEET:addMessages(2, 7, getHyperlink(col7, 7), color)
 					iEET:addMessages(2, 8, getHyperlink(count, 8), color)
-
 					--add data to copy thingie
 					if k == id then -- mainly in case of multiple start times
 						local temp = {}
@@ -1083,6 +1093,7 @@ do
 		if iEET.currentlyIgnoringFilters then return true end
 		return iEET.eventFunctions[e].filtering(data, filters, timestampsOnly, timestamps, starttime)
 	end
+	local _lastEncounterInfo
 	function iEET:loopData(generalSearch, dontReload, spellID, specialCat, eventGUID)
 		if #iEETConfig.filtering > 0 then
 			if iEET.encounterInfo then
@@ -1105,8 +1116,14 @@ do
 	
 		iEET.loopDataCall = GetTime()
 		iEET.frame:Hide() -- avoid fps spiking from ScrollingMessageFrame adding too many messages
+		local _currentEncounterAbilitiesOffset
 		if iEET.encounterInfoData and iEET.encounterInfoData.eN then
-			iEET.encounterInfo.text:SetText(string.format('%s(%s) %s %s, %s by %s', iEET.encounterInfoData.eN,string.sub(GetDifficultyInfo(iEET.encounterInfoData.d),1,1),(iEET.encounterInfoData.k == 1 and '+' or '-'),iEET.encounterInfoData.fT, iEET.encounterInfoData.pT, iEET.encounterInfoData.lN or UNKNOWN))
+			local _eit = string.format('%s(%s) %s %s, %s by %s', iEET.encounterInfoData.eN,string.sub(GetDifficultyInfo(iEET.encounterInfoData.d),1,1),(iEET.encounterInfoData.k == 1 and '+' or '-'),iEET.encounterInfoData.fT, iEET.encounterInfoData.pT, iEET.encounterInfoData.lN or UNKNOWN)
+			iEET.encounterInfo.text:SetText(_eit)
+			if _lastEncounterInfo == _eit then
+				_currentEncounterAbilitiesOffset = iEET.encounterAbilitiesContent:GetScrollOffset()
+			end
+			_lastEncounterInfo = _eit
 		end
 		local starttime = 0
 		local intervals = {}
@@ -1115,16 +1132,14 @@ do
 		for i=1, 8 do
 			iEET['content' .. i]:Clear()
 		end
-		if not dontReload then -- already gathered
-			iEET.encounterAbilitiesContent:Clear()
-			iEET.commonAbilitiesContent:Clear()
-			iEET.collector = {
-				['npcNames'] = {},
-				['unitIDs'] = {},
-				['spellIDs'] = {},
-				['specialCategories'] = {},
-			}
-		end
+		iEET.encounterAbilitiesContent:Clear()
+		iEET.commonAbilitiesContent:Clear()
+		iEET.collector = {
+			['npcNames'] = {},
+			['unitIDs'] = {},
+			['spellIDs'] = {},
+			['specialCategories'] = {},
+		}
 		-- Check for timestamps
 		local needTimestamps = {}
 		for k,v in pairs(iEETConfig.filtering) do
@@ -1173,38 +1188,37 @@ do
 		end
 		local filters = tcopy(iEETConfig.filtering)
 		for k,v in ipairs(iEET.data) do
+			local intervallGUID, specialCategory, col4, col5, col6, col7, collectorData = iEET.eventFunctions[v[1]].gui(v)
+			local _time = v[2]
+			local timeFromStart
+			if starttime == 0 then
+				timeFromStart = 0
+			else
+				timeFromStart = _time - starttime
+			end
+			if specialCategory == iEET.specialCategories.StartLogging then
+				starttime = _time
+			end
+			if collectorData then
+				local collapsed = collectorData.unitID and collapses[collectorData.unitID] or collectorData.unitID
+				if collectorData.unitID and not iEET.collector.unitIDs[collapsed] then
+					iEET.collector.unitIDs[collapsed] = true
+				end
+				if collectorData.spellID and not iEET.collector.spellIDs[collectorData.spellID] and not specialCategory then
+					iEET.collector.spellIDs[collectorData.spellID] = true
+					iEET:addToEncounterAbilities(collectorData.spellID, col4, nil, timeFromStart)
+				end
+				if collectorData.casterName and not iEET.collector.npcNames[collectorData.casterName] then
+					iEET.collector.npcNames[collectorData.casterName] = true
+				end
+				if specialCategory and not iEET.collector.specialCategories[specialCategory] then
+					iEET.collector.specialCategories[specialCategory] = true
+					iEET:addToEncounterAbilities(collectorData.spellID, col4, specialCategory)
+				end
+			end
 			if shouldShow(v,filters,eventGUID, nil, needTimestamps, starttime) then
-				local intervallGUID, specialCategory, col4, col5, col6, col7, collectorData = iEET.eventFunctions[v[1]].gui(v)
-				local _time = v[2]
-				local timeFromStart
-				if starttime == 0 then
-					timeFromStart = 0
-				else
-					timeFromStart = _time - starttime
-				end
-				if specialCategory == iEET.specialCategories.StartLogging then
-					starttime = _time
-				end
+				--local intervallGUID, specialCategory, col4, col5, col6, col7, collectorData = iEET.eventFunctions[v[1]].gui(v)
 				if specialCategory == iEET.specialCategories.StartLogging or (not spellID and not specialCat) or (collectorData and collectorData.spellID and collectorData.spellID == spellID) or (specialCat and specialCategory == specialCat) then
-					if not dontReload then
-						if collectorData then
-							local collapsed = collectorData.unitID and collapses[collectorData.unitID] or collectorData.unitID
-							if collectorData.unitID and not iEET.collector.unitIDs[collapsed] then
-								iEET.collector.unitIDs[collapsed] = true
-							end
-							if collectorData.spellID and not iEET.collector.spellIDs[collectorData.spellID] and not specialCategory then
-								iEET.collector.spellIDs[collectorData.spellID] = true
-								iEET:addToEncounterAbilities(collectorData.spellID, col4, nil, timeFromStart)
-							end
-							if collectorData.casterName and not iEET.collector.npcNames[collectorData.casterName] then
-								iEET.collector.npcNames[collectorData.casterName] = true
-							end
-							if specialCategory and not iEET.collector.specialCategories[specialCategory] then
-								iEET.collector.specialCategories[specialCategory] = true
-								iEET:addToEncounterAbilities(collectorData.spellID, col4, specialCategory)
-							end
-						end
-					end
 					local interval
 					local count
 					if not intervals[intervallGUID] then
@@ -1225,6 +1239,9 @@ do
 		iEET.maxScrollRange = iEET['content' .. 1]:GetMaxScrollRange()
 		iEET.mainFrameSlider:SetMinMaxValues(0, iEET.maxScrollRange)
 		iEET.mainFrameSlider:SetValue(iEET.maxScrollRange)
+		if _currentEncounterAbilitiesOffset then
+			iEET.encounterAbilitiesContent:SetScrollOffset(_currentEncounterAbilitiesOffset)
+		end
 		iEET.frame:Show()
 	end
 end
@@ -1509,14 +1526,26 @@ function iEET:ImportData(dataKey, prevNext)
 	iEET.data = {}
 	iEET.encounterInfoData = {}
 	for eK,eV in string.gmatch(dataKey, '{(.-)=(.-)}') do
-		if eK == 'd' or eK == 'rS' or eK == 's' or eK == 'k' or eK == 'v' or eK == 'zI' or eK == 'eI' then
+		if eK == 'd' or eK == 'rS' or eK == 's' or eK == 'k' or eK == 'zI' or eK == 'eI' then
 			local i = tonumber(eV)
 			if i then
-				if eK == "v" and i < 2 then -- REMOVE AT 9.1, "support" old logs during 9.0-9.1
+				eV = i
+			end
+		end
+		if eK == "v" then
+			local i = tonumber(eV)
+			if i then
+				if i < 2 then -- REMOVE AT 9.1, "support" old logs during 9.0-9.1
 					iEET:oldImport(dataKey)
 					return
 				end
-				eV = i
+			--[[
+			else
+				local _major,_minor,_patch = eV:match("^(%d-)%.(%d-)%.(%d-)$")
+					_major = tonumber(_major)
+					_minor = tonumber(_minor)
+					_patch = tonumber(_patch)
+				--]]
 			end
 		end
 		iEET.encounterInfoData[eK] = eV
@@ -1648,7 +1677,7 @@ SlashCmdList["IEET"] = function(realMsg)
 			iEET:Force(true, name)
 		end
 	elseif msg == 'version' then
-		iEET:print(iEETConfig.version)
+		iEET:print(iEETConfig.version.str)
 	elseif msg == 'wtf' then
 		iEET:ExportFightsToWTF()
 	elseif msg == 'contact' then

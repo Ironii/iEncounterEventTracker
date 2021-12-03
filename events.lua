@@ -380,12 +380,14 @@ function addon:ADDON_LOADED(addonName)
 		addon:RegisterEvent('CHAT_MSG_ADDON')
 		iEETConfig = iEETConfig or {}
 		iEET_Data = iEET_Data or {}
-		if iEETConfig.version and iEETConfig.version < 1.8 then
-			iEETConfig.tracking = nil
-		end
-		if iEETConfig.version and iEETConfig.version < 2.0 then
-			iEETConfig.filtering = nil
-			iEET:print("This is one time only message with authors contact information, feel free to use any of them if you run into any problems.\nBnet:\n    Ironi#2880 (EU)\nDiscord:\n    Ironi#2880\n    https://discord.gg/stY2nyj")
+		if iEETConfig.version and type(iEETConfig.version) ~= "table" then
+			if iEETConfig.version and iEETConfig.version < 1.8 then
+				iEETConfig.tracking = nil
+			end
+			if iEETConfig.version and iEETConfig.version < 2.0 then
+				iEETConfig.filtering = nil
+				iEET:print("This is one time only message with authors contact information, feel free to use any of them if you run into any problems.\nBnet:\n    Ironi#2880 (EU)\nDiscord:\n    Ironi#2880\n    https://discord.gg/stY2nyj")
+			end
 		end
 		iEET:LoadDefaults()
 		--Remove extra spells from CustomWhiteList (spells that have been added to iEET.approvedSpells)
@@ -422,7 +424,7 @@ do -- CHAT_MSG_ADDON
 	function addon:CHAT_MSG_ADDON(prefix,msg,chatType,sender)
 		if prefix == 'iEET' then
 			if msg == 'userCheck' then
-				C_ChatInfo.SendAddonMessage('iEET', string.format('userCheckReply;;%s;;%s',  iEETConfig.version, (iEETConfig.autoSave and '1' or '0')), chatType)
+				C_ChatInfo.SendAddonMessage('iEET', string.format('userCheckReply;;%s;;%s',  iEETConfig.version.str, (iEETConfig.autoSave and '1' or '0')), chatType)
 			elseif msg:find('userCheckReply') then -- unnecessary check for now, but use it so it will also work in future
 				local v,s = msg:match('userCheckReply;;(%d%.%d+);;(%d)')
 				if v and s then -- nil check to filter out idiots
@@ -521,7 +523,7 @@ do -- ENCOUNTER_START
 				['rS'] = raidSize,
 				['k'] = 0,
 				['zI'] = mapID,
-				['v'] = iEET.version,
+				['v'] = iEET.version.str,
 				['eI'] = encounterID,
 				['d'] = difficultyID,
 				['lN'] = UnitName('player')
@@ -615,7 +617,7 @@ do -- ENCOUNTER_END
 					['rS'] = raidSize,
 					['k'] = kill,
 					['zI'] = mapID,
-					['v'] = iEET.version,
+					['v'] = iEET.version.str,
 					['eI'] = EncounterID,
 					['lN'] = UnitName('player')
 				}
@@ -3333,7 +3335,7 @@ do -- Manual logging (start/end)
 				['rS'] = GetNumGroupMembers(),
 				['k'] = 1,
 				['zI'] = -1,
-				['v'] = iEET.version,
+				['v'] = iEET.version.str,
 				['eI'] = 0,
 				['lN'] = UnitName('player')
 			}
@@ -3365,7 +3367,7 @@ do -- Manual logging (start/end)
 				['rS'] = GetNumGroupMembers(),
 				['k'] = 1,
 				['zI'] = -1,
-				['v'] = iEET.version,
+				['v'] = iEET.version.str,
 				['eI'] = 0,
 				['lN'] = UnitName('player')
 				}
@@ -3425,7 +3427,12 @@ do -- UPDATE_UI_WIDGET
 		[_e.TextureWithAnimation] = _w.GetTextureWithAnimationVisualizationInfo,
 		[_e.DiscreteProgressSteps] = _w.GetDiscreteProgressStepsVisualizationInfo,
 		[_e.ScenarioHeaderTimer] = _w.GetScenarioHeaderTimerWidgetVisualizationInfo,
+		[_e.TextColumnRow] = _w.GetTextColumnRowVisualizationInfo,
+		[_e.Spacer] = _w.GetSpacerVisualizationInfo,
 	}
+	if _e.UnitPowerBar then -- 9.2 ptr
+		_e.UnitPowerBar = _w.GetUnitPowerBarWidgetVisualizationInfo
+	end
 	local function tableToString(key, t)
 		local str = sformat("%s", key)
 		for k,v in pairs(t) do
