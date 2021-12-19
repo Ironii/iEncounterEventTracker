@@ -2100,7 +2100,10 @@ function iEET:Options()
 end
 
 function iEET:GetPageFromFilters(pageid, id, data)
-	if iEET.encounterInfoData and iEET.encounterInfoData.v < 2 then return end -- REMOVE AT 9.1
+	if not iEET.encounterInfoData then return end
+	--local _major,_minor,_patch = iEET.encounterInfoData.v:match("^(%d-)%.(%d-)%.(%d-)$")
+	local oldFormat = tonumber(iEET.encounterInfoData.v)
+	if oldFormat and oldFormat < 2 then return end
 	addNewFilterOptions:ResetFrames()
 	addNewFilterOptions:Open(true, true)
 	addNewFilterOptions:GetPage(pageid, id, data)
