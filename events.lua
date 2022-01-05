@@ -77,7 +77,7 @@ local tcopy = function(t)
 	return temp
 end
 iEET.eventFunctions = {}
-local function checkForSpecialCategory(spellID, e)
+local function checkForSpecialCategory(spellID, e, arg)
 	if spellID and iEET.dispels[spellID] then
 		return iEET.specialCategories.Dispel
 	elseif spellID and iEET.interrupts[spellID] then
@@ -90,7 +90,18 @@ local function checkForSpecialCategory(spellID, e)
 		return iEET.specialCategories.NPCSpawn
 	elseif e == 34 then
 		return iEET.specialCategories.PowerUpdate
+	elseif (e == 63 and (not arg or arg == 2)) or e == 43 or e == 44 or e == 45 or e == 46 then
+		return iEET.specialCategories.Notification
 	end
+end
+local classColors = {}
+for i = 1, GetNumClasses() do
+	local _, className = GetClassInfo(i)
+	classColors[i] = {RAID_CLASS_COLORS[className].r,RAID_CLASS_COLORS[className].g,RAID_CLASS_COLORS[className].b}
+end
+local function getClassColor(id)
+	if not id or not iEETConfig.classColors then return end
+	return classColors[id]
 end
 local function formatKV(k,v)
 	return sformat("%s : %s", k or "ERROR report to author", tostring(v))
@@ -197,7 +208,7 @@ defaults.chats.gui = function(args, getGUID)
 	local guid = sformat("%s-%s-%s", args[d.event], args[d.sourceName], args[d.message]) -- Create unique string from message + sourceName
 	if getGUID then return guid end
 	return guid, -- 1
-		nil, -- 2
+		checkForSpecialCategory(nil, args[d.event]), -- 2
 		args[d.message], -- 3
 		args[d.sourceName], -- 4
 		nil, -- 5
@@ -407,20 +418,55 @@ function addon:ADDON_LOADED(addonName)
 end
 do -- CHAT_MSG_ADDON
 	local eventID = 63
+	local d = tcopy(defaults.chats.data)
+	d["category"] = 5
 	iEET.eventFunctions[eventID] = {
-		data = defaults.chats.data, 
-		gui = defaults.chats.gui,
+		data = d,
+		gui = function(args, getGUID)
+			local guid = sformat("%s-%s-%s", args[d.event], args[d.sourceName], args[d.message]) -- Create unique string from message + sourceName
+			if getGUID then return guid end
+			return guid, -- 1
+				checkForSpecialCategory(nil, args[d.event], args[d.category]), -- 2
+				args[d.message], -- 3
+				args[d.sourceName], -- 4
+				nil, -- 5
+				nil, -- 6
+				{formatKV("casterName",args[d.sourceName])} -- 7
+		end,
 		filtering = function(args, filters, ...)
 			return defaultFiltering(args, defaults.chats.data, filters, eventID, ...)
 		end,
-		hyperlink = defaults.chats.hyperlink,
-		import = function(args)
+		hyperlink = function(col, data)
+			if col == 4 then
+				if data[d.message]:match("^HiddenAuras") then
+					local msgs = {strsplit(";", data[d.message])}
+					for _,v in ipairs(msgs) do
+						local id = v:match("^(%d+)")
+						if id then
+							addToTooltip(nil, sformat("%s - %s",v, GetSpellInfo(id) or UNKNOWN))
+						else
+							addToTooltip(nil, v)
+						end
+					end
+					
+				else
+					addToTooltip(nil, data[d.message])
+				end
+				return true
+			elseif col == 5 then
+				addToTooltip(nil, data[d.sourceName])
+				return true
+			end
+		end,
+		import = function(args, version)
+			if version and (version.major > 2 or version.major == 2 and version.major >= 2) then
+				args[d.category] = tonumber(args[d.category])
+			end
 			return args
 		end,
 		chatLink = function(col, data) return end,
 		spreadsheet = defaults.chats.spreadsheet,
 	}
-	local d = iEET.eventFunctions[eventID].data
 	function addon:CHAT_MSG_ADDON(prefix,msg,chatType,sender)
 		if prefix == 'iEET' then
 			if msg == 'userCheck' then
@@ -441,6 +487,7 @@ do -- CHAT_MSG_ADDON
 				[d.time] = GetTime(),
 				[d.sourceName] = sender,
 				[d.message] = msg,
+				[d.category] = 1,
 			}
 			tinsert(iEET.data, t)
 			iEET:OnscreenAddMessages(t)
@@ -451,6 +498,7 @@ do -- CHAT_MSG_ADDON
 				[d.time] = GetTime(),
 				[d.sourceName] = sender,
 				[d.message] = msg,
+				[d.category] = 2,
 			}
 			tinsert(iEET.data, t)
 			iEET:OnscreenAddMessages(t)
@@ -867,11 +915,13 @@ do -- UNIT_TARGET
 				sformat("%s (%s)",args[d.unitID], args[d.sourceName]), -- 4
 				args[d.dest] or "NONE", -- 5,
 				args[d.hp], -- 6
-				{unitID = args[d.unitID], spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
+				{unitID = args[d.unitID], spellID = args[d.spellID], casterName = args[d.sourceName]}, -- 7
+				nil, -- source class
+				getClassColor(args[d.destClass])
 		end,
 		import = function(args)
 			args[d.hp] = tonumber(args[d.hp])
-			args[d.destClass] = tonumber(d.destClass)
+			args[d.destClass] = tonumber(args[d.destClass])
 			return args
 		end,
 		filtering = function(args, filters, ...)
@@ -1374,15 +1424,6 @@ do -- UNIT_EXITED_VEHICLE
 	end
 end
 do -- COMBAT_LOG_EVENT_UNFILTERED
-	local classColors = {}
-	for i = 1, GetNumClasses() do
-		local _, className = GetClassInfo(i)
-		classColors[i] = RAID_CLASS_COLORS[className].colorStr
-	end
-	local function formatClassColor(id, txt)
-		if not id or not iEETConfig.classColors then return txt end
-		return sformat("|c%s%s|r", classColors[id] or "ffffffff", txt)
-	end
 	local defaultCLEUData = {
 		["event"] = 1,
 		["time"] = 2,
@@ -1402,10 +1443,12 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 		return guid, -- 1
 			checkForSpecialCategory(args[defaultCLEUData.spellID]), -- 2
 			args[defaultCLEUData.spellName], -- 3
-			formatClassColor(args[defaultCLEUData.sourceClass], args[defaultCLEUData.sourceName]), -- 4
-			formatClassColor(args[defaultCLEUData.destClass], args[defaultCLEUData.destName]), -- 5
+			args[defaultCLEUData.sourceName], -- 4
+			args[defaultCLEUData.destName], -- 5
 			nil, -- 6
-			{spellID = args[defaultCLEUData.spellID], casterName = args[defaultCLEUData.sourceName]} -- 7
+			{spellID = args[defaultCLEUData.spellID], casterName = args[defaultCLEUData.sourceName]}, -- 7
+			getClassColor(args[defaultCLEUData.sourceClass]), -- source class color
+			getClassColor(args[defaultCLEUData.destClass]) -- dest class color
 	end
 	for _,v in pairs({1,2,9,10,11,14,15,16,17,20,22,23,24}) do
 		iEET.eventFunctions[v] = {
@@ -1486,10 +1529,12 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					return guid, -- 1
 						checkForSpecialCategory(args[d.spellID]), -- 2
 						args[d.spellName], -- 3
-						formatClassColor(args[defaultCLEUData.sourceClass], args[defaultCLEUData.sourceName]), -- 4
-						formatClassColor(args[defaultCLEUData.destClass], args[defaultCLEUData.destName]), -- 5
+						args[defaultCLEUData.sourceName], -- 4
+						args[defaultCLEUData.destName], -- 5
 						args[d.extraSpellName], -- 6
-						{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
+						{spellID = args[d.spellID], casterName = args[d.sourceName]}, -- 7
+						getClassColor(args[d.sourceClass]), -- source class color
+						getClassColor(args[d.destClass]) -- dest class color
 				end,
 				import = function(args)
 					args[d.sourceClass] = tonumber(args[d.sourceClass])
@@ -1587,10 +1632,12 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					return guid, -- 1
 					checkForSpecialCategory(args[d.spellID]), -- 2
 					args[d.spellName], -- 3
-					formatClassColor(args[d.sourceClass], args[d.sourceName]), -- 4,
-					formatClassColor(args[d.destClass], args[d.destName]), -- 5
+					args[d.sourceName], -- 4,
+					args[d.destName], -- 5
 					(args[d.auraType] == "1" and "BUFF" or "DEBUFF"), -- 6
-					{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
+					{spellID = args[d.spellID], casterName = args[d.sourceName]}, -- 7
+					getClassColor(args[d.sourceClass]), -- source class color
+					getClassColor(args[d.destClass]) -- dest class color
 				end,
 				import = function(args)
 					args[d.sourceClass] = tonumber(args[d.sourceClass])
@@ -1682,10 +1729,12 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					return guid, -- 1
 					nil, -- 2 TODO ADD SPECIAL
 					args[d.spellName], -- 3
-					formatClassColor(args[d.sourceClass], args[d.sourceName]), -- 4,
-					formatClassColor(args[d.destClass], args[d.destName]), -- 5
+					args[d.sourceName], -- 4,
+					args[d.destName], -- 5
 					sformat("%s (%s)",args[d.stacks] or "Error", args[d.auraType] == "1" and "BUFF" or "DEBUFF"), -- 6
-					{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
+					{spellID = args[d.spellID], casterName = args[d.sourceName]}, -- 7
+					getClassColor(args[d.sourceClass]), -- source class color
+					getClassColor(args[d.destClass]) -- dest class color
 				end,
 				import = function(args)
 					args[d.sourceClass] = tonumber(args[d.sourceClass])
@@ -1821,10 +1870,12 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				return guid, -- 1
 				checkForSpecialCategory(args[d.spellID]), -- 2
 				args[d.spellName], -- 3
-				formatClassColor(args[d.sourceClass], args[d.sourceName]), -- 4,
-				formatClassColor(args[d.destClass], args[d.destName]), -- 5
+				args[d.sourceName], -- 4,
+				args[d.destName], -- 5
 				args[d.amount], -- 6
-				{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
+				{spellID = args[d.spellID], casterName = args[d.sourceName]}, -- 7
+				getClassColor(args[d.sourceClass]), -- source class color
+				getClassColor(args[d.destClass]) -- dest class color
 			end,
 			import = function(args)
 				args[d.sourceClass] = tonumber(args[d.sourceClass])
@@ -1920,10 +1971,12 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				return guid, -- 1
 				checkForSpecialCategory(args[d.spellID]), -- 2
 				args[d.spellName], -- 3
-				formatClassColor(args[d.sourceClass], args[d.sourceName]), -- 4,
-				formatClassColor(args[d.destClass], args[d.destName]), -- 5
+				args[d.sourceName], -- 4,
+				args[d.destName], -- 5
 				args[d.amount], -- 6
-				{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
+				{spellID = args[d.spellID], casterName = args[d.sourceName]}, -- 7
+				getClassColor(args[d.sourceClass]), -- source class color
+				getClassColor(args[d.destClass]) -- dest class color
 			end,
 			import = function(args)
 				args[d.sourceClass] = tonumber(args[d.sourceClass])
@@ -2019,10 +2072,12 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				return guid, -- 1
 				checkForSpecialCategory(args[d.spellID]), -- 2
 				args[d.spellName], -- 3
-				formatClassColor(args[d.sourceClass], args[d.sourceName]), -- 4,
-				formatClassColor(args[d.destClass], args[d.destName]), -- 5
+				args[d.sourceName], -- 4,
+				args[d.destName], -- 5
 				args[d.missType], -- 6
-				{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
+				{spellID = args[d.spellID], casterName = args[d.sourceName]}, -- 7
+				getClassColor(args[d.sourceClass]), -- source class color
+				getClassColor(args[d.destClass]) -- dest class color
 			end,
 			import = function(args)
 				args[d.sourceClass] = tonumber(args[d.sourceClass])
@@ -2117,9 +2172,11 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				nil, -- 2
 				args[d.environmentalType], -- 3
 				nil, -- 4,
-				formatClassColor(args[d.destClass], args[d.destName]), -- 5,
+				args[d.destName], -- 5,
 				args[d.amount], -- 6
-				{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
+				{spellID = args[d.spellID], casterName = args[d.sourceName]}, -- 7
+				nil, -- source class color
+				getClassColor(args[d.destClass]) -- dest class color
 			end,
 			import = function(args)
 				args[d.destClass] = tonumber(args[d.destClass])
@@ -2203,9 +2260,11 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				nil, -- 2
 				args[d.environmentalType], -- 3
 				args[d.missType], -- 4,
-				formatClassColor(args[d.destClass], args[d.destName]), -- 5
+				args[d.destName], -- 5
 				nil, -- 6
-				{spellID = args[d.spellID], casterName = args[d.sourceName]} -- 7
+				{spellID = args[d.spellID], casterName = args[d.sourceName]}, -- 7
+				nil, -- source class color
+				getClassColor(args[d.destClass]) -- dest class color
 			end,
 			import = function(args)
 				args[d.destClass] = tonumber(args[d.destClass])
@@ -2536,7 +2595,7 @@ do -- RAID_BOSS_EMOTE
 			local guid = sformat("%s-%s-%s", eventID, args[d.sourceName], args[d.message]) -- Create unique string from message + sourceName
 			if getGUID then return guid end
 			return guid, -- 1
-				nil, -- 2
+				checkForSpecialCategory(nil, eventID), -- 2
 				args[d.message], --3
 				args[d.sourceName], -- 4
 				args[d.destName], -- 5
@@ -2620,7 +2679,7 @@ do -- CHAT_MSG_RAID_BOSS_EMOTE
 			local guid = sformat("%s-%s-%s", eventID, args[d.sourceName], args[d.message]) -- Create unique string from message + sourceName
 			if getGUID then return guid end
 			return guid, -- 1
-				nil, -- 2
+				checkForSpecialCategory(nil, eventID), -- 2
 				args[d.message], -- 3
 				args[d.sourceName], -- 4
 				args[d.destName], -- 5

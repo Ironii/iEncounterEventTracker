@@ -11,6 +11,7 @@ iEET.npcIgnoreList = {
 	[175519] = true, -- Frothing Pustule (???, trinket or smh? casts Noxious Bolt (345495))
 	[176474] = true, -- Inscrutable Quantum Device trinket:179350  (Hologram)
 	[180016] = true, -- Spectral Feline (trinket:186436, Resonant Silver Bell)
+	[182210] = true,	-- Magically Regulated Automa Core (optional reagent)
 
 -- Covenant/Soulbinds
 	[171396] = true, -- Bron (Kyrian)
@@ -97,7 +98,9 @@ iEET.npcIgnoreList = {
 	[67236] = true,		--Mindbender
 	[98167] = true,		--Void Tendril
 	[99904] = true,		--T'uure (Holy Artifact)
+	[172309] = true,	--Divine Image
 	[180113] = true,	--Rattling Mage (Necrolord legendary)
+	[183955] = true,	--Your Shadow
 
 --Rogue
 	[77726] = true,		--Shadow Reflection
@@ -138,6 +141,9 @@ iEET.npcIgnoreList = {
 	[106317] = true,	--Storm Totem
 	[106319] = true,	--Ember Totem
 	[106321] = true,	--Tailwind Totem
+	[184091] = true,	--Spirit Wolf
+	[184092] = true,	--Spirit Wolf
+	[184093] = true,	--Spirit Wolf	
 
 --Warlock
 	[89] = true,		--Infernal
@@ -166,11 +172,12 @@ iEET.npcIgnoreList = {
 	[108452] = true,	--Infernal
 	[108493] = true,	--Chaos Tear
 	[121643] = true,	--Flame Rift
-	[135002] = true, -- Demonic Tyrant
-	[135816] = true, -- Vilefiend
-	[136404] = true, -- Bilescourge
-	[136403] = true, -- Void Terror
-	[143622] = true, -- Wild Imp
+	[135002] = true, 	-- Demonic Tyrant
+	[135816] = true, 	-- Vilefiend
+	[136404] = true, 	-- Bilescourge
+	[136403] = true, 	-- Void Terror
+	[143622] = true, 	-- Wild Imp
+	[184206] = true,	-- Malicious Imp
 
 --Warrior
 }

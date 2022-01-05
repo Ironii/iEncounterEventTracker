@@ -370,7 +370,7 @@ function iEET:CreateMainFrame()
 		fc:SetFading(false)
 		fc:SetInsertMode("BOTTOM")
 		fc:SetJustifyH(iEET.justifyH)
-		fc:SetMaxLines(10000)
+		fc:SetMaxLines(1e5)
 		fc:SetSpacing(iEET.spacing)
 		fc:EnableMouseWheel(true)
 		fc:SetScript("OnMouseWheel", function(self, delta)
@@ -455,7 +455,7 @@ function iEET:CreateMainFrame()
 			fc:SetFading(false)
 			fc:SetInsertMode('BOTTOM')
 			fc:SetJustifyH(iEET.justifyH)
-			fc:SetMaxLines(10000)
+			fc:SetMaxLines(1e5)
 			fc:SetSpacing(iEET.spacing)
 			fc:EnableMouseWheel(true)
 			fc:SetScript("OnMouseWheel", function(self, delta)
@@ -888,7 +888,7 @@ function iEET:Toggle(show)
 		iEET.frame:Hide()
 	end
 end
-function iEET:toggleCopyFrame(forceShow)
+function iEET:toggleCopyFrame(txt)
 	if not iEET.frame then iEET:CreateMainFrame() end
 	if not iEET.copyFrame and not InCombatLockdown() then
 		iEET.copyFrame = CreateFrame('EditBox', 'iEETCopyFrame', UIParent, "BackdropTemplate")
@@ -917,14 +917,15 @@ function iEET:toggleCopyFrame(forceShow)
 		--iEET.copyFrame:SetMultiLine(true)
 		iEET.copyFrame:SetPoint('CENTER', UIParent, 'CENTER', iEETConfig.spawnOffset,0)
 		iEET.copyFrame:SetFrameStrata('DIALOG')
-		iEET.copyFrame:Show()
 		iEET.copyFrame:SetFont(iEET.font, iEET.fontsize+2, 'OUTLINE')
-	else
-		if iEET.copyFrame:IsShown() and not forceShow then
+	elseif iEET.copyFrame:IsShown() and not forceShow then
 			iEET.copyFrame:Hide()
-		elseif not InCombatLockdown() then
-			iEET.copyFrame:Show()
+			return
 		end
+	if not InCombatLockdown() then
+		iEET.copyFrame:Hide()
+		iEET.copyFrame:SetText(txt or "")
+		iEET.copyFrame:Show()
 	end
 end
 function iEET:CreateOnscreenFrame()

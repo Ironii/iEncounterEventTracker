@@ -152,6 +152,9 @@ iEET.fakeSpells = {
 	EndLogging = {
 		name = "End Logging",
 	},
+	Notification = {
+		name = "Notification",
+	},
 	AllSpellIDs = {},
 }
 for k,v in pairs(iEET.fakeSpells) do
@@ -177,6 +180,7 @@ iEET.specialCategories = {
 	["StartLogging"] = 6,
 	["EndLogging"] = 7,
 	["Taunt"] = 8,
+	["Notification"] = 9,
 }
 iEET.savedPowers = {}
 iEET.events = {
@@ -921,7 +925,7 @@ do
 		end
 		for k,v in ipairs(iEET.data) do
 			if iEET.eventFunctions[v[1]] then -- in case log has some removed events
-				local intervallGUID, specialCategory, col4, col5, col6, col7, collectorData = iEET.eventFunctions[v[1]].gui(v)
+				local intervallGUID, specialCategory, col4, col5, col6, col7, collectorData, sourceColor, destColor = iEET.eventFunctions[v[1]].gui(v)
 				local _time = v[2]
 				local timeFromStart
 				if starttime == 0 then
@@ -950,8 +954,8 @@ do
 					local color = iEET:getColor(intervallGUID)
 					iEET:addMessages(2, 1, getHyperlink(sformat("%.1f",timeFromStart), 1, timeFromStart), color)
 					iEET:addMessages(2, 2, getHyperlink(interval and sformat("%.1f",interval) or nil, 2, interval), color)
-					iEET:addMessages(2, 5, getHyperlink(col5, 5), color)
-					iEET:addMessages(2, 6, getHyperlink(col6, 6), color)
+					iEET:addMessages(2, 5, getHyperlink(col5, 5), sourceColor or color)
+					iEET:addMessages(2, 6, getHyperlink(col6, 6), destColor or color)
 					iEET:addMessages(2, 7, getHyperlink(col7, 7), color)
 					iEET:addMessages(2, 8, getHyperlink(count, 8), color)
 					--add data to copy thingie
@@ -987,7 +991,7 @@ do
 			return str:sub(1, maxLengths[col]) 
 		end
 		if str == "" then return " " end
-		str = str:gsub('|T.+|t', '') -- Textures
+		str = str:gsub('|T.-|t', '') -- Textures
 		str = str:gsub('%%', '%%%%')
 		str = str:gsub("|c........", "")
 		str = str:gsub("|r", "")
@@ -1000,7 +1004,7 @@ do
 	local function getHyperlink(str, col, accurateTime)
 		return string.format("\124HiEET%02d%03d%06d%s\124h%s\124h", col, _eventID, _id, accurateTime or " ", trim(str, col))
 	end
-	function iEET:addToContent(intervallGUID, eventID, id, _time, interval, col4, col5, col6, col7, count)
+	function iEET:addToContent(intervallGUID, eventID, id, _time, interval, col4, col5, col6, col7, count, sourceColor, destColor)
 		local color = iEET:getColor(intervallGUID)
 		_id = id
 		_eventID = eventID
@@ -1008,8 +1012,8 @@ do
 		iEET:addMessages(1, 2, getHyperlink(interval and sformat("%.1f",interval) or nil, 2, interval), color)
 		iEET:addMessages(1, 3, getHyperlink(iEET.events.fromID[eventID].s, 3), color)
 		iEET:addMessages(1, 4, getHyperlink(col4, 4), color)
-		iEET:addMessages(1, 5, getHyperlink(col5, 5), color)
-		iEET:addMessages(1, 6, getHyperlink(col6, 6), color)
+		iEET:addMessages(1, 5, getHyperlink(col5, 5), sourceColor or color)
+		iEET:addMessages(1, 6, getHyperlink(col6, 6), destColor or color)
 		iEET:addMessages(1, 7, getHyperlink(col7, 7), color)
 		iEET:addMessages(1, 8, getHyperlink(count, 8), color)
 	end
@@ -1042,6 +1046,7 @@ do
 		["StartLogging"] = 6,
 		["EndLogging"] = 7,
 		["Taunt"] = 8,
+		["Notification"] = 9,
 	}
 	--]]
 	do
@@ -1188,7 +1193,7 @@ do
 		end
 		local filters = tcopy(iEETConfig.filtering)
 		for k,v in ipairs(iEET.data) do
-			local intervallGUID, specialCategory, col4, col5, col6, col7, collectorData = iEET.eventFunctions[v[1]].gui(v)
+			local intervallGUID, specialCategory, col4, col5, col6, col7, collectorData, sourceColor, destColor = iEET.eventFunctions[v[1]].gui(v)
 			local _time = v[2]
 			local timeFromStart
 			if starttime == 0 then
@@ -1231,7 +1236,7 @@ do
 						counts[intervallGUID] = counts[intervallGUID] + 1
 						count = counts[intervallGUID]
 					end
-					iEET:addToContent(intervallGUID, v[1], k, timeFromStart, interval, col4, col5, col6, col7, count)
+					iEET:addToContent(intervallGUID, v[1], k, timeFromStart, interval, col4, col5, col6, col7, count, sourceColor, destColor)
 				end
 			end
 		end
@@ -1437,7 +1442,7 @@ function iEET:massDelete(data)
 	encounters = nil
 end
 do
-	local _concat = table.concat
+	local _concat, _tinsert = table.concat, table.insert
 	local function convertToSpreadsheet(formatStyle, d, col1, col2, col3, col8)
 		local spellID, col4, col5, col6, col7, extraData = iEET.eventFunctions[d[1]].spreadsheet(d)
 		if spellID then
@@ -1468,19 +1473,13 @@ do
 		return _concat(temp, "\t")
 	end
 	function iEET:copyCurrent(formatStyle) -- TODO : rewrite with event specific export funcs
-		local totalData = ''
+		local totalData = {}
 		for line = 1, iEET.content1:GetNumMessages() do
-			local lineData = ''
 			local col1 = iEET.content1:GetMessageInfo(line)
 			local id = tonumber(col1:sub(12,17))
-			local col2 = iEET.content2:GetMessageInfo(line)
-			local col3 = iEET.content3:GetMessageInfo(line)
-			local col8 = iEET.content8:GetMessageInfo(line)
-			local handledSTR = convertToSpreadsheet(formatStyle, iEET.data[id], col1, col2, col3, col8)
-			totalData = sformat("%s\n%s", totalData, handledSTR)
+			_tinsert(totalData, convertToSpreadsheet(formatStyle, iEET.data[id], col1, iEET.content2:GetMessageInfo(line), iEET.content3:GetMessageInfo(line), iEET.content8:GetMessageInfo(line)))
 		end
-		iEET:toggleCopyFrame(true)
-		iEET.copyFrame:SetText(totalData)
+		iEET:toggleCopyFrame(_concat(totalData, "\n"))
 	end
 end
 function iEET:ExportData(auto)
@@ -1525,6 +1524,7 @@ end
 function iEET:ImportData(dataKey, prevNext)
 	iEET.data = {}
 	iEET.encounterInfoData = {}
+	local _version
 	for eK,eV in string.gmatch(dataKey, '{(.-)=(.-)}') do
 		if eK == 'd' or eK == 'rS' or eK == 's' or eK == 'k' or eK == 'zI' or eK == 'eI' then
 			local i = tonumber(eV)
@@ -1539,13 +1539,13 @@ function iEET:ImportData(dataKey, prevNext)
 					iEET:oldImport(dataKey)
 					return
 				end
-			--[[
 			else
 				local _major,_minor,_patch = eV:match("^(%d-)%.(%d-)%.(%d-)$")
-					_major = tonumber(_major)
-					_minor = tonumber(_minor)
-					_patch = tonumber(_patch)
-				--]]
+				_version = {
+					major = tonumber(_major),
+					minor = tonumber(_minor),
+					patch = tonumber(_patch),
+				}
 			end
 		end
 		iEET.encounterInfoData[eK] = eV
@@ -1566,7 +1566,7 @@ function iEET:ImportData(dataKey, prevNext)
 			tempTable[key] = d
 		end
 		if iEET.eventFunctions[eventID] then -- in case the log has old data, don't import it (can't show it anyway without gui funcs)
-			tempTable = iEET.eventFunctions[eventID].import(tempTable)
+			tempTable = iEET.eventFunctions[eventID].import(tempTable, version)
 			table.insert(iEET.data, tempTable)
 		end
 	end
