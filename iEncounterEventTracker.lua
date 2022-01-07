@@ -1092,7 +1092,7 @@ do
 		if not (iEET.eventFunctions[e]) then -- removed event or the author fucked up
 			return false
 		end
-		if e == 27 or e == 37 then return true end -- Always show ENCOUNTER_START and MANUAL_START
+		if e == 27 or e == 37 or e == 28 or e == 38 then return true end -- Always show ENCOUNTER_START/EN and MANUAL_START/END
 		if not iEETConfig.tracking[e] then return false end
 		if guid then return iEET.eventFunctions[e].gui(data, true) == guid end
 		if iEET.currentlyIgnoringFilters then return true end
@@ -1223,7 +1223,7 @@ do
 			end
 			if shouldShow(v,filters,eventGUID, nil, needTimestamps, starttime) then
 				--local intervallGUID, specialCategory, col4, col5, col6, col7, collectorData = iEET.eventFunctions[v[1]].gui(v)
-				if specialCategory == iEET.specialCategories.StartLogging or (not spellID and not specialCat) or (collectorData and collectorData.spellID and collectorData.spellID == spellID) or (specialCat and specialCategory == specialCat) then
+				if specialCategory == iEET.specialCategories.StartLogging or specialCategory == iEET.specialCategories.EndLogging or (not spellID and not specialCat) or (collectorData and collectorData.spellID and collectorData.spellID == spellID) or (specialCat and specialCategory == specialCat) then
 					local interval
 					local count
 					if not intervals[intervallGUID] then

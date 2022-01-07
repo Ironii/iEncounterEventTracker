@@ -607,7 +607,7 @@ do -- ENCOUNTER_END
 		gui = function(args, getGUID)
 			local guid = sformat("%s-%s", eventID, args[d.event], args[d.encounterID]) -- Create unique string from event + encounterID
 			if getGUID then return guid end
-			return guid, nil, sformat("Logger: %s", args[d.logger]), (args[d.kill] == 1 and "Victory!" or "Wipe"), args[d.encounterID]
+			return guid, iEET.specialCategories.EndLogging, sformat("Logger: %s", args[d.logger]), (args[d.kill] == 1 and "Victory!" or "Wipe"), args[d.encounterID]
 		end,
 		import = function(args)
 			args[d.encounterID] = tonumber(args[d.encounterID]) -- encounterID

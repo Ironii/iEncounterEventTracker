@@ -7,6 +7,7 @@ iEET.dispels = {
 	[50613] = 2, -- Arcane Torrent (DK?)
 	[202719] = 2, -- Arcane Torrent (DH)
 	[339189] = 1, -- Purify Soul (Kyrian phial)
+	[323436] = 1, -- Purify Soul (Kyrian phial)
 
 	--Demon Hunter
 	[278326] = 2, -- Consume Magic
@@ -27,6 +28,7 @@ iEET.dispels = {
 	[115310] = 1,	--Revival
 	[115450] = 1,	--Detox
 	[218164] = 1, --Detox (Brewmaster)
+	[122783] = 1,	--Diffuse Magic
 
 	--Paladin
 	[4987] = 1,		--Cleanse

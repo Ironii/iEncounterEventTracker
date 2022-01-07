@@ -5,6 +5,7 @@ iEET.npcIgnoreList = {
 	[35642] = true,		--Jeeves
 	[77789] = true,		--Blingtron 5000
 	[92993] = true,		--Burning Blade Banner
+	[98300] = true,		--Petrified Sand Piper (toy)
 	[143985] = true,	-- Absorb-o-Tron
 	[152396] = true, -- Guardian of Azeroth (essence)
 	[170190] = true, -- Shadowgrasp Totem (trinket, Shadowgrasp Totem, 179356)
