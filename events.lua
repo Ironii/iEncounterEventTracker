@@ -481,7 +481,7 @@ do -- CHAT_MSG_ADDON
 				end
 			end
 		elseif prefix == "iEETSync" then -- TO DO: add syncs to events
-			if not currentlyLogging or sender == UnitName('player') then return end
+			if not currentlyLogging then return end
 			local t = {
 				[d.event] = eventID,
 				[d.time] = GetTime(),
@@ -492,7 +492,7 @@ do -- CHAT_MSG_ADDON
 			tinsert(iEET.data, t)
 			iEET:OnscreenAddMessages(t)
 		elseif prefix == "Transcriptor" then -- currently duplicate of iEETSync but for the future its already under different block
-			if not currentlyLogging or sender == UnitName('player') then return end
+			if not currentlyLogging then return end
 			local t = {
 				[d.event] = eventID,
 				[d.time] = GetTime(),
@@ -3208,6 +3208,7 @@ do --Start/End recording
 		'UNIT_SPELLCAST_STOP',
 		'UPDATE_UI_WIDGET',
 	}
+	local delayTimer
 	function iEET:StartRecording(force, encounterID)
 		currentlyLogging = true
 		iEET.IEEUnits = nil
@@ -3258,7 +3259,6 @@ do --Start/End recording
 	end
 
 	function iEET:StopRecording(force, encounterID)
-		currentlyLogging = false
 		iEET:BWRecording(false)
 		iEET:DBMRecording(false)
 		for _,v in pairs(eventsToToggle) do
@@ -3268,17 +3268,25 @@ do --Start/End recording
 			addon:UnregisterEvent('PLAYER_REGEN_DISABLED')
 			addon:UnregisterEvent('PLAYER_REGEN_ENABLED')
 		end
+		local export = false
 		if iEETConfig.autoSave then
 			if iEET:ShouldIgnoreEncounter(encounterID) then return end
 			if iEETConfig.onlyRaids then
 				local _, instanceType = IsInInstance()
 				if instanceType and instanceType == 'raid' then
-					iEET:ExportData(true)
+					export = true
 				end
 			else
-				iEET:ExportData(true)
+				export = true
 			end
 		end
+		if delayTimer then delayTimer:Cancel() end
+		delayTimer = C_Timer.NewTimer(1.2, function()
+			if export then
+				iEET:ExportData(true)
+			end
+			currentlyLogging = false
+		end)
 	end
 end
 do -- CUSTOM 

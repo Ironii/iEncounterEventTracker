@@ -43,6 +43,7 @@ iEET.interrupts = {
 	[115781] = true, --Optical Blast (Observer)
 	[132409] = true, --Spell Lock (Grimoire of Sacrifice)
 	[171140] = true, --Shadow Lock (Doomguard, Grimoire of Supremacy)
+	[347008] = true, --Axe Toss (Felguard)
 
 	--Warrior
 	[6552] = true, --Pummel
