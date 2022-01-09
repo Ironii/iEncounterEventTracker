@@ -1,4 +1,5 @@
 local addonName, iEET = ...
+local sformat, tonumber, tostring, type, mfloor, tinsert,ssub = string.format, tonumber, tostring, type, math.floor, table.insert, string.sub
 do
 	local _v = GetAddOnMetadata(addonName, "version")
 	local _major,_minor,_patch = _v:match("^(%d-)%.(%d-)%.(%d-)$")
@@ -11,7 +12,6 @@ do
 end
 -- TODO: fix dropdown menus going off screen (specifically when there is a lot of fights for one encounter)
 iEET.data = {}
-local sformat = string.format
 local function tcopy(data)
 	local t = {}
 	for k,v in pairs(data) do
@@ -25,12 +25,12 @@ local function tcopy(data)
 end
 local function converTime(_time)
 	if not _time then return end
-	_time = math.floor(_time)
-	local m = math.floor(_time/60)
+	_time = mfloor(_time)
+	local m = mfloor(_time/60)
 	if not m then
 		m = 0
 	end
-	local s = math.floor(_time%60)
+	local s = mfloor(_time%60)
 	return sformat('%d:%02d', m, s)
 end
 --local isAlpha = select(4, GetBuildInfo()) >= 70000 and true or false
@@ -690,23 +690,25 @@ local function spairs(t, order)
     end
 end
 iEET.spairs = spairs
-
-function iEET:getColor(guid)
-	if colors[guid] then
+do
+	local mrandom = math.random
+	function iEET:getColor(guid)
+		if colors[guid] then
+			return {colors[guid].r,colors[guid].g,colors[guid].b}
+		end
+		-- https://www.w3.org/WAI/ER/WD-AERT/#color-contrast
+		local t, i = {}, 0
+		repeat
+			t = {
+				['r'] = mrandom(),
+				['g'] = mrandom(),
+				['b'] = mrandom(),
+				};
+				i = i + 1
+		until (((t.r * 255 * 299) + (t.g * 255 * 587) + (t.b * 255 * 114)) / 1000 > 125 or i >= 10)
+		colors[guid] = t
 		return {colors[guid].r,colors[guid].g,colors[guid].b}
 	end
-	-- https://www.w3.org/WAI/ER/WD-AERT/#color-contrast
-	local t, i = {}, 0
-	repeat
-		t = {
-			['r'] = math.random(),
-			['g'] = math.random(),
-			['b'] = math.random(),
-			};
-			i = i + 1
-	until (((t.r * 255 * 299) + (t.g * 255 * 587) + (t.b * 255 * 114)) / 1000 > 125 or i >= 10)
-	colors[guid] = t
-	return {colors[guid].r,colors[guid].g,colors[guid].b}
 end
 function iEET:shouldTrack(event, unitType, npcID, spellID, sourceGUID, hideCaster)
 	if iEET.ignoreFilters then return true end
@@ -896,7 +898,7 @@ do
 		return str
 	end
 	local function getHyperlink(str, col, accurateTime)
-		return string.format("\124HiEET%02d%03d%06d%s\124h%s\124h", col, _eventID, _id, accurateTime or " ", trim(str, col))
+		return sformat("\124HiEET%02d%03d%06d%s\124h%s\124h", col, _eventID, _id, accurateTime or " ", trim(str, col))
 	end
 	function iEET:addSpellDetails(link, linkVal)
 		--local col = tonumber(link:sub(5,6))
@@ -1002,7 +1004,7 @@ do
 		return str
 	end
 	local function getHyperlink(str, col, accurateTime)
-		return string.format("\124HiEET%02d%03d%06d%s\124h%s\124h", col, _eventID, _id, accurateTime or " ", trim(str, col))
+		return sformat("\124HiEET%02d%03d%06d%s\124h%s\124h", col, _eventID, _id, accurateTime or " ", trim(str, col))
 	end
 	function iEET:addToContent(intervallGUID, eventID, id, _time, interval, col4, col5, col6, col7, count, sourceColor, destColor)
 		local color = iEET:getColor(intervallGUID)
@@ -1059,24 +1061,27 @@ do
 		local maxLength = iEET.frameSizes.maxLengths.encounterAbilities
 	function iEET:addToEncounterAbilities(spellID, col4, specialCat, timeFromStart)
 		if specialCat then
-			iEET.commonAbilitiesContent:AddMessage(string.format('\124HiEETCommon%s\124h%s\124r',specialCat,getSpecialCatName(specialCat)), .6,.6,.6)
+			iEET.commonAbilitiesContent:AddMessage(sformat('\124HiEETCommon%s\124h%s\124r',specialCat,getSpecialCatName(specialCat)), .6,.6,.6)
 		elseif spellID and col4 then
-			iEET.encounterAbilitiesContent:AddMessage(string.format('\124HiEETEncounter%s\124h%s (%s)\124r',spellID, col4:sub(1, maxLength), converTime(timeFromStart) or "Error"), 1,1,1)
+			iEET.encounterAbilitiesContent:AddMessage(sformat('\124HiEETEncounter%s\124h%s (%s)\124r',spellID, col4:sub(1, maxLength), converTime(timeFromStart) or "Error"), 1,1,1)
 		end
 	end
 	end
 end
-function iEET:addMessages(placeToAdd, frameID, str, color)
-	local frame = ''
-	if placeToAdd == 1 then
-		frame = iEET['content' .. frameID]
-	elseif placeToAdd == 2 then
-		frame = iEET['detailContent' .. frameID]
-	elseif placeToAdd == 3 then
-		frame = iEET['onscreenContent' .. frameID]
+do
+	local unpack = unpack
+	function iEET:addMessages(placeToAdd, frameID, str, color)
+		local frame = ''
+		if placeToAdd == 1 then
+			frame = iEET['content' .. frameID]
+		elseif placeToAdd == 2 then
+			frame = iEET['detailContent' .. frameID]
+		elseif placeToAdd == 3 then
+			frame = iEET['onscreenContent' .. frameID]
+		end
+		local r,g,b = unpack(color)
+		frame:AddMessage(str,r,g,b)
 	end
-	local r,g,b = unpack(color)
-	frame:AddMessage(str,r,g,b)
 end
 do
 	local function count(t)
@@ -1123,7 +1128,7 @@ do
 		iEET.frame:Hide() -- avoid fps spiking from ScrollingMessageFrame adding too many messages
 		local _currentEncounterAbilitiesOffset
 		if iEET.encounterInfoData and iEET.encounterInfoData.eN then
-			local _eit = string.format('%s(%s) %s %s, %s by %s', iEET.encounterInfoData.eN,string.sub(GetDifficultyInfo(iEET.encounterInfoData.d),1,1),(iEET.encounterInfoData.k == 1 and '+' or '-'),iEET.encounterInfoData.fT, iEET.encounterInfoData.pT, iEET.encounterInfoData.lN or UNKNOWN)
+			local _eit = sformat('%s(%s) %s %s, %s by %s', iEET.encounterInfoData.eN,ssub(GetDifficultyInfo(iEET.encounterInfoData.d),1,1),(iEET.encounterInfoData.k == 1 and '+' or '-'),iEET.encounterInfoData.fT, iEET.encounterInfoData.pT, iEET.encounterInfoData.lN or UNKNOWN)
 			iEET.encounterInfo.text:SetText(_eit)
 			if _lastEncounterInfo == _eit then
 				_currentEncounterAbilitiesOffset = iEET.encounterAbilitiesContent:GetScrollOffset()
@@ -1271,12 +1276,13 @@ function iEET:Hyperlinks(link, linkVal)
 			GameTooltip:AddLine(converTime(accurateTime) or "Error")
 			GameTooltip:AddLine(t[2] or "Error")
 		elseif col == 2 then
+			local _timeToShow
 			if accurateTime then
-				local m = math.floor(accurateTime/60)
+				local m = mfloor(accurateTime/60)
 				if not m then
 					m = 0
 				end
-				local s = math.floor(accurateTime%60)
+				local s = mfloor(accurateTime%60)
 				_timeToShow = sformat('%d:%02d', m, s)
 			end
 			GameTooltip:AddLine(accurateTime or "Error")
@@ -1332,7 +1338,7 @@ function iEET:getTooltipForEncounter(key)
 	for k,v in string.gmatch(key, '{(.-)=(.-)}') do
 		temp[k] = v
 	end
-	return string.format('%s(%s)\n%s%s\n%s\nBy %s', temp.eN,string.sub(GetDifficultyInfo(temp.d),1,1),(temp.k == 1 and '+' or '-'),temp.fT, temp.pT, temp.lN or UNKNOWN)
+	return sformat('%s(%s)\n%s%s\n%s\nBy %s', temp.eN,ssub(GetDifficultyInfo(temp.d),1,1),(temp.k == 1 and '+' or '-'),temp.fT, temp.pT, temp.lN or UNKNOWN)
 end
 function iEET:getEncounterString()
 	local currentEncounterString = ''
@@ -1459,7 +1465,7 @@ do
 		end
 		local temp = {col1, col2, col3, col4 or "", col5 or "", col6 or "", col7 or "", col8 or "", extraData or ""}
 		for i,v in ipairs(temp) do -- clean up
-			_v = tostring(v)
+			local _v = tostring(v)
 			if i ~= 4 then -- 4 starts with "="
 				if _v:len() > 0 then -- string starting with "+" or "=" fucks up spreadsheets
 					_v = _v:gsub("^+", "\\+")
@@ -1487,7 +1493,7 @@ function iEET:ExportData(auto)
 		if auto then
 			local m,s = string.match(iEET.encounterInfoData.fT, '(%d):(%d*)')
 			if m*60+s < iEETConfig.autoDiscard then
-				iEET:print(string.format('discarded (%ss)', m*60+s))
+				iEET:print(sformat('discarded (%ss)', m*60+s))
 				return
 			end
 			if InCombatLockdown() then
@@ -1566,7 +1572,7 @@ function iEET:ImportData(dataKey, prevNext)
 			tempTable[key] = d
 		end
 		if iEET.eventFunctions[eventID] then -- in case the log has old data, don't import it (can't show it anyway without gui funcs)
-			tempTable = iEET.eventFunctions[eventID].import(tempTable, version)
+			tempTable = iEET.eventFunctions[eventID].import(tempTable, _version)
 			table.insert(iEET.data, tempTable)
 		end
 	end
@@ -1578,7 +1584,7 @@ function iEET:ImportData(dataKey, prevNext)
 		end
 	end
 	iEET:loopData(msg)
-	iEET:print(string.format('Imported %s on %s (%s), %sman (%s), Time: %s, Logger: %s.',iEET.encounterInfoData.eN,GetDifficultyInfo(iEET.encounterInfoData.d),iEET.encounterInfoData.fT, iEET.encounterInfoData.rS, (iEET.encounterInfoData.k == 1 and 'kill' or 'wipe'), iEET.encounterInfoData.pT, iEET.encounterInfoData.lN or UNKNOWN))
+	iEET:print(sformat('Imported %s on %s (%s), %sman (%s), Time: %s, Logger: %s.',iEET.encounterInfoData.eN,GetDifficultyInfo(iEET.encounterInfoData.d),iEET.encounterInfoData.fT, iEET.encounterInfoData.rS, (iEET.encounterInfoData.k == 1 and 'kill' or 'wipe'), iEET.encounterInfoData.pT, iEET.encounterInfoData.lN or UNKNOWN))
 end
 
 function iEET:ExportFightsToWTF()
@@ -1601,7 +1607,7 @@ function iEET:ExportFightsToWTF()
 		else
 			zone = UNKNOWN
 		end
-		local str = string.format('%s (%s)', zone, dif)
+		local str = sformat('%s (%s)', zone, dif)
 		if not iEET_ExportFromWTF[str] then
 			iEET_ExportFromWTF[str] = {}
 		end
@@ -1665,7 +1671,7 @@ SlashCmdList["IEET"] = function(realMsg)
 		iEET:UpdateColors('main',nil,true) --force update after reset
 		iEET:UpdateColors('options',nil,true) --force update after reset
 	elseif msg:match('^force') then
-		local arg = string.sub(realMsg, 6)
+		local arg = ssub(realMsg, 6)
 		arg = iEET:TrimWS(arg)
 		local name
 		if arg:len() > 0 then
@@ -1702,9 +1708,9 @@ SlashCmdList["IEET"] = function(realMsg)
 					char = k
 				end
 				if not str then
-					str = string.format('%s%s\124r(%s)', (v.autoSave == '1' and '\124cff00ff00' or '\124cffff1a1a'), char, v.version)
+					str = sformat('%s%s\124r(%s)', (v.autoSave == '1' and '\124cff00ff00' or '\124cffff1a1a'), char, v.version)
 				else
-					str = str .. string.format(', %s%s\124r(%s)', (v.autoSave == '1' and '\124cff00ff00' or '\124cffff1a1a'), char, v.version)
+					str = sformat('%s, %s%s\124r(%s)', str, (v.autoSave == '1' and '\124cff00ff00' or '\124cffff1a1a'), char, v.version)
 				end
 			end
 			iEET:print('\n' .. str)
@@ -1755,9 +1761,9 @@ SlashCmdList["IEET"] = function(realMsg)
 			return
 		end
 		iEETConfig.spawnOffset = offset
-		iEET:print(string.format("Spawn offset changed to: %d, requires reloading your ui to take full effect.", iEETConfig.spawnOffset))
+		iEET:print(sformat("Spawn offset changed to: %d, requires reloading your ui to take full effect.", iEETConfig.spawnOffset))
 	else
-		iEET:print(string.format('Command "%s" not found, read the readme.txt.', msg))
+		iEET:print(sformat('Command "%s" not found, read the readme.txt.', msg))
 	end
 end
 BINDING_HEADER_IEET = 'iEncounterEventTracker'

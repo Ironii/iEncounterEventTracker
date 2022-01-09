@@ -59,7 +59,8 @@ do
 	end
 end
 -- upvalues
-local tonumber, tinsert, GetTime, UnitGUID, UnitName, sformat, UnitClass, GetRaidRosterInfo, sfind, mfloor, smatch, sgsub, strsplit = tonumber, table.insert, GetTime, UnitGUID, UnitName, string.format, UnitClass, GetRaidRosterInfo, string.find, math.floor, string.match, string.gsub, strsplit
+local tonumber, tinsert, GetTime, UnitGUID, UnitName, sformat, UnitClass, GetRaidRosterInfo, sfind, mfloor, smatch, sgsub, strsplit, tostring, GetClassInfo, GetSpellLink, UnitHealth, UnitHealthMax, UnitExists, GetNumGroupMembers = 
+	tonumber, table.insert, GetTime, UnitGUID, UnitName, string.format, UnitClass, GetRaidRosterInfo, string.find, math.floor, string.match, string.gsub, strsplit, tostring, GetClassInfo, GetSpellLink, UnitHealth, UnitHealthMax, UnitExists, GetNumGroupMembers
 
 local addon = CreateFrame('frame')
 addon:RegisterEvent('ENCOUNTER_START')
@@ -1047,6 +1048,7 @@ do -- UNIT_POWER_UPDATE
 			{formatKV("sourceGUID",data[d.sourceGUID]), formatKV("Power type", data[d.powerType]), formatKV("Tooltip", data[d.tooltip])} -- Extra
 		end,
 	}
+	local UnitPowerType, UnitPower, UnitPowerMax = UnitPowerType, UnitPower, UnitPowerMax
 	function addon:UNIT_POWER_UPDATE(unitID, powerType)
 		local isValid, sourceGUID, sourceName, php = defaultUnitHandler(eventID, unitID, nil, nil, nil, true)
 		if not isValid then return end
@@ -1450,6 +1452,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 			getClassColor(args[defaultCLEUData.sourceClass]), -- source class color
 			getClassColor(args[defaultCLEUData.destClass]) -- dest class color
 	end
+	local GetSchoolString = GetSchoolString
 	for _,v in pairs({1,2,9,10,11,14,15,16,17,20,22,23,24}) do
 		iEET.eventFunctions[v] = {
 			data = defaultCLEUData,
@@ -2315,8 +2318,9 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 			end,
 			}
 	end
+	local _getCLEU = CombatLogGetCurrentEventInfo
 	function addon:COMBAT_LOG_EVENT_UNFILTERED()
-		local args = {CombatLogGetCurrentEventInfo()}
+		local args = {_getCLEU()}
 		-- args[2] = sub event
 		if cleuEventsToTrack[args[2]] then
 			local eventID = iEET.events.toID[args[2]]
@@ -3537,7 +3541,7 @@ do -- UPDATE_UI_WIDGET
 					end
 				else -- New data has more keys
 					for k,v in pairs(newData) do
-						str = _checkChangedValues(k, oldData[k], v)
+						local str = _checkChangedValues(k, oldData[k], v)
 						if str then
 							tinsert(changedValues, str)
 						end
@@ -3548,7 +3552,7 @@ do -- UPDATE_UI_WIDGET
 			elseif t1 then -- Was table, isn't anymore
 				return sformat("%s : %s (table)", key, tostring(newData))
 			else -- Is table now, wasn't before
-				return sformat("%s : %s (%s)", key, tableToString(t), oldData)
+				return sformat("%s : %s (%s)", key, tableToString(newData), oldData)
 			end
 		elseif oldData ~= newData then
 			return sformat("%s : %s (%s)", key, tostring(newData), tostring(oldData))
@@ -3562,8 +3566,8 @@ do -- UPDATE_UI_WIDGET
 		if shown == 0 and not seenWidgets[widgetInfo.widgetID] then return 0 end
 		local widgetDataToShow = {prev = {"Changed values from previous:"}, first = {"Changed values from first:"}}
 		if widgetInfo.unitToken then
-			sourceGUID = UnitGUID(unitID) or UNKNOWN -- cba to do more checks
-			sourceName = UnitName(unitID) or UNKNOWN
+			sourceGUID = UnitGUID(widgetInfo.unitToken) or UNKNOWN -- cba to do more checks
+			sourceName = UnitName(widgetInfo.unitToken) or UNKNOWN
 		end
 		if seenWidgets[widgetInfo.widgetID] then
 			local prevData = seenWidgets[widgetInfo.widgetID].prev or nil
@@ -3959,7 +3963,7 @@ do -- DeadlyBossMods
 				end
 			end,
 			import = function(args)
-				args[d.dbm_spellID] = tonumber(args[dbm_spellID])
+				args[d.dbm_spellID] = tonumber(args[d.dbm_spellID])
 				return args
 			end,
 			chatLink = function(col, data) return end,

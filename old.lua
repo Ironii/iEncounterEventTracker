@@ -4,7 +4,7 @@ local spairs = iEET.spairs
 local maxLengths = iEET.frameSizes.maxLengths
 
 local function _addMessages(col, msg)
-  if msg and _maxLengths[col] then msg = msg:sub(1, _maxLengths[col]) end
+  if msg and maxLengths[col] then msg = msg:sub(1, maxLengths[col]) end
   iEET['content' .. col]:AddMessage(msg or " ")
 end
 

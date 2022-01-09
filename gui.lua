@@ -918,7 +918,7 @@ function iEET:toggleCopyFrame(txt)
 		iEET.copyFrame:SetPoint('CENTER', UIParent, 'CENTER', iEETConfig.spawnOffset,0)
 		iEET.copyFrame:SetFrameStrata('DIALOG')
 		iEET.copyFrame:SetFont(iEET.font, iEET.fontsize+2, 'OUTLINE')
-	elseif iEET.copyFrame:IsShown() and not forceShow then
+	elseif iEET.copyFrame:IsShown() and not txt then
 			iEET.copyFrame:Hide()
 			return
 		end

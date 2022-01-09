@@ -54,18 +54,14 @@ local function utf8_len (s)
 	local pos = 1
 	local bytes = string.len(s)
 	local len = 0
-	
+	local c = string.byte(s,pos)
 	while pos <= bytes and len ~= c do
-		 local c = string.byte(s,pos)
-		 len = len + 1
-		 
+		 len = len + 1		 
 		 pos = pos + utf8_charbytes(s, pos)
 	end
-	
 	if c ~= nil then
 		 return pos - 1
-	end
-	
+	end	
 	return len
 end
 local function utf8_sub (s, i, j)
@@ -324,7 +320,7 @@ do
 						f.slider:SetValue(value)
 					else -- up
 						local value = f.slider:GetValue()-20
-						value = max(0, value)
+						value = math.max(0, value)
 						f.slider:SetValue(value)
 					end
 				end
