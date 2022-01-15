@@ -20,7 +20,9 @@ local function showTooltipOnCursor(...)
 	GameTooltip:ClearLines()
 	GameTooltip:SetOwner(UIParent, "ANCHOR_CURSOR", 0, 0)
 	for _,v in ipairs({...}) do
-		GameTooltip:AddLine(v)
+		if v then
+			GameTooltip:AddLine(v)
+		end
 	end
 	GameTooltip:Show()
 end
@@ -433,7 +435,11 @@ do
 			f:SetPoint("topleft", bg, "topleft", ((i-1) % 5)*width, -math.floor((i-1)/5)*(height+1)-3)
 			f.text:SetText(v.shortName)
 			f:SetScript("OnEnter", function()
-				showTooltipOnCursor(v.name)
+				if v.isCleu then
+					showTooltipOnCursor(sformat("%s (CLEU)", v.name))
+				else
+					showTooltipOnCursor(v.name)
+				end
 			end)
 			f:SetScript("OnLeave", function()
 				GameTooltip:Hide()
@@ -2096,10 +2102,13 @@ function iEET:Options()
 end
 
 function iEET:GetPageFromFilters(pageid, id, data)
-	if not iEET.encounterInfoData then return end
+	if not iEET.encounterInfoData then
+		if pageid ~= "filterEvents" then return end
+	else
+		local oldFormat = tonumber(iEET.encounterInfoData.v)
+		if oldFormat and oldFormat < 2 then return end
+	end
 	--local _major,_minor,_patch = iEET.encounterInfoData.v:match("^(%d-)%.(%d-)%.(%d-)$")
-	local oldFormat = tonumber(iEET.encounterInfoData.v)
-	if oldFormat and oldFormat < 2 then return end
 	addNewFilterOptions:ResetFrames()
 	addNewFilterOptions:Open(true, true)
 	addNewFilterOptions:GetPage(pageid, id, data)

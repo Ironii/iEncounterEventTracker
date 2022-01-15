@@ -88,6 +88,7 @@ iEET.npcIgnoreList = {
 	[168033] = true, -- Fallen Monk (Covenant:Venthyr)
 	[168073] = true, -- Fallen Monk (Covenant:Venthyr)
 	[168074] = true, -- Fallen Monk (Covenant:Venthyr)
+	[180743] = true, -- Niuzao
 
 --Paladin
 
@@ -178,7 +179,8 @@ iEET.npcIgnoreList = {
 	[136404] = true, 	-- Bilescourge
 	[136403] = true, 	-- Void Terror
 	[143622] = true, 	-- Wild Imp
-	[184206] = true,	-- Malicious Imp
+	[184206] = true,	-- Malicious Imp (T28)
+	[185584] = true,	-- Blasphemy (T28)
 
 --Warrior
 }

@@ -1288,7 +1288,11 @@ function iEET:Hyperlinks(link, linkVal)
 			GameTooltip:AddLine(accurateTime or "Error")
 			GameTooltip:AddLine(_timeToShow or "Error")
 		elseif col == 3 then
-			GameTooltip:AddLine(iEET.events.fromID[eventID].l or "Error")
+			if iEET.events.fromID[eventID].c then
+				GameTooltip:AddLine(sformat("%s (CLEU)",iEET.events.fromID[eventID].l or "Error"))
+			else
+				GameTooltip:AddLine(iEET.events.fromID[eventID].l or "Error")
+			end
 			GameTooltip:AddLine("Event ID: "..eventID)
 		else -- col 8 (count), TODO : maybe add count desc?
 		end
