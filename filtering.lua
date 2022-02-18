@@ -424,7 +424,7 @@ do
 		misc = "Miscellaneous",
 		bigwigs = "BigWigs",
 		dbm = "DeadlyBossMods",
-		dmg = "Damage/Healing"
+		dmg = "Damage"
 	}
 	local sortedEvents = {}
 	for k,v in spairs(iEET.events.fromID, function(t,a,b) return t[b].l > t[a].l end) do

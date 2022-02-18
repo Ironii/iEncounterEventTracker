@@ -203,6 +203,8 @@ iEET.events = {
 		['SPELL_AURA_APPLIED_DOSE'] = 5, -- CLEU
 		['SPELL_AURA_REMOVED_DOSE'] = 6, -- CLEU
 		['SPELL_AURA_REFRESH'] = 7, -- CLEU
+		['SPELL_AURA_BROKEN'] = 76, -- CLEU
+		['SPELL_AURA_BROKEN_SPELL'] = 77, -- CLEU
 		['SPELL_PERIODIC_AURA_APPLIED'] = 16, -- CLEU
 		['SPELL_PERIODIC_AURA_REMOVED'] = 17, -- CLEU
 		['SPELL_PERIODIC_AURA_APPLIED_DOSE'] = 18, -- CLEU
@@ -235,6 +237,9 @@ iEET.events = {
 		['CHAT_MSG_ADDON'] = 63,
 		['CUSTOM'] = 64,
 		['UPDATE_UI_WIDGET'] = 65,
+		["SPELL_INSTAKILL"] = 78,
+		["UNIT_DESTROYED"] = 79,
+		["UNIT_DISSIPATES"] = 80,
 		-- Cinematic
 		['PLAY_MOVIE'] = 57,
 		['CINEMATIC_START'] = 58,
@@ -401,7 +406,7 @@ iEET.events = {
 			l = 'SPELL_PERIODIC_HEAL',
 			s = 'SP_HEAL',
 			c = true,
-			t = "channel",
+			t = "heal",
 		},
 		[25] = {
 			l = 'UNIT_DIED',
@@ -664,6 +669,36 @@ iEET.events = {
 			t = "dmg",
 			c = true,
 		},
+		[76] = {
+			l = "SPELL_AURA_BROKEN",
+			s = "SAURA_B",
+			c = true,
+			t = "aura",
+		},
+		[77] = {
+			l = "SPELL_AURA_BROKEN_SPELL",
+			s = "SAURA_BS",
+			c = true,
+			t = "aura",
+		},
+		[78] = {
+			l = "SPELL_INSTAKILL",
+			s = "INSTAKILL",
+			c = true,
+			t = "misc",
+		},
+		[79] = {
+			l = "UNIT_DESTROYED",
+			s = "U_DESTROYED",
+			c = true,
+			t = "misc",
+		},
+		[80] = {
+			l = "UNIT_DISSIPATES",
+			s = "U_DISSIPATES",
+			c = true,
+			t = "misc",
+		},
 	},
 }
 iEET.addonUsers = {}
@@ -712,7 +747,7 @@ do
 end
 function iEET:shouldTrack(event, unitType, npcID, spellID, sourceGUID, hideCaster)
 	if iEET.ignoreFilters then return true end
-	if (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and (iEET.approvedSpells[spellID] or iEET.taunts[spellID] or iEETConfig.CustomWhitelist[spellID])) or not sourceGUID or hideCaster or event == 'SPELL_INTERRUPT' or event == 'SPELL_DISPEL' then
+	if (unitType == 'Creature') or (unitType == 'Vehicle') or (spellID and (iEET.approvedSpells[spellID] or iEET.taunts[spellID] or iEETConfig.CustomWhitelist[spellID])) or not sourceGUID or hideCaster or event == 'SPELL_INTERRUPT' or event == 'SPELL_DISPEL' or event == "SPELL_AURA_BROKEN" or event == "SPELL_AURA_BROKEN_SPELL" then
 		if (spellID and not iEET.ignoredSpells[spellID]) then
 			if not iEET.npcIgnoreList[tonumber(npcID)] then
 				return true
@@ -815,6 +850,12 @@ function iEET:LoadDefaults()
 			[73] = true, -- SPELL_DAMAGE
 			[74] = true, -- ENVIRONMENTAL_DAMAGE
 			[75] = true, -- ENVIRONMENTAL_MISSED
+
+			[76] = true, -- SPELL_AURA_BROKEN
+			[77] = true, -- SPELL_AURA_BROKEN_SPELL
+			[78] = true, -- SPELL_INSTAKILL
+			[79] = true, -- UNIT_DESTROYED
+			[80] = true, -- UNIT_DISSIPATES
 		},
 		['version'] = iEET.version,
 		['autoSave'] = true,
@@ -861,7 +902,7 @@ function iEET:LoadDefaults()
 		if iEETConfig[k] == nil then
 			iEETConfig[k] = v
 		elseif type(v) == 'table' then -- mainly for new events and filtering stuff, no need to go deeper
-			if not k == "version" then
+			if not (k == "version") then
 				for deeperKey, deeperValue in pairs(v) do
 					if iEETConfig[k][deeperKey] == nil then
 						iEETConfig[k][deeperKey] = deeperValue

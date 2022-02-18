@@ -16,6 +16,9 @@ local cleuEventsToTrack = {
 	['SPELL_INTERRUPT'] = true,
 	['SPELL_STOLEN'] = true,
 
+	['SPELL_AURA_BROKEN'] = true,
+	['SPELL_AURA_BROKEN_SPELL'] = true,
+
 	['SPELL_PERIODIC_CAST_START'] = true,
 	['SPELL_PERIODIC_CAST_SUCCESS'] = true,
 	['SPELL_PERIODIC_AURA_APPLIED'] = true,
@@ -28,6 +31,9 @@ local cleuEventsToTrack = {
 	['SPELL_PERIODIC_HEAL'] = true,
 
 	['UNIT_DIED'] = true,
+	["SPELL_INSTAKILL"] = true,
+	["UNIT_DESTROYED"] = true,
+	["UNIT_DISSIPATES"] = true,
 
 	['SPELL_HEAL'] = true,
 	['SPELL_MISSED'] = true,
@@ -86,9 +92,9 @@ local function checkForSpecialCategory(spellID, e, arg)
 		return iEET.specialCategories.Interrupt
 	elseif spellID and iEET.taunts[spellID] then
 		return iEET.specialCategories.Taunt
-	elseif e == 25 then
+	elseif e == 25 or e == 78 or e == 79 or e == 80 then
 		return iEET.specialCategories.Death
-	elseif e == 33 then
+	elseif e == 33 or e == 9 or e == 10 then -- INSTANCE_ENCOUNTER_ENGAGE_UNIT, SPELL_CREATE, SPELL_SUMMON
 		return iEET.specialCategories.NPCSpawn
 	elseif e == 34 then
 		return iEET.specialCategories.PowerUpdate
@@ -401,6 +407,8 @@ function addon:ADDON_LOADED(addonName)
 				iEETConfig.filtering = nil
 				iEET:print("This is one time only message with authors contact information, feel free to use any of them if you run into any problems.\nBnet:\n    Ironi#2880 (EU)\nDiscord:\n    Ironi#2880\n    https://discord.gg/stY2nyj")
 			end
+		elseif not iEETConfig.version then
+			iEET:print("This is one time only message with authors contact information, feel free to use any of them if you run into any problems.\nBnet:\n    Ironi#2880 (EU)\nDiscord:\n    Ironi#2880\n    https://discord.gg/stY2nyj")
 		end
 		iEET:LoadDefaults()
 		--Remove extra spells from CustomWhiteList (spells that have been added to iEET.approvedSpells)
@@ -1444,7 +1452,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 	local defaultCLEUGUI = function(args)
 		local guid = sformat("%s-%s-%s", args[defaultCLEUData.event], (args[defaultCLEUData.sourceGUID] or args[defaultCLEUData.sourceName] or ""), args[defaultCLEUData.spellID]) -- Create unique string from event + sourceGUID
 		return guid, -- 1
-			checkForSpecialCategory(args[defaultCLEUData.spellID]), -- 2
+			checkForSpecialCategory(args[defaultCLEUData.spellID], args[defaultCLEUData.event]), -- 2
 			args[defaultCLEUData.spellName], -- 3
 			args[defaultCLEUData.sourceName], -- 4
 			args[defaultCLEUData.destName], -- 5
@@ -1454,7 +1462,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 			getClassColor(args[defaultCLEUData.destClass]) -- dest class color
 	end
 	local GetSchoolString = GetSchoolString
-	for _,v in pairs({1,2,9,10,11,14,15,16,17,20,22,23,24}) do
+	for _,v in pairs({1,2,9,10,11,14,15,16,17,20,22,23,24,78}) do
 		iEET.eventFunctions[v] = {
 			data = defaultCLEUData,
 			gui = defaultCLEUGUI,
@@ -1622,8 +1630,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 			}
 		end
 	end
-	--SPELL_AURA_APPLIED, SPELL_AURA_REMOVED, SPELL_AURA_REFRESH
-	local auraEvents = {[3] = true, [4] = true,[7] = true}
+	--SPELL_AURA_APPLIED, SPELL_AURA_REMOVED, SPELL_AURA_REFRESH, SPELL_AURA_BROKEN
+	local auraEvents = {[3] = true, [4] = true,[7] = true, [76] = true}
 	do -- AURA
 		local d = tcopy(defaultCLEUData)
 		d["auraType"] = 13
@@ -1634,7 +1642,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					local guid = sformat("%s-%s-%s", args[d.event], (args[d.sourceGUID] or args[d.sourceName] or ""), args[d.spellID]) -- Create unique string from event + sourceGUID
 					if getGUID then return guid end
 					return guid, -- 1
-					checkForSpecialCategory(args[d.spellID]), -- 2
+					checkForSpecialCategory(args[d.spellID], args[d.event]), -- 2
 					args[d.spellName], -- 3
 					args[d.sourceName], -- 4,
 					args[d.destName], -- 5
@@ -1817,48 +1825,51 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 			}
 		end
 	end
-	do -- UNIT_DIED
+	do -- UNIT_DIED, UNIT_DESTROYED, UNIT_DISSIPATES
 		local d = {
 			["event"] = 1,
 			["time"] = 2,
 			["destGUID"] = 3,
 			["destName"] = 4,
 		}
-		iEET.eventFunctions[25] = {
-			data = d,
-			gui = function(args, getGUID)
-				local guid = sformat("25-%s-%s", (args[d.destGUID] or args[d.destName] or ""), "Death") -- Create unique string from event + sourceGUID
-				if getGUID then return guid end
-				return guid, -- 1
-					iEET.specialCategories.Death, -- 2
-					iEET.fakeSpells.Death.name, -- 3
-					args[d.destName], -- 4
-					nil, -- 5
-					nil, -- 6
-					{casterName = args[d.destName]} -- 7
-			end,
-			filtering = function(args, filters, ...)
-				return defaultFiltering(args, d, filters, 25, ...)
-			end,
-			import = function(args) return args end,
-			hyperlink = function(col, data)
-				if col ~= 5 then return end
-					addToTooltip(nil,
-							formatKV("Target name", data[d.destName]),
-							formatKV("Target GUID", data[d.destGUID])
-						)
-				return true
-			end,
-			spreadsheet = function(data)
-				return nil, -- spellID
-				iEET.fakeSpells.Death.name, -- Col 4
-				data[d.destName], -- Col 5
-				nil, -- Col 6
-				nil, -- Col 7
-				{formatKV("destGUID", data[d.destGUID])} -- Extra
-			end,
-			chatLink = function(col, data) return end
-		}
+		for k,v in pairs({25,79,80}) do
+			iEET.eventFunctions[v] = {
+				data = d,
+				gui = function(args, getGUID)
+					local guid = sformat("%s-%s-%s", v, (args[d.destGUID] or args[d.destName] or ""), "Death") -- Create unique string from event + sourceGUID
+					if getGUID then return guid end
+					return guid, -- 1
+						iEET.specialCategories.Death, -- 2
+						iEET.fakeSpells.Death.name, -- 3
+						args[d.destName], -- 4
+						nil, -- 5
+						nil, -- 6
+						{casterName = args[d.destName]} -- 7
+				end,
+				filtering = function(args, filters, ...)
+					return defaultFiltering(args, d, filters, v, ...)
+				end,
+				import = function(args) return args end,
+				hyperlink = function(col, data)
+					if col ~= 5 then return end
+						addToTooltip(nil,
+								formatKV("Target name", data[d.destName]),
+								formatKV("Target GUID", data[d.destGUID])
+							)
+					return true
+				end,
+				spreadsheet = function(data)
+					return nil, -- spellID
+					iEET.fakeSpells.Death.name, -- Col 4
+					data[d.destName], -- Col 5
+					nil, -- Col 6
+					nil, -- Col 7
+					{formatKV("destGUID", data[d.destGUID])} -- Extra
+				end,
+				chatLink = function(col, data) return end
+			}
+		end
+
 	end
 	do -- SPELL_HEAL
 		local d = tcopy(defaultCLEUData)
@@ -2319,6 +2330,108 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 			end,
 			}
 	end
+	do -- SPELL_AURA_BROKEN_SPELL
+		local d = tcopy(defaultCLEUData)
+		d["auraType"] = 13
+		d["extraSpellID"] = 14
+		d["extraSpellName"] = 15
+		local eventID = 77
+		iEET.eventFunctions[eventID] = {
+			data = d,
+			gui = function(args, getGUID)
+				local guid = sformat("%s-%s-%s", eventID, (args[d.sourceGUID] or args[d.sourceName] or ""), args[d.spellID]) -- Create unique string from event + sourceGUID
+				if getGUID then return guid end
+				return guid, -- 1
+					checkForSpecialCategory(args[d.spellID]), -- 2
+					args[d.spellName], -- 3
+					args[defaultCLEUData.sourceName], -- 4
+					args[defaultCLEUData.destName], -- 5
+					args[d.extraSpellName], -- 6
+					{spellID = args[d.spellID], casterName = args[d.sourceName]}, -- 7
+					getClassColor(args[d.sourceClass]), -- source class color
+					getClassColor(args[d.destClass]) -- dest class color
+			end,
+			import = function(args)
+				args[d.sourceClass] = tonumber(args[d.sourceClass])
+				args[d.destClass] = tonumber(args[d.destClass])
+				args[d.spellID] = tonumber(args[d.spellID])
+				args[d.extraSpellID] = tonumber(args[d.extraSpellID])
+				return args
+			end,
+			filtering = function(args, filters, ...)
+				return defaultFiltering(args, d, filters, eventID, ...)
+			end,
+			hyperlink = function(col, data)
+				if col == 4 then
+					if C_Spell.DoesSpellExist(data[d.spellID]) then -- TODO : CHECK if it requires caching first, live/ptr check
+						addToTooltip(data[d.spellID],
+							formatKV("Spell ID", data[d.spellID]),
+							formatKV("Extra spell ID", data[d.extraSpellID]),
+							formatKV("Extra spell name", data[d.extraSpellName]),
+							formatKV("Aura type", data[d.auraType] == "1" and "BUFF" or "DEBUFF")
+						)
+					else
+						addToTooltip(nil,
+							formatKV("Spell ID", data[d.spellID]),
+							formatKV("Spell name", data[d.spellName]),
+							formatKV("Extra spell ID", data[d.extraSpellID]),
+							formatKV("Extra spell name", data[d.extraSpellName]),
+							formatKV("Aura type", data[d.auraType] == "1" and "BUFF" or "DEBUFF")
+						)
+					end
+				elseif col == 5 then
+					local class
+					if data[d.sourceClass] then
+						class = GetClassInfo(data[d.sourceClass])
+					end
+					addToTooltip(nil,
+							formatKV("Source name", data[d.sourceName]),
+							formatKV("Source GUID", data[d.sourceGUID]),
+							formatKV("Source class", class),
+							formatKV("Source role", data[d.sourceRole])
+						)
+				elseif col == 6 then
+					local class
+					if data[d.destClass] then
+						class = GetClassInfo(data[d.destClass])
+					end
+					addToTooltip(nil,
+						formatKV("Target name", data[d.destName]),
+						formatKV("Target GUID", data[d.destGUID]),
+						formatKV("Target class", class),
+						formatKV("Target role", data[d.destRole])
+					)
+				else -- 7
+					addToTooltip(data[d.extraSpellID],
+							formatKV("Extra spell ID", data[d.extraSpellID]),
+							formatKV("Extra spell name", data[d.extraSpellName])
+						)
+				end
+				return true
+			end,
+			chatLink = function(col, data)
+				-- ignore column for now
+				if not data[d.spellID] then return end
+				return GetSpellLink(data[d.spellID])
+			end,
+			spreadsheet = function(data)
+				local class
+				if data[d.destClass] then
+					class = GetClassInfo(data[d.destClass])
+				end
+				return data[d.spellID], -- spellID
+				data[d.spellName], -- Col 4
+				data[d.sourceName], -- Col 5
+				data[d.destName], -- Col 6
+				data[d.auraType] == "1" and "BUFF" or "DEBUFF", -- Col 7
+				{formatKV("sourceGUID", data[d.sourceGUID]),
+				formatKV("destName", data[d.destName]),
+				formatKV("destGUID", data[d.destGUID]),
+				formatKV("destClass", class),
+				formatKV("destRole", data[d.destRole])} -- Extra
+			end,
+		}
+	end
 	local _getCLEU = CombatLogGetCurrentEventInfo
 	function addon:COMBAT_LOG_EVENT_UNFILTERED()
 		local args = {_getCLEU()}
@@ -2331,7 +2444,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 			if args[4] then -- sourceGUID, fix for arena id's
 				unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", args[4]) -- sourceGUID
 			end
-			if eventID == 25 then -- UNIT_DIED
+			if eventID == 25 or eventID == 79 or eventID == 80 then -- UNIT_DIED, UNIT_DESTROYED, UNIT_DISSIPATES
 				unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", args[8]) -- destGUID
 				if iEET.ignoreFilters or (unitType == 'Creature') or (unitType == 'Vehicle') or (unitType == 'Player') then
 					if iEET.ignoreFilters or not iEET.npcIgnoreList[tonumber(npcID)] then
@@ -2403,9 +2516,12 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 						[d.destClass] = destClass,
 						[d.destRole] = destRole,
 					}
-					if eventID == 12 or eventID == 13 or eventID == 62 then -- SPELL_DISPEL, SPELL_INTERRUPT, SPELL_STOLEN
+					if eventID == 12 or eventID == 13 or eventID == 62 or eventID == 77 then -- SPELL_DISPEL, SPELL_INTERRUPT, SPELL_STOLEN, SPELL_AURA_BROKEN_SPELL
 						t[d.extraSpellID] = args[15]
 						t[d.extraSpellName] = args[16]
+					end
+					if eventID == 77 then -- SPELL_AURA_BROKEN_SPELL
+						t[d.auraType] = args[18] == 'DEBUFF' and '0' or '1'
 					end
 					if auraEvents[eventID] or doseEvents[eventID] then
 						t[d.auraType] = args[15] == 'DEBUFF' and '0' or '1'
