@@ -1,4 +1,5 @@
 -- TODO : transcriptor imports
+-- TODO : add spell_aura_broken & spell_aura_broken_spell
 
 local _, iEET = ...
 local cleuEventsToTrack = {

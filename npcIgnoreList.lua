@@ -102,6 +102,7 @@ iEET.npcIgnoreList = {
 	[99904] = true,		--T'uure (Holy Artifact)
 	[172309] = true,	--Divine Image
 	[180113] = true,	--Rattling Mage (Necrolord legendary)
+	[180171] = true,	--Brooding Cleric (Necrolord Legendary)
 	[183955] = true,	--Your Shadow
 
 --Rogue

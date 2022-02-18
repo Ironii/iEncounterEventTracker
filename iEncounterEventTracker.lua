@@ -1225,6 +1225,9 @@ do
 					iEET.collector.specialCategories[specialCategory] = true
 					iEET:addToEncounterAbilities(collectorData.spellID, col4, specialCategory)
 				end
+			elseif specialCategory == iEET.specialCategories.NPCSpawn and not iEET.collector.specialCategories[specialCategory] then
+				iEET.collector.specialCategories[specialCategory] = true
+				iEET:addToEncounterAbilities(nil,nil,specialCategory)
 			end
 			if shouldShow(v,filters,eventGUID, nil, needTimestamps, starttime) then
 				--local intervallGUID, specialCategory, col4, col5, col6, col7, collectorData = iEET.eventFunctions[v[1]].gui(v)

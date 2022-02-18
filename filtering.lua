@@ -112,6 +112,43 @@ local function trimText(self)
 		self.text:SetText(utf8_sub(self.text:GetText(), 1, -2))
 	end
 end
+--http://lua-users.org/wiki/TableUtils
+local tableUtils = {}
+function tableUtils.val_to_str ( v )
+  if "string" == type( v ) then
+    v = string.gsub( v, "\n", "\\n" )
+    if string.match( string.gsub(v,"[^'\"]",""), '^"+$' ) then
+      return "'" .. v .. "'"
+    end
+    return '"' .. string.gsub(v,'"', '\\"' ) .. '"'
+  else
+    return "table" == type( v ) and tableUtils.tostring( v ) or
+      tostring( v )
+  end
+end
+
+function tableUtils.key_to_str ( k )
+  if "string" == type( k ) and string.match( k, "^[_%a][_%a%d]*$" ) then
+    return k
+  else
+    return "[" .. tableUtils.val_to_str( k ) .. "]"
+  end
+end
+
+function tableUtils.tostring( tbl )
+  local result, done = {}, {}
+  for k, v in ipairs( tbl ) do
+    table.insert( result, tableUtils.val_to_str( v ) )
+    done[ k ] = true
+  end
+  for k, v in pairs( tbl ) do
+    if not done[ k ] then
+      table.insert( result,
+				tableUtils.key_to_str( k ) .. "=" .. tableUtils.val_to_str( v ) )
+    end
+  end
+  return "{" .. table.concat( result, "," ) .. "}"
+end
 StaticPopupDialogs["IEET_ARE_YOU_SURE"] = {
   text = "%s",
   button1 = YES,
@@ -1598,7 +1635,90 @@ do
 						iEET:print("Error: Dialog not found (delete all filters)!")
 					end
 				end)
-				return bg
+				local importFilters = addNewFilterOptions:GetFrame("button", pageID)
+				importFilters:SetParent(bg)
+				importFilters:Show()
+				importFilters:SetSize(12, 12)
+				importFilters:SetBackdropColor(0,0,0,.25)
+				importFilters:SetBackdropBorderColor(1,0,0,1)
+				importFilters.text:SetText("▼")
+				importFilters:SetScript("OnEnter", function()
+					showTooltipOnCursor("Import all filters")
+				end)
+				importFilters:SetScript("OnLeave", function()
+					GameTooltip:Hide()
+				end)
+				importFilters:SetScript("OnMouseDown", function(self)
+					local editbox = addNewFilterOptions:GetFrame("editbox", pageID)
+					editbox:SetParent(bg)
+					editbox:Show()
+					editbox:SetSize(300, 18)
+					editbox:ClearAllPoints()
+					editbox:SetBackdropColor(0,0,0,.75)
+					editbox:SetBackdropBorderColor(1,0,0,.5)
+					editbox:SetPoint("bottom", bg, "top", 0, 28)
+					editbox:SetScript('OnTextChanged', function(self)
+					end)
+					editbox:SetScript('OnEnterPressed', function(self)
+						local ls, e = loadstring("return "..self:GetText() or "")
+						local data = ""
+						if ls then
+							data = ls()
+						end
+						if e then
+							iEET:print(e)
+						else
+							if type(data) == "table" then
+								for k,v in pairs(data) do
+									if type(v) == "table" then
+										table.insert(iEETConfig.filtering, v)
+									else
+										iEET:print("Error importing, data is not a valid table.")		
+									end
+								end
+							else
+								iEET:print("Error importing, data is not a valid table.")
+							end
+						end
+						self:Hide()
+						refreshPage()
+					end)
+					editbox:SetText("")
+				end)
+				local exportFilters = addNewFilterOptions:GetFrame("button", pageID)
+				exportFilters:SetParent(bg)
+				exportFilters:Show()
+				exportFilters:SetSize(12, 12)
+				--exportFilters:ClearAllPoints()
+				--exportFilters:SetPoint("bottomright", bg, "bottomright", -3, 3)
+				exportFilters:SetBackdropColor(0,0,0,.25)
+				exportFilters:SetBackdropBorderColor(1,0,0,1)
+				exportFilters.text:SetText("▲")
+				exportFilters:SetScript("OnEnter", function()
+					showTooltipOnCursor("Export all filters")
+				end)
+				exportFilters:SetScript("OnLeave", function()
+					GameTooltip:Hide()
+				end)
+				exportFilters:SetScript("OnMouseDown", function(self)
+					local editbox = addNewFilterOptions:GetFrame("editbox", pageID)
+					editbox:SetParent(bg)
+					editbox:Show()
+					editbox:SetSize(300, 18)
+					editbox:ClearAllPoints()
+					editbox:SetBackdropColor(0,0,0,.75)
+					editbox:SetBackdropBorderColor(1,0,0,.5)
+					editbox:SetPoint("bottom", bg, "top", 0, 28)
+					editbox:SetScript('OnTextChanged', function(self)
+					end)
+					editbox:SetScript('OnEnterPressed', function(self)
+						self:Hide()
+					end)
+					editbox:SetText(tableUtils.tostring(iEETConfig.filtering))
+					editbox:HighlightText()
+					editbox:SetFocus()
+				end)
+				return bg, {importFilters, exportFilters}
 			end,
 			filterEvents = function()
 				currentlySelectedEvents = nil
@@ -1976,11 +2096,11 @@ do
 		}
 		function addNewFilterOptions:GetPage(page, id, data)
 			if not page then -- called when opening up filters
-				if #iEETConfig.filtering > 0 then
+				--if #iEETConfig.filtering > 0 then
 					page = "filterOverview"
-				else
-					page = "event"
-				end
+				--else
+					--page = "event"
+				--end
 			end
 			if page == "event" then
 				local f = pages.event(id)
@@ -1999,11 +2119,22 @@ do
 				addNewFilterOptions.titleInfo:SetText('Choose search values')
 				return f
 			elseif page == "filterOverview" then
-				local f = pages.filterOverview()
+				local f, titleButtons = pages.filterOverview()
 				f:ClearAllPoints()
 				f:SetParent(addNewFilterOptions.mainFrame)
 				f:SetSize(totalWidth,totalHeight-3)
 				f:SetPoint("top", addNewFilterOptions.mainFrame, "top", 0, -3)
+				if titleButtons then
+					for i,v in ipairs(titleButtons) do
+						if i == 1 then
+							v:ClearAllPoints()
+							v:SetPoint("right", addNewFilterOptions.title, "right", -3,0)
+						else
+							v:ClearAllPoints()
+							v:SetPoint("right", titleButtons[i-1], "left", -2,0)
+						end
+					end
+				end
 				addNewFilterOptions.titleInfo:SetText('Filtering overview')
 				return f
 			elseif page == "filterEvents" then
