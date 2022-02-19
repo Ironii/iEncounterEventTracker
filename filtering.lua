@@ -985,6 +985,33 @@ do
 				editFunc(id)
 			end)
 			edit.text:SetText("edit")
+						
+			local duplicate = addNewFilterOptions:GetFrame("button", frameID)
+			duplicate:SetParent(bg)
+			duplicate:Show()
+			duplicate:SetSize(75, 18)
+			duplicate:SetFrameStrata('DIALOG')
+			duplicate:SetFrameLevel(2)
+			duplicate:ClearAllPoints()
+			duplicate:SetPoint("left", edit, "right", 1, 0)
+			duplicate:SetBackdropColor(0,0,0,.75)
+			duplicate:SetBackdropBorderColor(1,0,0,1)
+			duplicate:SetScript("OnEnter", function()
+				showTooltipOnCursor("Duplicate this filter")
+			end)
+			duplicate:SetScript("OnLeave", function()
+				GameTooltip:Hide()
+			end)
+			duplicate:SetScript("OnMouseDown", function()
+				if not iEETConfig.filtering[id] then
+					iEET:print("Error when duplicating filter, id not found.")
+					return
+				end
+				local t = tcopy(iEETConfig.filtering[id])
+				tinsert(iEETConfig.filtering, t)
+				refreshFunc()
+			end)
+			duplicate.text:SetText("duplicate")
 			return bg
 		end
 		local function getSpecialCatName(id)
