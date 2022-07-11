@@ -1,5 +1,4 @@
 -- TODO : transcriptor imports
--- TODO : add spell_aura_broken & spell_aura_broken_spell
 
 local _, iEET = ...
 local cleuEventsToTrack = {
@@ -44,20 +43,21 @@ local cleuEventsToTrack = {
 local seenWidgets = {}
 do
 	local validUnits = {
-		boss1 = true, boss2 = true, boss3 = true, boss4 = true, boss5 = true,
-		target = true, focus = true,
-		nameplate1 = true, nameplate2 = true, nameplate3 = true, nameplate4 = true, nameplate5 = true,
-		nameplate6 = true, nameplate7 = true, nameplate8 = true, nameplate9 = true, nameplate10 = true,
-		nameplate11 = true, nameplate12 = true, nameplate13 = true, nameplate14 = true, nameplate15 = true,
-		nameplate16 = true, nameplate17 = true, nameplate18 = true, nameplate19 = true, nameplate20 = true,
-		nameplate21 = true, nameplate22 = true, nameplate23 = true, nameplate24 = true, nameplate25 = true,
-		nameplate26 = true, nameplate27 = true, nameplate28 = true, nameplate29 = true, nameplate30 = true,
-		nameplate31 = true, nameplate32 = true, nameplate33 = true, nameplate34 = true, nameplate35 = true,
-		nameplate36 = true, nameplate37 = true, nameplate38 = true, nameplate39 = true, nameplate40 = true,
+		target = true,
+		focus = true,
 	}
 	for i = 1, 40 do
 		validUnits["nameplate"..i] = true
 	end
+	for i = 1, 15 do
+		validUnits["boss"..i] = true
+	end
+
+	--[[
+	for i =1, 5 do
+		validUnits["arena"..i] = true
+	end
+	--]]
 	function iEET.IsValidUnit(unitID)
 		if not unitID then return end
 		if iEET.ignoreFilters or validUnits[unitID] then
@@ -100,6 +100,8 @@ local function checkForSpecialCategory(spellID, e, arg)
 		return iEET.specialCategories.PowerUpdate
 	elseif (e == 63 and (not arg or arg == 2)) or e == 43 or e == 44 or e == 45 or e == 46 then
 		return iEET.specialCategories.Notification
+	elseif e == 77 or e == 76 then
+		return iEET.specialCategories.AuraBreak
 	end
 end
 local classColors = {}
@@ -2342,7 +2344,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				local guid = sformat("%s-%s-%s", eventID, (args[d.sourceGUID] or args[d.sourceName] or ""), args[d.spellID]) -- Create unique string from event + sourceGUID
 				if getGUID then return guid end
 				return guid, -- 1
-					checkForSpecialCategory(args[d.spellID]), -- 2
+					checkForSpecialCategory(args[d.spellID], eventID), -- 2
 					args[d.spellName], -- 3
 					args[defaultCLEUData.sourceName], -- 4
 					args[defaultCLEUData.destName], -- 5
@@ -2585,7 +2587,7 @@ do -- INSTANCE_ENCOUNTER_ENGAGE_UNIT
 	function addon:INSTANCE_ENCOUNTER_ENGAGE_UNIT()
 		local newUnits = {}
 		local unitNames = {}
-		for i = 1, 5 do
+		for i = 1, 15 do
 			local unitID = 'boss' .. i
 			local sourceGUID = UnitGUID(unitID)
 			if UnitExists(unitID) or sourceGUID then
@@ -2598,6 +2600,15 @@ do -- INSTANCE_ENCOUNTER_ENGAGE_UNIT
 				end
 				local unitType, _, serverID, instanceID, zoneID, npcID, spawnID = strsplit("-", sourceGUID)
 				unitNames[i] = {name = sourceName, guid = sourceGUID, npcID = npcID}
+			end
+		end
+		-- arena testing
+		for i = 1, 5 do
+			local u = 'arena'..i
+			if UnitGUID(u) then
+				print("hasGuid", "arena"..i, UnitName(u), UnitGUID(u), UnitExists(u))
+			elseif UnitExists(u) then
+				print("exists", "arena"..i, UnitName(u), UnitGUID(u), UnitExists(u))
 			end
 		end
 		iEET.IEEUnits = nil
@@ -3037,6 +3048,9 @@ do -- BigWigs
 			BigWigsLoader.RegisterMessage('iEncounterEventTracker', 'BigWigs_StopBars', function()
 				iEET:BigWigsData('BigWigs_StopBars')
 			end)
+			BigWigsLoader.RegisterMessage('iEncounterEventTracker', 'BigWigs_SetStage', function(_, stage)
+				iEET:BigWigsData('BigWigs_SetStage', stage)
+			end)
 		else
 			BigWigsLoader.UnregisterMessage('iEncounterEventTracker', 'BigWigs_BarCreated')
 			BigWigsLoader.UnregisterMessage('iEncounterEventTracker', 'BigWigs_Message')
@@ -3044,6 +3058,7 @@ do -- BigWigs
 			BigWigsLoader.UnregisterMessage('iEncounterEventTracker', 'BigWigs_ResumeBar')
 			BigWigsLoader.UnregisterMessage('iEncounterEventTracker', 'BigWigs_StopBar')
 			BigWigsLoader.UnregisterMessage('iEncounterEventTracker', 'BigWigs_StopBars')
+			BigWigsLoader.UnregisterMessage('iEncounterEventTracker', 'BigWigs_SetStage')
 		end
 	end
 	do -- BigWigs_BarCreated
@@ -3242,6 +3257,36 @@ do -- BigWigs
 			end,
 		}
 	end
+	do -- BigWigs_SetStage
+		local eventID = 81
+		local d =  {
+			["event"] = 1,
+			["time"] = 2,
+			["bw_stage"] = 3,
+		}
+		iEET.eventFunctions[eventID] = { 
+			data = d,
+			gui = function(args, getGUID)
+				local guid = sformat("%s", eventID)
+				if getGUID then return guid end
+				return guid, iEET.specialCategories.Ignore, "BigWigs_SetStage", args[d.bw_stage]
+			end,
+			filtering = function(args, filters, ...)
+				return defaultFiltering(args, d, filters, eventID, ...)
+			end,
+			hyperlink = function(col, data) return end, -- Nothing to show
+			import = function(args) 
+				args[d.bw_stage] = tonumber(args[d.bw_stage])
+				return args 
+			end,
+			chatLink = function(col, data) return end,
+			spreadsheet = function(data)
+				return nil, -- spellID
+				"BigWigs_SetStage", -- Col 4
+				data[d.bw_stage] -- Col 5
+			end,
+		}
+	end
 	function iEET:BigWigsData(event,...)
 		local t
 		local eventID = iEET.events.toID[event]
@@ -3293,6 +3338,13 @@ do -- BigWigs
 			t = {
 				[d.event] = eventID,
 				[d.time] = GetTime(),
+			}
+		elseif event == "BigWigs_SetStage" then
+			local stage = ...
+			t = {
+				[d.event] = eventID,
+				[d.time] = GetTime(),
+				[d.bw_stage] = stage,
 			}
 		end
 		if not t then return end
@@ -3617,10 +3669,8 @@ do -- UPDATE_UI_WIDGET
 		[_e.ScenarioHeaderTimer] = _w.GetScenarioHeaderTimerWidgetVisualizationInfo,
 		[_e.TextColumnRow] = _w.GetTextColumnRowVisualizationInfo,
 		[_e.Spacer] = _w.GetSpacerVisualizationInfo,
+		[_e.UnitPowerBar] = _w.GetUnitPowerBarWidgetVisualizationInfo,
 	}
-	if _e.UnitPowerBar then -- 9.2 ptr
-		_e.UnitPowerBar = _w.GetUnitPowerBarWidgetVisualizationInfo
-	end
 	local function tableToString(key, t)
 		local str = sformat("%s", key)
 		for k,v in pairs(t) do
@@ -4163,6 +4213,119 @@ do -- DeadlyBossMods
 			iEET:OnscreenAddMessages(t)
 		end
 	end
+	do -- DBM_SetStage
+		local eventID = 82
+		local d = {
+			["event"] = 1,
+			["time"] = 2,
+			["dbm_stage"] = 3,
+		}
+		iEET.eventFunctions[eventID] = {
+			data = d,
+			gui = function(args, getGUID)
+				local guid = sformat("%s", eventID) -- Create unique string from event + id
+				if getGUID then return guid end
+				return guid, iEET.specialCategories.Ignore, "DBM_SetStage", args[d.dbm_stage]
+			end,
+			filtering = function(args, filters, ...)
+				return defaultFiltering(args, d, filters, eventID, ...)
+			end,
+			hyperlink = function(col, data) return end,
+			import = function(args)
+				args[d.dbm_stage] = tonumber(args[d.dbm_stage])
+				return args
+			end,
+			chatLink = function(col, data) return end,
+			spreadsheet = function(data)
+				return nil, -- spellID
+				"DBM_SetStage", -- Col 4
+				data[d.dbm_stage] -- Col 5
+			end,
+		}	
+		function dbmHandlers:DBM_SetStage(mod, modID, stage, encounterID, stageTotal)
+			local t = {
+				[d.event] = eventID,
+				[d.time] = GetTime(),
+				[d.dbm_stage] = stage,
+			}
+			table.insert(iEET.data, t);
+			iEET:OnscreenAddMessages(t)
+		end
+	end
+	do -- DBM_TimerResume
+		local eventID = 83
+		local d = {
+			["event"] = 1,
+			["time"] = 2,
+			["dbm_id"] = 3,
+		}
+		iEET.eventFunctions[eventID] = {
+			data = d,
+			gui = function(args, getGUID)
+				local guid = sformat("%s-%s", eventID, (args[d.dbm_id] or "")) -- Create unique string from event + id
+				if getGUID then return guid end
+				return guid, -- 1
+					iEET.specialCategories.Ignore, -- 2
+					args[d.dbm_id] -- 3
+			end,
+			filtering = function(args, filters, ...)
+				return defaultFiltering(args, d, filters, eventID, ...)
+			end,
+			hyperlink = function(col, data) return end,
+			import = function(args)return args end,
+			chatLink = function(col, data) return end,
+			spreadsheet = function(data)
+				return nil, -- spellID
+				data[d.dbm_id] -- Col 4
+			end,
+		}	
+		function dbmHandlers:DBM_TimerResume(id)
+			local t = {
+				[d.event] = eventID,
+				[d.time] = GetTime(),
+				[d.dbm_id] = id,
+			}
+			table.insert(iEET.data, t);
+			iEET:OnscreenAddMessages(t)
+		end
+	end
+	do -- DBM_TimerPause
+		local eventID = 84
+		local d = {
+			["event"] = 1,
+			["time"] = 2,
+			["dbm_id"] = 3,
+		}
+		iEET.eventFunctions[eventID] = {
+			data = d,
+			gui = function(args, getGUID)
+				local guid = sformat("%s-%s", eventID, (args[d.dbm_id] or "")) -- Create unique string from event + id
+				if getGUID then return guid end
+				return guid, -- 1
+					iEET.specialCategories.Ignore, -- 2
+					args[d.dbm_id] -- 3
+			end,
+			filtering = function(args, filters, ...)
+				return defaultFiltering(args, d, filters, eventID, ...)
+			end,
+			hyperlink = function(col, data) return end,
+			import = function(args)return args end,
+			chatLink = function(col, data) return end,
+			spreadsheet = function(data)
+				return nil, -- spellID
+				data[d.dbm_id] -- Col 4
+			end,
+		}	
+		function dbmHandlers:DBM_TimerPause(id)
+			local t = {
+				[d.event] = eventID,
+				[d.time] = GetTime(),
+				[d.dbm_id] = id,
+			}
+			table.insert(iEET.data, t);
+			iEET:OnscreenAddMessages(t)
+		end
+	end
 	local callbacks = {
 		DBM_Announce = dbmHandlers.DBM_Announce,
 		DBM_Debug = dbmHandlers.DBM_Debug,
@@ -4170,6 +4333,9 @@ do -- DeadlyBossMods
 		DBM_TimerStop = dbmHandlers.DBM_TimerStop,
 		DBM_TimerFadeUpdate = dbmHandlers.DBM_TimerFadeUpdate,
 		DBM_TimerUpdate = dbmHandlers.DBM_TimerUpdate,
+		DBM_SetStage = dbmHandlers.DBM_SetStage,
+		DBM_TimerResume = dbmHandlers.DBM_TimerResume,
+		DBM_TimerPause = dbmHandlers.DBM_TimerPause,
 	}
 	function iEET:DBMRecording(start)
 		if not DBM then

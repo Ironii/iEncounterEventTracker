@@ -221,7 +221,7 @@ function iEET:CreateMainFrame()
 	iEET.encounterInfo.text = iEET.frame:CreateFontString()
 	iEET.encounterInfo.text:SetFont(iEET.font, iEET.fontsize, 'OUTLINE')
 	iEET.encounterInfo.text:SetPoint('CENTER', iEET.encounterInfo, 'CENTER', 0,1)
-	iEET.encounterInfo.text:SetText("Ironi's Encounter Event Tracker")
+	iEET.encounterInfo.text:SetText("Ironi's Encounter Event Tracker v" .. iEET.version.str)
 	iEET.encounterInfo.text:Show()
 
 	-- Prev button

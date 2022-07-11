@@ -181,6 +181,7 @@ iEET.specialCategories = {
 	["EndLogging"] = 7,
 	["Taunt"] = 8,
 	["Notification"] = 9,
+	["AuraBreak"] = 10,
 }
 iEET.savedPowers = {}
 iEET.events = {
@@ -262,12 +263,16 @@ iEET.events = {
 		['BigWigs_ResumeBar'] = 50,
 		['BigWigs_StopBar'] = 51,
 		['BigWigs_StopBars'] = 52,
+		 ['BigWigs_SetStage'] = 81,
 		['DBM_Announce'] = 66,
 		['DBM_Debug'] = 67,
 		['DBM_TimerStart'] = 68,
 		['DBM_TimerStop'] = 69,
 		['DBM_TimerFadeUpdate'] = 70,
 		['DBM_TimerUpdate'] = 71,
+		['DBM_SetStage'] = 82,
+		['DBM_TimerResume'] = 83,
+		['DBM_TimerPause'] = 84,
 
 		--Damage
 		['SPELL_MISSED'] = 72, -- CLEU
@@ -699,6 +704,26 @@ iEET.events = {
 			c = true,
 			t = "misc",
 		},
+		[81] = {
+			l = "BigWigs_SetStage",
+			s = "BW_SetStage",
+			t = "bigwigs",
+		},
+		[82] = {
+			l = "DBM_SetStage",
+			s = "DBM_SetStage",
+			t = "dbm"
+		},
+		[83] = {
+			l = "DBM_TimerResume",
+			s = "DBM_TResume",
+			t = "dbm"
+		},
+		[84] = {
+			l = "DBM_TimerPause",
+			s = "DBM_TPause",
+			t = "dbm"
+		},
 	},
 }
 iEET.addonUsers = {}
@@ -856,6 +881,11 @@ function iEET:LoadDefaults()
 			[78] = true, -- SPELL_INSTAKILL
 			[79] = true, -- UNIT_DESTROYED
 			[80] = true, -- UNIT_DISSIPATES
+
+			[81] = true, -- BigWigs_SetStage
+			[82] = true, -- DBM_SetStage
+			[83] = true, -- DBM_TimerResume
+			[84] = true, -- DBM_TimerPause
 		},
 		['version'] = iEET.version,
 		['autoSave'] = true,

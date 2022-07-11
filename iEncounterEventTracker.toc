@@ -1,8 +1,8 @@
-## Interface: 90105
+## Interface: 90205
 ## Title: iEncounterEventTracker
 ## Notes: Ironi's Encounter Event Tracker
 ## Author: Ironi
-## Version: 2.3.1
+## Version: 2.4.0
 ## DefaultState: enabled
 ## SavedVariables: iEETConfig, iEET_Data, iEET_ExportFromWTF
 

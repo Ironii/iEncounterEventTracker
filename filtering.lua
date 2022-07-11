@@ -649,6 +649,7 @@ do
 			amountOver = "number",
 			absorbed = "number",
 			powerPercent = "number",
+			bw_stage = "number",
 		}
 		local noEditbox = {
 			auraType = true,
