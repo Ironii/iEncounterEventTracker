@@ -107,7 +107,9 @@ end
 local classColors = {}
 for i = 1, GetNumClasses() do
 	local _, className = GetClassInfo(i)
-	classColors[i] = {RAID_CLASS_COLORS[className].r,RAID_CLASS_COLORS[className].g,RAID_CLASS_COLORS[className].b}
+	if className ~= "Adventurer" then
+		classColors[i] = {RAID_CLASS_COLORS[className].r,RAID_CLASS_COLORS[className].g,RAID_CLASS_COLORS[className].b}
+	end
 end
 local function getClassColor(id)
 	if not id or not iEETConfig.classColors then return end
@@ -3048,7 +3050,7 @@ do -- BigWigs
 			BigWigsLoader.RegisterMessage('iEncounterEventTracker', 'BigWigs_StopBars', function()
 				iEET:BigWigsData('BigWigs_StopBars')
 			end)
-			BigWigsLoader.RegisterMessage('iEncounterEventTracker', 'BigWigs_SetStage', function(_, stage)
+			BigWigsLoader.RegisterMessage('iEncounterEventTracker', 'BigWigs_SetStage', function(_, _, stage)
 				iEET:BigWigsData('BigWigs_SetStage', stage)
 			end)
 		else
