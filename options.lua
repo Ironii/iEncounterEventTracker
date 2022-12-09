@@ -217,6 +217,12 @@ function iEET:updateOptionsMenu()
 			{text ='Shadowlands - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.SHADOWLANDS5MAN], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.SHADOWLANDS5MAN, func = function(self, arg1, arg2, checked)
 				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
 			end},
+			{text ='Dragonflight - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
+			{text ='Dragonflight - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
 		}})
 	tinsert(iEET.optionsMenu, {text = 'Class coloring', isNotRadio = true,	checked = iEETConfig.classColors, keepShownOnClick = true, func = function()
 			if iEETConfig.classColors then

@@ -14,6 +14,7 @@ local cleuEventsToTrack = {
 	['SPELL_DISPEL'] = true,
 	['SPELL_INTERRUPT'] = true,
 	['SPELL_STOLEN'] = true,
+	['SPELL_ENERGIZE'] = true,
 
 	['SPELL_AURA_BROKEN'] = true,
 	['SPELL_AURA_BROKEN_SPELL'] = true,
@@ -2436,6 +2437,119 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 			end,
 		}
 	end
+	do -- SPELL_ENERGIZE
+		local d = tcopy(defaultCLEUData)
+		d["amount"] = 13
+		d["amountOver"] = 14
+		d["powerType"] = 15
+		local eventID = 85
+		local savedPowerTypes = {}
+		iEET.eventFunctions[eventID] = {
+			data = d,
+			gui = function(args, getGUID)
+				local guid = sformat("%s-%s-%s", args[d.event], (args[d.sourceGUID] or args[d.sourceName] or ""), args[d.spellID]) -- Create unique string from event + sourceGUID
+				if getGUID then return guid end
+				return guid, -- 1
+				checkForSpecialCategory(args[d.spellID]), -- 2
+				args[d.spellName], -- 3
+				args[d.sourceName], -- 4,
+				args[d.destName], -- 5
+				args[d.amount], -- 6
+				{spellID = args[d.spellID], casterName = args[d.sourceName]}, -- 7
+				getClassColor(args[d.sourceClass]), -- source class color
+				getClassColor(args[d.destClass]) -- dest class color
+			end,
+			import = function(args)
+				args[d.sourceClass] = tonumber(args[d.sourceClass])
+				args[d.destClass] = tonumber(args[d.destClass])
+				args[d.spellID] = tonumber(args[d.spellID])
+				args[d.amount] = tonumber(args[d.amount])
+				args[d.amountOver] = tonumber(args[d.amountOver])
+				args[d.powerType] = tonumber(args[d.powerType])
+				return args
+			end,
+			filtering = function(args, filters, ...)
+				return defaultFiltering(args, d, filters, eventID, ...)
+			end,
+			hyperlink = function(col, data)
+				if col == 4 then
+					if C_Spell.DoesSpellExist(data[d.spellID]) then -- TODO : CHECK if it requires caching first, live/ptr check
+						addToTooltip(data[d.spellID], formatKV("Spell ID", data[d.spellID]))
+					else
+						addToTooltip(nil,
+							formatKV("Spell ID", data[d.spellID]),
+							formatKV("Spell name", data[d.spellName])
+						)
+					end
+				elseif col == 5 then
+					local class
+					if data[d.sourceClass] then
+						class = GetClassInfo(data[d.sourceClass])
+					end
+					addToTooltip(nil,
+						formatKV("Source name", data[d.sourceName]),
+						formatKV("Source GUID", data[d.sourceGUID]),
+						formatKV("Source class", class),
+						formatKV("Source role", data[d.sourceRole])
+						)
+				elseif col == 6 then
+					local class
+					if data[d.destClass] then
+						class = GetClassInfo(data[d.destClass])
+					end
+					addToTooltip(nil,
+						formatKV("Target name", data[d.destName]),
+						formatKV("Target GUID", data[d.destGUID]),
+						formatKV("Target class", class),
+						formatKV("Target role", data[d.destRole])
+					)
+				else -- 7
+					local powerStr = UNKNOWN
+					if data[d.powerType] and not savedPowerTypes[data[d.powerType]] then
+						for k,v in pairs(Enum.PowerType) do
+							if v == data[d.powerType] then
+								powerStr = k
+								savedPowerTypes[data[d.powerType]] = k
+								break
+							end
+						end
+					else
+						powerStr = savedPowerTypes[data[d.powerType]]
+					end
+					addToTooltip(nil,
+						formatKV("Amount", data[d.amount]),
+						formatKV("Wasted", data[d.amountOver]),
+						formatKV("Power type", sformat("%s (%s)", powerStr, data[d.powerType]))
+					)
+				end
+				return true
+			end,
+			chatLink = function(col, data)
+				-- ignore column for now
+				if not data[d.spellID] then return end
+				return GetSpellLink(data[d.spellID])
+			end,
+			spreadsheet = function(data)
+				local class
+				if data[d.destClass] then
+					class = GetClassInfo(data[d.destClass])
+				end
+				return data[d.spellID], -- spellID
+				data[d.spellName], -- Col 4
+				data[d.sourceName], -- Col 5
+				data[d.destName], -- Col 6
+				data[d.amount], -- Col 7
+				{formatKV("sourceGUID", data[d.sourceGUID]),
+				formatKV("destName", data[d.destName]),
+				formatKV("destGUID", data[d.destGUID]),
+				formatKV("destClass", class),
+				formatKV("destRole", data[d.destRole]),
+				formatKV("amount", data[d.amount]),
+				formatKV("wasted", data[d.amountOver]),
+				formatKV("powerType", data[d.powerType])} -- Extra
+			end,
+		}
+	end
 	local _getCLEU = CombatLogGetCurrentEventInfo
 	function addon:COMBAT_LOG_EVENT_UNFILTERED()
 		local args = {_getCLEU()}
@@ -2532,11 +2646,13 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 						if doseEvents[eventID] then
 							t[d.stacks] = args[16]
 						end
-					elseif eventID == 11 or eventID == 73 then -- SPELL_HEAL, SPELL_DAMAGE
+					elseif eventID == 11 or eventID == 73 or eventID == 85 then -- SPELL_HEAL, SPELL_DAMAGE, SPELL_ENERGIZE
 						t[d.amount] = args[15]
 						t[d.amountOver] = args[16]
 						if eventID == 11 then -- SPELL_HEAL
 							t[d.absorbed] = args[17]
+						elseif eventID == 85 then
+							t[d.powerType] = args[17]
 						else -- SPELL_DAMAGE
 							t[d.absorbed] = args[20]
 							t[d.spellSchool] = args[17]
@@ -3672,6 +3788,7 @@ do -- UPDATE_UI_WIDGET
 		[_e.TextColumnRow] = _w.GetTextColumnRowVisualizationInfo,
 		[_e.Spacer] = _w.GetSpacerVisualizationInfo,
 		[_e.UnitPowerBar] = _w.GetUnitPowerBarWidgetVisualizationInfo,
+		[_e.FillUpFrames] = _w.GetFillUpFramesWidgetVisualizationInfo,
 	}
 	local function tableToString(key, t)
 		local str = sformat("%s", key)

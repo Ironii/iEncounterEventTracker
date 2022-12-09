@@ -1325,6 +1325,8 @@ function iEET:toggleDeleteOptions()
 					{k = iEET.ENUMS.EXPANSIONS.BFA5MAN, v = 'Battle for Azeroth - 5man'},
 					{k = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, v = 'Shadowlands - raid'},
 					{k = iEET.ENUMS.EXPANSIONS.SHADOWLANDS5MAN, v = 'Shadowlands - 5man'},
+					{k = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, v = 'Dragonflight - raid'},
+					{k = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, v = 'Dragonflight - 5man'},
 					{k = false, v = "Any"},
 				}
 				for _, data in ipairs(opt) do

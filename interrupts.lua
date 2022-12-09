@@ -14,6 +14,9 @@ iEET.interrupts = {
 	[93985] = true, --Skull Bash
 	[106839] = true, --Skull Bash
 
+	--Evoker
+	[351338] = true, -- Quell
+	
 	--Hunter
 	[147362] = true, --Counter Shot
 	[187707] = true, --Muzzle

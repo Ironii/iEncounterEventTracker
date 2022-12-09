@@ -19,6 +19,8 @@ iEET.ENUMS.EXPANSIONS = {
   BFA5MAN = 85,
   SHADOWLANDS = 9,
   SHADOWLANDS5MAN = 95,
+  DRAGONFLIGHT = 10,
+  DRAGONFLIGHT5MAN = 105,
   DEFAULT = 0,
 }
 local encounters = {
@@ -982,6 +984,28 @@ local encounters = {
   [2416] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Eastern Kingdoms, Nathanos Blightcaller
   [2417] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Castle Nathria, Stone Legion Generals
   [2418] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Castle Nathria, Huntsman Altimor
+  [2435] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sanctum of Domination, The Tarragrue
+  [2439] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sanctum of Domination, The Nine
+  [2440] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sanctum of Domination, Kel'Thuzad
+  [2441] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sanctum of Domination, Sylvanas Windrunner
+  [2442] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sanctum of Domination, The Eye of the Jailer
+  [2443] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sanctum of Domination, Painsmith Raznal
+  [2444] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sanctum of Domination, Remnant of Ner'zhul
+  [2445] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sanctum of Domination, Soulrender Dormazain
+  [2446] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sanctum of Domination, Guardian of the First Ones
+  [2447] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sanctum of Domination, Fatescribe Roh-Kalo
+
+  [2457] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sepulcher of the First Ones, Lords of Dread
+  [2458] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sepulcher of the First Ones, Vigilant Guardian
+  [2459] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sepulcher of the First Ones, Dausegne, the Fallen Oracle
+  [2460] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sepulcher of the First Ones, Prototype Pantheon
+  [2461] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sepulcher of the First Ones, Lihuvim, Principal Architect
+  [2463] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sepulcher of the First Ones, Halondrus the Reclaimer
+  [2464] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sepulcher of the First Ones, The Jailer
+  [2465] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sepulcher of the First Ones, Skolex, the Insatiable Ravener
+  [2467] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sepulcher of the First Ones, Rygelon
+  [2469] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sepulcher of the First Ones, Anduin Wrynn
+  [2470] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS, -- Sepulcher of the First Ones, Artificer Xy'mox
 
   -- Shadowlands 5man
   [2325] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS5MAN, -- Darkmaul Citadel, Tunk
@@ -1019,6 +1043,58 @@ local encounters = {
   [2403] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS5MAN, -- Halls of Atonement, High Adjudicator Aleez
   [2404] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS5MAN, -- Theater of Pain, Mordretha
   [2415] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS5MAN, -- Sinfall Scenario, Ember Court
+  [2436] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS5MAN, -- Tazavesh, the Veiled Market, Mailroom Mayhem
+  [2437] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS5MAN, -- Tazavesh, the Veiled Market, Zo'phex the Sentinel
+  [2448] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS5MAN, -- Tazavesh, the Veiled Market, Hylbrande
+  [2449] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS5MAN, -- Tazavesh, the Veiled Market, Timecap'n Hooktail
+  [2451] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS5MAN, -- Tazavesh, the Veiled Market, So'azmi
+  [2452] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS5MAN, -- Tazavesh, the Veiled Market, Myza's Oasis
+  [2454] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS5MAN, -- Tazavesh, the Veiled Market, The Grand Menagerie
+  [2455] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS5MAN, -- Tazavesh, the Veiled Market, So'leah
+
+  -- Dragonflight
+  [2480] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Eranog
+  [2482] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Sennarth, the Cold Breath
+  [2486] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, The Primal Council
+  [2491] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Kurog Grimtotem
+  [2493] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Broodkeeper Diurna
+  [2499] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Raszageth the Storm-Eater
+  [2500] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Terros
+  [2502] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Dathea, Ascended
+
+  -- Dragonflight 5mans
+  [2471] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Brackenhide Hollow, Hackclaw's War-Band
+  [2472] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Brackenhide Hollow, Gutshot
+  [2473] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Brackenhide Hollow, Treemouth
+  [2474] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Brackenhide Hollow, Decatriarch Wratheye
+  [2477] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- The Nokhud Offensive, Balakar Khan
+  [2478] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- The Nokhud Offensive, Teera and Maruuk
+  [2497] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- The Nokhud Offensive, The Raging Tempest
+  [2498] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- The Nokhud Offensive, Granyth
+  [2475] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Uldaman: Legacy of Tyr, The Lost Dwarves
+  [2476] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Uldaman: Legacy of Tyr, Emberon
+  [2479] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Uldaman: Legacy of Tyr, Chrono-Lord Deios
+  [2484] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Uldaman: Legacy of Tyr, Sentinel Talondras
+  [2487] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Uldaman: Legacy of Tyr, Bromach
+  [2483] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- The Azure Vault, Telash Greywing
+  [2492] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- The Azure Vault, Leymor
+  [2505] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- The Azure Vault, Azureblade
+  [2508] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- The Azure Vault, Umbrelskul
+  [2485] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Ruby Life Pools, Kokia Blazehoof
+  [2488] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Ruby Life Pools, Melidrussa Chillworn
+  [2503] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Ruby Life Pools, Kyrakka and Erkhart Stormvein
+  [2489] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Neltharus, Forgemaster Gorek
+  [2490] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Neltharus, Chargath, Bane of Scales
+  [2494] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Neltharus, Magmatusk
+  [2501] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Neltharus, Warlord Sargha
+  [2495] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Algeth'ar Academy, Crawth
+  [2509] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Algeth'ar Academy, Vexamus
+  [2512] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Algeth'ar Academy, Overgrown Ancient
+  [2514] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Algeth'ar Academy, Echo of Doragosa
+  [2504] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- 	Halls of Infusion, Watcher Irideus
+  [2507] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- 	Halls of Infusion, Gulping Goliath
+  [2510] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- 	Halls of Infusion, Khajin the Unyielding
+  [2511] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- 	Halls of Infusion, Primal Tsunami
 }
 
 function iEET:ShouldIgnoreEncounter(encounterID)

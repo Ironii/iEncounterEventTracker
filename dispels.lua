@@ -17,6 +17,11 @@ iEET.dispels = {
 	[2908] = 2,		--Soothe
 	[88423] = 1,	--Nature's Cure
 
+	--Evoker
+	[374251] = 1, -- Cauterizing Flame
+	[372048] = 2, -- Oppressing Roar
+	[360823] = 1, -- Naturalize
+
 	--Hunter
 	[19801] = 2,	--Tranquilizing Shot
 

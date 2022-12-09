@@ -241,6 +241,7 @@ iEET.events = {
 		["SPELL_INSTAKILL"] = 78,
 		["UNIT_DESTROYED"] = 79,
 		["UNIT_DISSIPATES"] = 80,
+		["SPELL_ENERGIZE"] = 85, -- CLEU
 		-- Cinematic
 		['PLAY_MOVIE'] = 57,
 		['CINEMATIC_START'] = 58,
@@ -724,6 +725,12 @@ iEET.events = {
 			s = "DBM_TPause",
 			t = "dbm"
 		},
+		[85] = {
+			l = "SPELL_ENERGIZE",
+			s = "SPELL_ENERGIZE",
+			c = true,
+			t = "misc",
+		},
 	},
 }
 iEET.addonUsers = {}
@@ -886,6 +893,8 @@ function iEET:LoadDefaults()
 			[82] = true, -- DBM_SetStage
 			[83] = true, -- DBM_TimerResume
 			[84] = true, -- DBM_TimerPause
+
+			[85] = true, -- SPELL_ENERGIZE
 		},
 		['version'] = iEET.version,
 		['autoSave'] = true,
