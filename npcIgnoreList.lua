@@ -34,6 +34,8 @@ iEET.npcIgnoreList = {
 	[163366] = true,	--Magus of the Dead
 
 --Demon Hunter
+	[136402] = true,	--Ur'zul
+	[136406] = true,	--Shivarra
 
 --Druid
 	[1964] = true,		--Treant
@@ -41,6 +43,9 @@ iEET.npcIgnoreList = {
 	[54983] = true,		--Treant
 	[94852] = true,		--Boomkin 4pc
 	[103822] = true,	--Treant
+	[198489] = true,	--Fey Missile
+--Evoker
+	[189161] = true,	-- Dream Sprout
 
 --Hunter
 	[62005] = true,		--Beast(?)
@@ -84,11 +89,13 @@ iEET.npcIgnoreList = {
 	[99625] = true,		--Wind Spirit
 	[100868] = true,	--Chi'ji
 	[165374] = true, -- Yu'lon
-	[180744] = true, -- Yu'lon
+	[166949] = true,	-- Chi-ji
 	[168033] = true, -- Fallen Monk (Covenant:Venthyr)
 	[168073] = true, -- Fallen Monk (Covenant:Venthyr)
 	[168074] = true, -- Fallen Monk (Covenant:Venthyr)
 	[180743] = true, -- Niuzao
+	[180744] = true, -- Yu'lon
+	[196581] = true, -- White Tiger Statue
 
 --Paladin
 
@@ -104,6 +111,9 @@ iEET.npcIgnoreList = {
 	[180113] = true,	--Rattling Mage (Necrolord legendary)
 	[180171] = true,	--Brooding Cleric (Necrolord Legendary)
 	[183955] = true,	--Your Shadow
+	[189988] = true,	-- Thing from Beyond
+	[192337] = true,	-- Void Tendril
+	[198757] = true,	-- Void Lasher
 
 --Rogue
 	[77726] = true,		--Shadow Reflection
@@ -177,11 +187,19 @@ iEET.npcIgnoreList = {
 	[121643] = true,	--Flame Rift
 	[135002] = true, 	-- Demonic Tyrant
 	[135816] = true, 	-- Vilefiend
-	[136404] = true, 	-- Bilescourge
+	[136398] = true,	-- Illidari Satyr
+	[136399] = true,	-- Vicious Hellhound
+	[136401] = true,	-- Eye of Gul'dan
+	[136404] = true, 	-- Bilescourge	
+	[136407] = true,	-- Wrathguard
+	[136408] = true,	-- Darkhound	
 	[136403] = true, 	-- Void Terror
 	[143622] = true, 	-- Wild Imp
+	[168932] = true,	-- Doomguard
+	[169426] = true,	-- Infernal
 	[184206] = true,	-- Malicious Imp (T28)
 	[185584] = true,	-- Blasphemy (T28)
-
+	
+	
 --Warrior
 }
