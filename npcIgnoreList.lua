@@ -118,6 +118,7 @@ iEET.npcIgnoreList = {
 --Rogue
 	[77726] = true,		--Shadow Reflection
 	[105850] = true,	--Akaari's soul (Sublety artifact)
+	[144961] = true,	--Akaari's Soul (DF Talent)
 
 --Shaman
 	[2523] = true,		--Searing Totem

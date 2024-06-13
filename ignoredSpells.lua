@@ -34,6 +34,7 @@ iEET.ignoredSpells = {
 -- Mage
 	[307454] = true, --Radiant Spark Vulnerability (Kyrian)
 	[307747] = true, --Radiant Spark (Kyrian)
+	[376104] = true, --Radiant Spark Vulnerability
 
 --Priest
 	[81782] = true,		--Power Word: Barrier

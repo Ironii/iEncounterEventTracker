@@ -1,7 +1,7 @@
 local addonName, iEET = ...
 local sformat, tonumber, tostring, type, mfloor, tinsert,ssub = string.format, tonumber, tostring, type, math.floor, table.insert, string.sub
 do
-	local _v = GetAddOnMetadata(addonName, "version")
+	local _v = C_AddOns.GetAddOnMetadata(addonName, "version")
 	local _major,_minor,_patch = _v:match("^(%d-)%.(%d-)%.(%d-)$")
 	iEET.version = {
 		str = _v,
@@ -264,7 +264,7 @@ iEET.events = {
 		['BigWigs_ResumeBar'] = 50,
 		['BigWigs_StopBar'] = 51,
 		['BigWigs_StopBars'] = 52,
-		 ['BigWigs_SetStage'] = 81,
+		['BigWigs_SetStage'] = 81,
 		['DBM_Announce'] = 66,
 		['DBM_Debug'] = 67,
 		['DBM_TimerStart'] = 68,
@@ -1774,7 +1774,7 @@ SlashCmdList["IEET"] = function(realMsg)
 	elseif msg == 'wtf' then
 		iEET:ExportFightsToWTF()
 	elseif msg == 'contact' then
-		iEET:print("\nBnet:\n    Ironi#2880 (EU)\nDiscord:\n    Ironi#2880\n    https://discord.gg/stY2nyj")
+		iEET:print("\nBnet:\n    Ironi#2880 (EU)\nDiscord:\n    ironi\n    https://discord.gg/stY2nyj")
 	elseif msg == 'users' then
 		iEET.addonUsers = {}
 		local chatType

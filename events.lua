@@ -410,10 +410,10 @@ function addon:ADDON_LOADED(addonName)
 			end
 			if iEETConfig.version and iEETConfig.version < 2.0 then
 				iEETConfig.filtering = nil
-				iEET:print("This is one time only message with authors contact information, feel free to use any of them if you run into any problems.\nBnet:\n    Ironi#2880 (EU)\nDiscord:\n    Ironi#2880\n    https://discord.gg/stY2nyj")
+				iEET:print("This is one time only message with authors contact information, feel free to use any of them if you run into any problems.\nBnet:\n    Ironi#2880 (EU)\nDiscord:\n    ironi\n    https://discord.gg/stY2nyj")
 			end
 		elseif not iEETConfig.version then
-			iEET:print("This is one time only message with authors contact information, feel free to use any of them if you run into any problems.\nBnet:\n    Ironi#2880 (EU)\nDiscord:\n    Ironi#2880\n    https://discord.gg/stY2nyj")
+			iEET:print("This is one time only message with authors contact information, feel free to use any of them if you run into any problems.\nBnet:\n    Ironi#2880 (EU)\nDiscord:\n    ironi\n    https://discord.gg/stY2nyj")
 		end
 		iEET:LoadDefaults()
 		--Remove extra spells from CustomWhiteList (spells that have been added to iEET.approvedSpells)
@@ -458,7 +458,12 @@ do -- CHAT_MSG_ADDON
 					for _,v in ipairs(msgs) do
 						local id = v:match("^(%d+)")
 						if id then
-							addToTooltip(nil, sformat("%s - %s",v, GetSpellInfo(id) or UNKNOWN))
+							if C_Spell and C_Spell.GetSpellInfo then
+								local spellData = C_Spell.GetSpellInfo(id)
+								addToTooltip(nil, sformat("%s - %s",v, spellData and spellData.name or UNKNOWN))
+							else
+								addToTooltip(nil, sformat("%s - %s",v, GetSpellInfo(id) or UNKNOWN))
+							end
 						else
 							addToTooltip(nil, v)
 						end
@@ -692,7 +697,6 @@ end
 do -- UNIT_SPELLCAST_SUCCEEDED
 	local eventID = 26
 	iEET.eventFunctions[eventID] = {
-		defaults.unitEvents,
 		data = defaults.unitEvents.data,
 		gui = defaults.unitEvents.gui,
 		hyperlink = defaults.unitEvents.hyperlink,
@@ -709,7 +713,28 @@ do -- UNIT_SPELLCAST_SUCCEEDED
 end
 do -- UNIT_SPELLCAST_START
 	local eventID = 39
-	iEET.eventFunctions[eventID] = defaults.unitEvents
+	local d = {
+		["event"] = 1,
+		["time"] = 2,
+		["sourceGUID"] = 3,
+		["sourceName"] = 4,
+		["unitID"] = 5,
+		["spellName"] = 6,
+		["spellID"] = 7,
+		["hp"] = 8,
+		["castGUID"] = 9,
+	}
+	iEET.eventFunctions[eventID] = {
+		data = defaults.unitEvents.data,
+		gui = defaults.unitEvents.gui,
+		hyperlink = defaults.unitEvents.hyperlink,
+		spreadsheet = defaults.unitEvents.spreadsheet,
+		chatLink = defaults.unitEvents.chatLink,
+		import = defaults.unitEvents.import,
+		filtering = function(args, filters, ...)
+			return defaultFiltering(args, defaults.unitEvents.data, filters, eventID, ...)
+		end
+	}
 	iEET.eventFunctions[eventID].filtering = function(args, filters, ...)
 		return defaultFiltering(args, defaults.unitEvents.data, filters, eventID, ...)
 	end
@@ -1099,7 +1124,9 @@ do -- UNIT_POWER_UPDATE
 		local maxPower = UnitPowerMax(unitID,iEET.savedPowers[powerType].i)
 		local pUP = 0
 		if currentPower and maxPower then
-			pUP = mfloor(currentPower/maxPower*10000+0.5)/100
+			if maxPower > 0 then
+				pUP = mfloor(currentPower/maxPower*10000+0.5)/100
+			end
 		end
 		local tooltipText = string.format('%s %s%%\n%s/%s\n%s',iEET.savedPowers[powerType].n, pUP, currentPower, maxPower, change) --PowerName 50%;50/100;+20
 		local t = {

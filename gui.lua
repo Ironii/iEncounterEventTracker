@@ -1,5 +1,24 @@
 local _, iEET = ...
 local spairs, sformat = iEET.spairs, string.format
+local EasyMenu = EasyMenu
+if not EasyMenu then
+	local function EasyMenu_Initialize( frame, level, menuList )
+		for index = 1, #menuList do
+				local value = menuList[index]
+				if (value.text) then
+						value.index = index;
+						UIDropDownMenu_AddButton( value, level );
+				end
+		end
+end
+	EasyMenu = function(menuList, menuFrame, anchor, x, y, displayMode, autoHideDelay )
+    if ( displayMode == "MENU" ) then
+        menuFrame.displayMode = displayMode;
+    end
+    UIDropDownMenu_Initialize(menuFrame, EasyMenu_Initialize, displayMode, nil, menuList);
+    ToggleDropDownMenu(1, nil, menuFrame, anchor, x, y, menuList, nil, autoHideDelay);
+	end
+end
 function iEET:ShowColorPicker(frame)
 	iEET.colorToChange = frame
 	local r,g,b,a
@@ -851,7 +870,7 @@ function iEET:CreateMainFrame()
 	--Contact information on first run
 	if iEETConfig.cInfo then
 		iEETConfig.cInfo = false
-		iEET:print("This is one time only message with authors contact information, feel free to use any of them if you run into any problems.\nBnet:\n    Ironi#2880 (EU)\nDiscord:\n    Ironi#2880\n    https://discord.gg/stY2nyj")
+		iEET:print("This is one time only message with authors contact information, feel free to use any of them if you run into any problems.\nBnet:\n    Ironi#2880 (EU)\nDiscord:\n    ironi\n    https://discord.gg/stY2nyj")
 	end
 end
 
