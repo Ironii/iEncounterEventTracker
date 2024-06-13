@@ -16,14 +16,18 @@ iEET.dispels = {
 	[2782] = 1,		--Remove Corruption
 	[2908] = 2,		--Soothe
 	[88423] = 1,	--Nature's Cure
+	[5487] = 1,		-- Bear Form
+	[24858] = 1,	-- Moonkin Form
 
 	--Evoker
 	[374251] = 1, -- Cauterizing Flame
 	[372048] = 2, -- Oppressing Roar
 	[360823] = 1, -- Naturalize
+	[357210] = 1,	-- Deep Breath
 
 	--Hunter
 	[19801] = 2,	--Tranquilizing Shot
+	[781] = 1,		-- Disengage
 
 	--Mage
 	[30449] = 2,	--Spellsteal
@@ -34,6 +38,7 @@ iEET.dispels = {
 	[115450] = 1,	--Detox
 	[218164] = 1, --Detox (Brewmaster)
 	[122783] = 1,	--Diffuse Magic
+	[116841] = 1, -- Tiger's Lust
 
 	--Paladin
 	[4987] = 1,		--Cleanse

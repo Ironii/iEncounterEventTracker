@@ -31,7 +31,13 @@ iEET.npcIgnoreList = {
 	[106848] = true,	--Transformed abomination
 	[111748] = true,	--Shadowy Reflection (Blood Artifact)
 	[148797] = true,	--Magus of the Dead
+	[149555] = true,	--Abomination
 	[163366] = true,	--Magus of the Dead
+	[217228] = true,	-- Blood Beast
+	[221633] = true,	-- High Inquisitor Whitemane
+	[221632] = true,	-- Highlord Darion Mograine
+	[221635] = true,	-- King Thoras Trollbane
+	[221634] = true,	-- Nazgrim
 
 --Demon Hunter
 	[136402] = true,	--Ur'zul
@@ -65,6 +71,8 @@ iEET.npcIgnoreList = {
 	[121661] = true,	--Sneaky Snake
 	[128751] = true,	--Beast
 	[128752] = true,	--Beast
+	[228108] = true,	-- Beast
+	[228224] = true,	-- Fenryr
 
 --Mage
 	[31216] = true,		--Mirror Image
@@ -77,6 +85,7 @@ iEET.npcIgnoreList = {
 	[94925] = true,		--T18 (Lady Sylvanas Windrunner)
 	[94946] = true,		--T18 (Arthas Menethil)
 	[103636] = true,	--Arcane Familiar
+	[223453] = true,	-- Arcane Phoenix
 
 --Monk
 	[60849] = true,		--Jade Serpent Statue
@@ -113,7 +122,9 @@ iEET.npcIgnoreList = {
 	[183955] = true,	--Your Shadow
 	[189988] = true,	-- Thing from Beyond
 	[192337] = true,	-- Void Tendril
-	[198757] = true,	-- Void Lasher
+	[198236] = true,	-- Divine Image
+	[198757] = true,	-- Void Lasher	
+	[224466] = true,	-- Voidwraith
 
 --Rogue
 	[77726] = true,		--Shadow Reflection
@@ -158,6 +169,9 @@ iEET.npcIgnoreList = {
 	[184091] = true,	--Spirit Wolf
 	[184092] = true,	--Spirit Wolf
 	[184093] = true,	--Spirit Wolf	
+	[212489] = true,	--Spirit Wolf
+	[221177] = true,	-- Ancestor
+	[225409] = true,	-- Surging Totem
 
 --Warlock
 	[89] = true,		--Infernal
@@ -200,7 +214,13 @@ iEET.npcIgnoreList = {
 	[169426] = true,	-- Infernal
 	[184206] = true,	-- Malicious Imp (T28)
 	[185584] = true,	-- Blasphemy (T28)
-	
-	
+	[196280] = true,	-- Unstable Tear
+	[198547] = true,	-- Shadowy Tear
+	[198555] = true,	-- Chaos Tear
+	[217429] = true,	-- Overfiend
+	[226269] = true,	-- Charbound
+	[228574] = true,	-- Pit Lord
+	[228575] = true,	-- Overlord
+	[228576] = true,	-- Mother of Chaos
 --Warrior
 }

@@ -38,9 +38,12 @@ iEET.ignoredSpells = {
 
 --Priest
 	[81782] = true,		--Power Word: Barrier
+	[32409] = true,		-- Shadow Word: Death
 
 --Shaman
+	[201657] = true,	-- Earthen Wall	
 	[157384] = true,	--Eye of the Storm
+	
 --Warrior
 	[227847] = true,	--Bladestorm
 --Encounter Specific

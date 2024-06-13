@@ -1493,7 +1493,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 			getClassColor(args[defaultCLEUData.sourceClass]), -- source class color
 			getClassColor(args[defaultCLEUData.destClass]) -- dest class color
 	end
-	local GetSchoolString = GetSchoolString
+	local GetSchoolString = GetSchoolString or C_Spell.GetSchoolString
 	for _,v in pairs({1,2,9,10,11,14,15,16,17,20,22,23,24,78}) do
 		iEET.eventFunctions[v] = {
 			data = defaultCLEUData,
