@@ -4060,8 +4060,7 @@ do -- UPDATE_UI_WIDGET
 		return
 	end
 	local function _updateWidgetData(widgetInfo)
-		if iEET.widgetIgnoreList[widgetInfo.widgetID] then return end
-		if not _widgetHandlers(widgetInfo.widgetType) then
+		if not _widgetHandlers[widgetInfo.widgetType] then
 			print(sformat("iEET: widget type %s (widget id: %s) is not supported, contact author is possible.", widgetInfo.widgetType, widgetInfo.widgetID))
 			return
 		end
@@ -4093,7 +4092,7 @@ do -- UPDATE_UI_WIDGET
 				end
 			end
 			seenWidgets[widgetInfo.widgetID].prev = widgetData
-			return shown, sformat("%s\r\r%s", 
+			return shown, sformat("%s\r\r%s",
 			(#widgetDataToShow.prev > 1 and _concat(widgetDataToShow.prev, "\r") or "Changed values from previous: NONE"), 
 			(#widgetDataToShow.first > 1 and _concat(widgetDataToShow.first, "\r") or "Changed values from first: NONE")),
 			sourceName, sourceGUID
@@ -4157,7 +4156,9 @@ do -- UPDATE_UI_WIDGET
 	}
 	function addon:UPDATE_UI_WIDGET(widgetInfo)
 		-- shown: 0 = hidden, 1 = shown, 2 = was shown, now hidden, let trough
+		if iEET.widgetIgnoreList[widgetInfo.widgetID] then return end
 		local shown, widgetData, sourceName, sourceGUID = _updateWidgetData(widgetInfo)
+		if not widgetData then return end
 		if shown == 0 then return end
 		local t = {
 			[d.event] = eventID,
