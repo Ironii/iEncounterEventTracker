@@ -54,4 +54,9 @@ iEET.ignoredSpells = {
 --T18
 	[184690] = true,	--Ring of Desctruction(Zakuun)
 	[184697] = true,	--Ring of Desctruction(Zakuun)
+
+	[455363] = true,	-- Queen's Proclamation (Nerub-ar Palace, The Silken Court)
+	-- TWW S2
+	[1225537] = true, -- Time is Money
+	[1225298] = true, -- Loyal Customer
 }

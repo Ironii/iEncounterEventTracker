@@ -73,6 +73,7 @@ iEET.npcIgnoreList = {
 	[128752] = true,	--Beast
 	[228108] = true,	-- Beast
 	[228224] = true,	-- Fenryr
+	[234018] = true,	-- Bear
 
 --Mage
 	[31216] = true,		--Mirror Image

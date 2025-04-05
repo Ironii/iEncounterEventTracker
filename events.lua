@@ -42,7 +42,7 @@ local cleuEventsToTrack = {
 	['ENVIRONMENTAL_MISSED'] = true,
 }
 local seenWidgets = {}
-do
+do -- Unit whitelisting
 	local validUnits = {
 		target = true,
 		focus = true,
@@ -67,8 +67,8 @@ do
 	end
 end
 -- upvalues
-local tonumber, tinsert, GetTime, UnitGUID, UnitName, sformat, UnitClass, GetRaidRosterInfo, sfind, mfloor, smatch, sgsub, strsplit, tostring, GetClassInfo, GetSpellLink, UnitHealth, UnitHealthMax, UnitExists, GetNumGroupMembers = 
-	tonumber, table.insert, GetTime, UnitGUID, UnitName, string.format, UnitClass, GetRaidRosterInfo, string.find, math.floor, string.match, string.gsub, strsplit, tostring, GetClassInfo, GetSpellLink, UnitHealth, UnitHealthMax, UnitExists, GetNumGroupMembers
+local tonumber, tinsert, GetTime, UnitGUID, UnitName, sformat, UnitClass, GetRaidRosterInfo, sfind, mfloor, smatch, sgsub, strsplit, tostring, GetClassInfo, GetSpellLink, UnitHealth, UnitHealthMax, UnitExists, GetNumGroupMembers, UNKNOWN = 
+	tonumber, table.insert, GetTime, UnitGUID, UnitName, string.format, UnitClass, GetRaidRosterInfo, string.find, math.floor, string.match, string.gsub, strsplit, tostring, GetClassInfo, GetSpellLink, UnitHealth, UnitHealthMax, UnitExists, GetNumGroupMembers, UNKNOWN
 
 local addon = CreateFrame('frame')
 addon:RegisterEvent('ENCOUNTER_START')
@@ -119,14 +119,148 @@ end
 local function formatKV(k,v)
 	return sformat("%s : %s", k or "ERROR report to author", tostring(v))
 end
+local function GetSpawnData(guid)
+	local unitType, _, _, _, _, _, spawnUID = strsplit("-", guid)
+	if not (unitType == "Creature" or unitType == "Vehicle") then return end
+	local spawnEpoch = GetServerTime() - (GetServerTime() % 2^23)
+	local spawnEpochOffset = bit.band(tonumber(string.sub(spawnUID, 5), 16), 0x7fffff)
+	local spawnIndex = bit.rshift(bit.band(tonumber(string.sub(spawnUID, 1, 5), 16), 0xffff8), 3)
+	local spawnTime = spawnEpoch + spawnEpochOffset
+
+	if spawnTime > GetServerTime() then
+			-- This only occurs if the epoch has rolled over since a unit has spawned.
+			spawnTime = spawnTime - ((2^23) - 1)
+	end
+	return date("%Y-%m-%d %H:%M:%S", spawnTime), spawnIndex
+end
 local function addToTooltip(spellID, ...)
 	if spellID then
 		GameTooltip:SetHyperlink(sformat('spell:%s',spellID))
 	end
 	local t = {...}
 	for k,v in ipairs(t) do
-		GameTooltip:AddLine(tostring(v))
+		if type(v) == "table" then
+			if v.formatGUIDData then
+				local spawnTime, spawnIndex = GetSpawnData(v.formatGUIDData)
+				if spawnTime and spawnIndex then
+					GameTooltip:AddLine(sformat("Spawn time: %s", spawnTime))
+					GameTooltip:AddLine(sformat("Spawn Index: %s", spawnIndex))
+				end
+			end
+		else
+			GameTooltip:AddLine(tostring(v))
+		end
 	end
+end
+do
+	local _version,_build = GetBuildInfo()
+	iEET.currentBuildInfo = _version..".".._build
+end
+
+-- Data caching functions
+local dataSources = {
+	CLEU = "cleu",
+	UNIT_EVENT = "unitEvent",
+	ROSTER_CHECK = "rosterCheck",
+}
+local unitDataFunctions = {
+	generic = {
+		name = function(guid, unitName, unitID, dataSource)
+			if unitName then
+				return unitName ~= UNKNOWN, unitName
+			end
+			if not unitID then
+				return false
+			end
+			local n = UnitName(unitID)
+			return n and true, n
+		end,
+		maxHealth = function(guid, unitName, unitID, dataSource)
+			if dataSource ~= dataSources.UNIT_EVENT then return false end
+			local maxHp = UnitHealthMax(unitID)
+			return maxHp and maxHp > 0 and true, maxHp
+		end,
+	},
+	rosterCheck = {
+		name = function(guid, unitName, unitID, dataSource)
+			if dataSource ~= dataSources.ROSTER_CHECK then return false end
+			local valid, value = false, 2
+			return valid, value
+		end,
+		server = function(guid, unitName, unitID, dataSource)
+			if dataSource ~= dataSources.ROSTER_CHECK then return false end
+			local valid, value = false, 2
+			return valid, value
+		end,
+		class = function(guid, unitName, unitID, dataSource)
+			if dataSource ~= dataSources.ROSTER_CHECK then return false end
+			local valid, value = false, 2
+			return valid, value
+		end,
+		role = function(guid, unitName, unitID, dataSource)
+			if dataSource ~= dataSources.ROSTER_CHECK then return false end
+			local valid, value = false, 2
+			return valid, value
+		end,
+	},
+}
+
+local function addUnit(guid, unitName, unitID, dataSource) -- Decent overkill considering the data we currently gather, but with this we can easily add more values without fucking up anything else
+	if not guid then return end
+	if iEET.data.units[guid] and iEET.data.units[guid].isComplete then return end
+	local completeData = true
+	if dataSource == dataSources.CLEU then
+	elseif dataSource == dataSources.UNIT_EVENT then
+	elseif dataSource == dataSources.ROSTER_CHECK then
+	else
+		error("iEET ERROR: Incorrect data source: "..tostring(dataSource), 1)
+		return
+	end
+	if not iEET.data.units[guid] then
+		iEET.data.units[guid] = {
+			missing = {},
+			data = {},
+			isComplete = false,
+		}
+		iEET.data.units[guid].missing = {}
+		if dataSource == dataSources.ROSTER_CHECK then
+			for k, func in pairs(unitDataFunctions.rosterCheck) do
+				local valid, value = func(guid, unitName, unitID, dataSource)
+				if not valid then
+					completeData = false
+					iEET.data.units[guid].missing[k] = true
+				else
+					iEET.data.units[guid].data[k] = value
+				end
+			end
+		else
+			for k, func in pairs(unitDataFunctions.generic) do
+				local valid, value = func(guid, unitName, unitID, dataSource)
+				if not valid then
+					completeData = false
+					iEET.data.units[guid].missing[k] = true
+				else
+					iEET.data.units[guid].data[k] = value
+				end
+			end
+		end
+		if completeData then
+			iEET.data.units[guid].isComplete = true
+		end
+		return
+	end
+	for k in pairs(iEET.data.units[guid].missing) do
+		local valid, value = unitDataFunctions[k](guid, unitName, unitID)
+		if valid then
+			iEET.data.units[guid].data[k] = value
+		else
+			completeData = false
+		end
+	end
+	iEET.data.units[guid].isComplete = completeData
+end
+local function addSpell(spellID, spellName) -- TODO finish
+
 end
 local currentlyLogging = false
 iEET.IEEUnits = {}
@@ -185,7 +319,8 @@ defaults.unitEvents.hyperlink = function(col, data)
 		addToTooltip(nil,
 			formatKV("Source name", data[d.sourceName]),
 			formatKV("Source GUID", data[d.sourceGUID]),
-			formatKV("Unit ID", data[d.unitID])
+			formatKV("Unit ID", data[d.unitID]),
+			{formatGUIDData = data[d.sourceGUID]}
 		)
 	else -- col 7
 		addToTooltip(nil,
@@ -594,7 +729,8 @@ do -- ENCOUNTER_START
 				['v'] = iEET.version.str,
 				['eI'] = encounterID,
 				['d'] = difficultyID,
-				['lN'] = UnitName('player')
+				['lN'] = UnitName('player'),
+				['gV'] = iEET.currentBuildInfo,
 			}
 		end
 		local t = {
@@ -687,7 +823,8 @@ do -- ENCOUNTER_END
 					['zI'] = mapID,
 					['v'] = iEET.version.str,
 					['eI'] = EncounterID,
-					['lN'] = UnitName('player')
+					['lN'] = UnitName('player'),
+					['gV'] = iEET.currentBuildInfo,
 				}
 			end
 			iEET:StopRecording(nil, EncounterID)
@@ -834,7 +971,8 @@ do -- UNIT_SPELLCAST_INTERRUPTIBLE
 				addToTooltip(nil,
 					formatKV("Source name", data[d.sourceName]),
 					formatKV("Source GUID", data[d.sourceGUID]),
-					formatKV("Unit ID", data[d.unitID])
+					formatKV("Unit ID", data[d.unitID]),
+					{formatGUIDData = data[d.sourceGUID]}
 				)
 			end
 			return true
@@ -901,7 +1039,8 @@ do -- UNIT_SPELLCAST_NOT_INTERRUPTIBLE
 				addToTooltip(nil,
 					formatKV("Source name", data[d.sourceName]),
 					formatKV("Source GUID", data[d.sourceGUID]),
-					formatKV("Unit ID", data[d.unitID])
+					formatKV("Unit ID", data[d.unitID]),
+					{formatGUIDData = data[d.sourceGUID]}
 				)
 			end
 			return true
@@ -975,7 +1114,8 @@ do -- UNIT_TARGET
 				addToTooltip(nil,
 					formatKV("Source name", data[d.sourceName]),
 					formatKV("Source GUID", data[d.sourceGUID]),
-					formatKV("Unit ID", data[d.unitID])
+					formatKV("Unit ID", data[d.unitID]),
+					{formatGUIDData = data[d.sourceGUID]}
 				)
 			else -- 6
 				local class
@@ -986,7 +1126,8 @@ do -- UNIT_TARGET
 					formatKV("Target name", data[d.dest] or "NONE"),
 					formatKV("Target GUID", data[d.destGUID] or ""),
 					formatKV("Target class", class or ""),
-					formatKV("Target role", data[d.destRole] or "")
+					formatKV("Target role", data[d.destRole] or ""),
+					{formatGUIDData = data[d.destGUID]}
 				)
 			end
 			return true
@@ -1070,7 +1211,8 @@ do -- UNIT_POWER_UPDATE
 				addToTooltip(nil,
 					formatKV("Source name", data[d.sourceName]),
 					formatKV("Source GUID", data[d.sourceGUID]),
-					formatKV("Unit ID", data[d.unitID])
+					formatKV("Unit ID", data[d.unitID]),
+					{formatGUIDData = data[d.sourceGUID]}
 			)
 			else -- 7
 				addToTooltip(nil, formatKV("Health", data[d.hp]))
@@ -1193,7 +1335,8 @@ do -- UNIT_ENTERING_VEHICLE
 				addToTooltip(nil,
 					formatKV("Source name", data[d.sourceName]),
 					formatKV("Source GUID", data[d.sourceGUID]),
-					formatKV("Unit ID", data[d.unitID])
+					formatKV("Unit ID", data[d.unitID]),
+					{formatGUIDData = data[d.sourceGUID]}
 				)
 			return true
 			end
@@ -1292,7 +1435,8 @@ do -- UNIT_ENTERED_VEHICLE
 				addToTooltip(nil,
 					formatKV("Source name", data[d.sourceName]),
 					formatKV("Source GUID", data[d.sourceGUID]),
-					formatKV("Unit ID", data[d.unitID])
+					formatKV("Unit ID", data[d.unitID]),
+					{formatGUIDData = data[d.sourceGUID]}
 				)
 			return true
 			end
@@ -1372,7 +1516,8 @@ do -- UNIT_EXITING_VEHICLE
 				addToTooltip(nil,
 					formatKV("Source name", data[d.sourceName]),
 					formatKV("Source GUID", data[d.sourceGUID]),
-					formatKV("Unit ID", data[d.unitID])
+					formatKV("Unit ID", data[d.unitID]),
+					{formatGUIDData = data[d.sourceGUID]}
 				)
 				return true
 			end
@@ -1434,7 +1579,8 @@ do -- UNIT_EXITED_VEHICLE
 				addToTooltip(nil,
 					formatKV("Source name", data[d.sourceName]),
 					formatKV("Source GUID", data[d.sourceGUID]),
-					formatKV("Unit ID", data[d.unitID])
+					formatKV("Unit ID", data[d.unitID]),
+					{formatGUIDData = data[d.sourceGUID]}
 				)
 				return true
 			end
@@ -1520,18 +1666,27 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				elseif col == 5 then
 					addToTooltip(nil,
 							formatKV("Source name", data[defaultCLEUData.sourceName]),
-							formatKV("Source GUID", data[defaultCLEUData.sourceGUID])
+							formatKV("Source GUID", data[defaultCLEUData.sourceGUID]),
+							{formatGUIDData = data[defaultCLEUData.sourceGUID]}
 						)
 				else -- 6
 					local class
 					if data[defaultCLEUData.destClass] then
 						class = GetClassInfo(data[defaultCLEUData.destClass])
 					end
+					local spawnIndex = 0
+					if data[defaultCLEUData.destGUID] then
+					local npcID, spawnID = select(6, strsplit("-", data[defaultCLEUData.destGUID]))
+						if npcID and spawnID then
+							spawnIndex = bit.rshift(bit.band(tonumber(string.sub(spawnID, 1, 5), 16), 0xffff8), 3)
+						end
+					end
 					addToTooltip(nil,
 						formatKV("Target name", data[defaultCLEUData.destName]),
 						formatKV("Target GUID", data[defaultCLEUData.destGUID]),
 						formatKV("Target class", class),
-						formatKV("Target role", data[defaultCLEUData.destRole])
+						formatKV("Target role", data[defaultCLEUData.destRole]),
+						formatKV("Spawn Index:", spawnIndex)
 					)
 				end
 				return true
@@ -1615,18 +1770,28 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 								formatKV("Source name", data[d.sourceName]),
 								formatKV("Source GUID", data[d.sourceGUID]),
 								formatKV("Source class", class),
-								formatKV("Source role", data[d.sourceRole])
+								formatKV("Source role", data[d.sourceRole]),
+								{formatGUIDData = data[d.sourceGUID]}
 							)
 					elseif col == 6 then
 						local class
 						if data[d.destClass] then
 							class = GetClassInfo(data[d.destClass])
 						end
+						local spawnIndex = "N/A"
+						if data[defaultCLEUData.destGUID] then
+						local npcID, spawnID = select(6, strsplit("-", data[defaultCLEUData.destGUID]))
+							if npcID and spawnID then
+---@diagnostic disable-next-line: cast-local-type
+								spawnIndex = bit.rshift(bit.band(tonumber(string.sub(spawnID, 1, 5), 16), 0xffff8), 3)
+							end
+						end
 						addToTooltip(nil,
 							formatKV("Target name", data[d.destName]),
 							formatKV("Target GUID", data[d.destGUID]),
 							formatKV("Target class", class),
-							formatKV("Target role", data[d.destRole])
+							formatKV("Target role", data[d.destRole]),
+							formatKV("Spawn Index:", spawnIndex)
 						)
 					else -- 7
 						addToTooltip(data[d.extraSpellID],
@@ -1712,7 +1877,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 							formatKV("Source name", data[d.sourceName]),
 							formatKV("Source GUID", data[d.sourceGUID]),
 							formatKV("Source class", class),
-							formatKV("Source role", data[d.sourceRole])
+							formatKV("Source role", data[d.sourceRole]),
+							{formatGUIDData = data[d.sourceGUID]}
 							)
 					elseif col == 6 then
 						local class
@@ -1723,7 +1889,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 							formatKV("Target name", data[d.destName]),
 							formatKV("Target GUID", data[d.destGUID]),
 							formatKV("Target class", class),
-							formatKV("Target role", data[d.destRole])
+							formatKV("Target role", data[d.destRole]),
+							{formatGUIDData = data[d.destGUID]}
 						)
 					else -- 8
 						addToTooltip(nil, formatKV("Aura type", data[d.auraType] == "1" and "BUFF" or "DEBUFF"))
@@ -1811,7 +1978,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 							formatKV("Source name", data[d.sourceName]),
 							formatKV("Source GUID", data[d.sourceGUID]),
 							formatKV("Source class", class),
-							formatKV("Source role", data[d.sourceRole])
+							formatKV("Source role", data[d.sourceRole]),
+							{formatGUIDData = data[d.sourceGUID]}
 							)
 					elseif col == 6 then
 						local class
@@ -1822,7 +1990,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 							formatKV("Target name", data[d.destName]),
 							formatKV("Target GUID", data[d.destGUID]),
 							formatKV("Target class", class),
-							formatKV("Target role", data[d.destRole])
+							formatKV("Target role", data[d.destRole]),
+							{formatGUIDData = data[d.destGUID]}
 						)
 					else -- 7
 						addToTooltip(nil,
@@ -1886,7 +2055,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					if col ~= 5 then return end
 						addToTooltip(nil,
 								formatKV("Target name", data[d.destName]),
-								formatKV("Target GUID", data[d.destGUID])
+								formatKV("Target GUID", data[d.destGUID]),
+								{formatGUIDData = data[d.destGUID]}
 							)
 					return true
 				end,
@@ -1955,7 +2125,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 						formatKV("Source name", data[d.sourceName]),
 						formatKV("Source GUID", data[d.sourceGUID]),
 						formatKV("Source class", class),
-						formatKV("Source role", data[d.sourceRole])
+						formatKV("Source role", data[d.sourceRole]),
+						{formatGUIDData = data[d.sourceGUID]}
 						)
 				elseif col == 6 then
 					local class
@@ -1966,7 +2137,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 						formatKV("Target name", data[d.destName]),
 						formatKV("Target GUID", data[d.destGUID]),
 						formatKV("Target class", class),
-						formatKV("Target role", data[d.destRole])
+						formatKV("Target role", data[d.destRole]),
+						{formatGUIDData = data[d.destGUID]}
 					)
 				else -- 7
 					addToTooltip(nil,
@@ -2057,7 +2229,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 						formatKV("Source name", data[d.sourceName]),
 						formatKV("Source GUID", data[d.sourceGUID]),
 						formatKV("Source class", class),
-						formatKV("Source role", data[d.sourceRole])
+						formatKV("Source role", data[d.sourceRole]),
+						{formatGUIDData = data[d.sourceGUID]}
 						)
 				elseif col == 6 then
 					local class
@@ -2068,7 +2241,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 						formatKV("Target name", data[d.destName]),
 						formatKV("Target GUID", data[d.destGUID]),
 						formatKV("Target class", class),
-						formatKV("Target role", data[d.destRole])
+						formatKV("Target role", data[d.destRole]),
+						{formatGUIDData = data[d.destGUID]}
 					)
 				else -- 7
 					addToTooltip(nil,
@@ -2154,7 +2328,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 						formatKV("Source name", data[d.sourceName]),
 						formatKV("Source GUID", data[d.sourceGUID]),
 						formatKV("Source class", class),
-						formatKV("Source role", data[d.sourceRole])
+						formatKV("Source role", data[d.sourceRole]),
+						{formatGUIDData = data[d.sourceGUID]}
 						)
 				elseif col == 6 then
 					local class
@@ -2165,7 +2340,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 						formatKV("Target name", data[d.destName]),
 						formatKV("Target GUID", data[d.destGUID]),
 						formatKV("Target class", class),
-						formatKV("Target role", data[d.destRole])
+						formatKV("Target role", data[d.destRole]),
+						{formatGUIDData = data[d.destGUID]}
 					)
 				else -- 7
 					addToTooltip(nil, formatKV("Miss type", data[d.missType]))
@@ -2249,7 +2425,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 						formatKV("Target name", data[d.destName]),
 						formatKV("Target GUID", data[d.destGUID]),
 						formatKV("Target class", class),
-						formatKV("Target role", data[d.destRole])
+						formatKV("Target role", data[d.destRole]),
+						{formatGUIDData = data[d.destGUID]}
 					)
 				else -- 7
 					addToTooltip(nil,
@@ -2333,7 +2510,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 						formatKV("Target name", data[d.destName]),
 						formatKV("Target GUID", data[d.destGUID]),
 						formatKV("Target class", class),
-						formatKV("Target role", data[d.destRole])
+						formatKV("Target role", data[d.destRole]),
+						{formatGUIDData = data[d.destGUID]}
 					)
 				else -- 7
 					addToTooltip(nil, formatKV("Miss type", data[d.missType]))
@@ -2420,7 +2598,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 							formatKV("Source name", data[d.sourceName]),
 							formatKV("Source GUID", data[d.sourceGUID]),
 							formatKV("Source class", class),
-							formatKV("Source role", data[d.sourceRole])
+							formatKV("Source role", data[d.sourceRole]),
+							{formatGUIDData = data[d.sourceGUID]}
 						)
 				elseif col == 6 then
 					local class
@@ -2431,7 +2610,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 						formatKV("Target name", data[d.destName]),
 						formatKV("Target GUID", data[d.destGUID]),
 						formatKV("Target class", class),
-						formatKV("Target role", data[d.destRole])
+						formatKV("Target role", data[d.destRole]),
+						{formatGUIDData = data[d.destGUID]}
 					)
 				else -- 7
 					addToTooltip(data[d.extraSpellID],
@@ -2517,7 +2697,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 						formatKV("Source name", data[d.sourceName]),
 						formatKV("Source GUID", data[d.sourceGUID]),
 						formatKV("Source class", class),
-						formatKV("Source role", data[d.sourceRole])
+						formatKV("Source role", data[d.sourceRole]),
+						{formatGUIDData = data[d.sourceGUID]}
 						)
 				elseif col == 6 then
 					local class
@@ -2528,7 +2709,8 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 						formatKV("Target name", data[d.destName]),
 						formatKV("Target GUID", data[d.destGUID]),
 						formatKV("Target class", class),
-						formatKV("Target role", data[d.destRole])
+						formatKV("Target role", data[d.destRole]),
+						{formatGUIDData = data[d.destGUID]}
 					)
 				else -- 7
 					local powerStr = UNKNOWN
@@ -3722,7 +3904,8 @@ do -- Manual logging (start/end)
 				['zI'] = -1,
 				['v'] = iEET.version.str,
 				['eI'] = 0,
-				['lN'] = UnitName('player')
+				['lN'] = UnitName('player'),
+				['gV'] = iEET.currentBuildInfo,
 			}
 			--register events and start recording
 		else
@@ -3754,7 +3937,8 @@ do -- Manual logging (start/end)
 				['zI'] = -1,
 				['v'] = iEET.version.str,
 				['eI'] = 0,
-				['lN'] = UnitName('player')
+				['lN'] = UnitName('player'),
+				['gV'] = iEET.currentBuildInfo,
 				}
 			end
 			iEET:print(string.format('Stopped recording: %s (%s)', iEET.encounterInfoData.eN, iEET.encounterInfoData.fT))
@@ -3817,6 +4001,9 @@ do -- UPDATE_UI_WIDGET
 		[_e.UnitPowerBar] = _w.GetUnitPowerBarWidgetVisualizationInfo,
 		[_e.FillUpFrames] = _w.GetFillUpFramesWidgetVisualizationInfo,
 	}
+	for typeName,typeID in pairs(Enum.UIWidgetVisualizationType) do
+		_widgetHandlers[typeID] =  _w["Get" .. typeName .. "WidgetVisualizationInfo"] or _w["Get" .. typeName .. "VisualizationInfo"]
+	end
 	local function tableToString(key, t)
 		local str = sformat("%s", key)
 		for k,v in pairs(t) do
@@ -3873,6 +4060,11 @@ do -- UPDATE_UI_WIDGET
 		return
 	end
 	local function _updateWidgetData(widgetInfo)
+		if iEET.widgetIgnoreList[widgetInfo.widgetID] then return end
+		if not _widgetHandlers(widgetInfo.widgetType) then
+			print(sformat("iEET: widget type %s (widget id: %s) is not supported, contact author is possible.", widgetInfo.widgetType, widgetInfo.widgetID))
+			return
+		end
 		local widgetData = _widgetHandlers[widgetInfo.widgetType](widgetInfo.widgetID)
 		local sourceName, sourceGUID
 		local shown = widgetData.shownState
@@ -3941,7 +4133,8 @@ do -- UPDATE_UI_WIDGET
 				formatKV("Unit token", data[d.unitID]),
 				formatKV("Source name", data[d.sourceName]),
 				formatKV("Source GUID", data[d.sourceGUID]),
-				formatKV("Widget data", data[d.widgetData])
+				formatKV("Widget data", data[d.widgetData]),
+				{formatGUIDData = data[d.sourceGUID]}
 			)
 			return true
 		end,

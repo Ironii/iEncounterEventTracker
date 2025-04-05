@@ -1,8 +1,8 @@
-## Interface: 100002
+## Interface: 110100
 ## Title: iEncounterEventTracker
 ## Notes: Ironi's Encounter Event Tracker
 ## Author: Ironi
-## Version: 2.6.1
+## Version: 2.6.2
 ## DefaultState: enabled
 ## SavedVariables: iEETConfig, iEET_Data, iEET_ExportFromWTF
 
@@ -17,6 +17,7 @@ npcIgnoreList.lua
 dispels.lua
 interrupts.lua
 taunts.lua
+widgetIgnoreList.lua
 filtering.lua
 blacklisting-encounters.lua
 old.lua

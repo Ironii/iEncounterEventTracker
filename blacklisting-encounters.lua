@@ -21,6 +21,8 @@ iEET.ENUMS.EXPANSIONS = {
   SHADOWLANDS5MAN = 95,
   DRAGONFLIGHT = 10,
   DRAGONFLIGHT5MAN = 105,
+  THEWARWITHIN = 11,
+  THEWARWITHIN5MAN = 115,
   DEFAULT = 0,
 }
 local encounters = {
@@ -1053,14 +1055,32 @@ local encounters = {
   [2455] = iEET.ENUMS.EXPANSIONS.SHADOWLANDS5MAN, -- Tazavesh, the Veiled Market, So'leah
 
   -- Dragonflight
-  [2480] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Eranog
-  [2482] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Sennarth, the Cold Breath
-  [2486] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, The Primal Council
-  [2491] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Kurog Grimtotem
-  [2493] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Broodkeeper Diurna
-  [2499] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Raszageth the Storm-Eater
-  [2500] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Terros
-  [2502] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Dathea, Ascended
+  [2587] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Eranog
+  [2592] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Sennarth, the Cold Breath
+  [2590] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, The Primal Council
+  [2605] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Kurog Grimtotem
+  [2614] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Broodkeeper Diurna
+  [2607] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Raszageth the Storm-Eater
+  [2639] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Terros
+  [2635] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Vault of the Incarnates, Dathea, Ascended
+  [2688] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- The Aberrus, Kazzara, the Hellforged
+  [2687] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- The Aberrus, The Amalgamation Chamber
+  [2693] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- The Aberrus, The Forgotten Experiments
+  [2682] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- The Aberrus, Assault of the Zaqali
+  [2680] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- The Aberrus, Rashok, the Elder
+  [2689] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- The Aberrus, The Vigilant Steward, Zskarn
+  [2683] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- The Aberrus, Magmorax
+  [2684] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- The Aberrus, Echo of Neltharion
+  [2685] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- The Aberrus, Scalecommander Sarkareth
+  [2820] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Amirdrassil, the Dream's Hope, Gnarlroot
+  [2709] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Amirdrassil, the Dream's Hope, Igira the Cruel
+  [2737] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Amirdrassil, the Dream's Hope, Volcoross
+  [2728] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Amirdrassil, the Dream's Hope, Council of Dreams
+  [2731] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Amirdrassil, the Dream's Hope, Larodar, Keeper of the Flame
+  [2708] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Amirdrassil, the Dream's Hope, Nymue, Weaver of the Cycle
+  [2824] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Amirdrassil, the Dream's Hope, Smolderon
+  [2786] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Amirdrassil, the Dream's Hope, Tindral Sageswift, Seer of the Flame
+  [2677] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT, -- Amirdrassil, the Dream's Hope, Fyrakk the Blazing
 
   -- Dragonflight 5mans
   [2471] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Brackenhide Hollow, Hackclaw's War-Band
@@ -1091,10 +1111,70 @@ local encounters = {
   [2509] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Algeth'ar Academy, Vexamus
   [2512] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Algeth'ar Academy, Overgrown Ancient
   [2514] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Algeth'ar Academy, Echo of Doragosa
-  [2504] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- 	Halls of Infusion, Watcher Irideus
-  [2507] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- 	Halls of Infusion, Gulping Goliath
-  [2510] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- 	Halls of Infusion, Khajin the Unyielding
-  [2511] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- 	Halls of Infusion, Primal Tsunami
+  [2504] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Halls of Infusion, Watcher Irideus
+  [2507] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Halls of Infusion, Gulping Goliath
+  [2510] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Halls of Infusion, Khajin the Unyielding
+  [2511] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Halls of Infusion, Primal Tsunami
+  [2666] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Dawn of the Infinite, Chronikar
+  [2667] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Dawn of the Infinite, Manifested Timeways
+  [2668] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Dawn of the Infinite, Blight of Galakrond
+  [2669] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Dawn of the Infinite, Iridikron the Stonescaled
+  [2670] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Dawn of the Infinite, Tyr, the Infinite Keeper
+  [2671] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Dawn of the Infinite, Morchie
+  [2672] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Dawn of the Infinite, Time-Lost Battlefield
+  [2673] = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, -- Dawn of the Infinite, Chrono-Lord Deios
+  
+  -- TWW Raids
+  [2902] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN, -- Nerub-ar Palace, Ulgrax the Devourer
+  [2917] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN, -- Nerub-ar Palace, The Bloodbound Horror
+  [2898] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN, -- Nerub-ar Palace, Sikran, Captain of the Sureki
+  [2918] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN, -- Nerub-ar Palace, Rasha'nan
+  [2919] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN, -- Nerub-ar Palace, Broodtwister Ovi'nax
+  [2920] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN, -- Nerub-ar Palace, Nexus Princess Ky'veza
+  [2921] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN, -- Nerub-ar Palace, The Silken Court
+  [2922] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN, -- Nerub-ar Palace, Queen Anurek
+  [3009] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN, -- Liberation of Undermine, Vexie and the Geargrinders
+  [3010] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN, -- Liberation of Undermine, Cauldron of Carnage
+  [3011] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN, -- Liberation of Undermine, Rik Reverb
+  [3012] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN, -- Liberation of Undermine, Stix Bunkjunker
+  [3013] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN, -- Liberation of Undermine, Sprocketmonger Lockenstock
+  [3014] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN, -- Liberation of Undermine, The One-Armed Bandit
+  [3015] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN, -- Liberation of Undermine, Mug'zee, Heads of Security
+  [3016] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN, -- Liberation of Undermine, Chrome King Gallywix
+  
+  -- TWW 5mans
+  [2926] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- Ara-ara, City of Echoes, Avanoxx
+  [2906] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- Ara-ara, City of Echoes, Anub'zekt
+  [2901] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- Ara-ara, City of Echoes, Ki'katal the Harvester
+  [2900] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- Cinderbrew Meadery, Brew Master Aldryr
+  [2929] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- Cinderbrew Meadery, I'pa
+  [2931] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- Cinderbrew Meadery, Benk Buzzbee
+  [2930] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- Cinderbrew Meadery, Goldie Baronbottom
+  [2907] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- City of Threads, Orator Krix'vizk
+  [2908] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- City of Threads, Fangs of the Queen
+  [2905] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- City of Threads, The Coaglamation
+  [2909] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- City of Threads, Izo, the Grand Splicer
+  [2829] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- Darkflame Cleft, Ol' Waxbeard
+  [2826] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- Darkflame Cleft, Blazkion
+  [2787] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- Darkflame Cleft, The Candle King
+  [2788] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- Darkflame Cleft, The Darkness
+  [2847] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- Priory of the Sacred Flame, Captain Dailcry
+  [2835] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- Priory of the Sacred Flame, Baron Braunpyke
+  [2848] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- Priory of the Sacred Flame, Prioress Murrpray
+  [2837] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- The Dawnbreaker, Speaker Shadowcrown
+  [2838] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- The Dawnbreaker, Anub'ikkaj
+  [2839] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- The Dawnbreaker, Rasha'nan
+  [2816] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- The Rookery, Kyrioss
+  [2861] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- The Rookery, Stormguard Gorren
+  [2836] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- The Rookery, Voidstone Monstrosity
+  [2854] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- The Stonevault, E.D.N.A
+  [2880] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- The Stonevault, Skamorak
+  [2888] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- The Stonevault, Master Machinists
+  [2883] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- The Stonevault, Void Speaker Eirich
+  [3020] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- Operation: Floodgate, Big M.O.M.M.A.
+  [3019] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- Operation: Floodgate, Demolition Duo
+  [3053] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- Operation: Floodgate, Swampface
+  [3054] = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, -- Operation: Floodgate, Geezle Gigazap
 }
 
 function iEET:ShouldIgnoreEncounter(encounterID)
