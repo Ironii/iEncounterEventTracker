@@ -243,6 +243,12 @@ function iEET:updateOptionsMenu()
 			{text ='Dragonflight - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.DRAGONFLIGHT5MAN, func = function(self, arg1, arg2, checked)
 				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
 			end},
+			{text ='The War Within - raid', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.THEWARWITHIN], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.THEWARWITHIN, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
+			{text ='The War Within - 5man', isNotRadio = true, checked = iEETConfig.expansionIgnore[iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN], keepShownOnClick = true, arg1 = iEET.ENUMS.EXPANSIONS.THEWARWITHIN5MAN, func = function(self, arg1, arg2, checked)
+				if checked then iEETConfig.expansionIgnore[arg1] = true else iEETConfig.expansionIgnore[arg1] = nil end
+			end},
 		}})
 	tinsert(iEET.optionsMenu, {text = 'Class coloring', isNotRadio = true,	checked = iEETConfig.classColors, keepShownOnClick = true, func = function()
 			if iEETConfig.classColors then
@@ -251,6 +257,18 @@ function iEET:updateOptionsMenu()
 			else
 				iEETConfig.classColors = true
 				iEET:print('Class coloring is now on.')
+			end
+			iEET:updateOptionsMenu()
+			EasyMenu(iEET.optionsMenu, iEET.optionsMenuFrame, iEET.optionsList, 0 , 0, 'MENU');
+			iEET:loopData()
+		end})
+		tinsert(iEET.optionsMenu, {text = 'Translate spell names', isNotRadio = true, checked = iEETConfig.translateSpellNames, keepShownOnClick = true, func = function()
+			if iEETConfig.translateSpellNames then
+				iEETConfig.translateSpellNames = false
+				iEET:print('Spell name translation is now off.')
+			else
+				iEETConfig.translateSpellNames = true
+				iEET:print('Spell name translation is now on.')
 			end
 			iEET:updateOptionsMenu()
 			EasyMenu(iEET.optionsMenu, iEET.optionsMenuFrame, iEET.optionsList, 0 , 0, 'MENU');

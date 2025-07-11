@@ -67,8 +67,8 @@ do -- Unit whitelisting
 	end
 end
 -- upvalues
-local tonumber, tinsert, GetTime, UnitGUID, UnitName, sformat, UnitClass, GetRaidRosterInfo, sfind, mfloor, smatch, sgsub, strsplit, tostring, GetClassInfo, GetSpellLink, UnitHealth, UnitHealthMax, UnitExists, GetNumGroupMembers, UNKNOWN = 
-	tonumber, table.insert, GetTime, UnitGUID, UnitName, string.format, UnitClass, GetRaidRosterInfo, string.find, math.floor, string.match, string.gsub, strsplit, tostring, GetClassInfo, GetSpellLink, UnitHealth, UnitHealthMax, UnitExists, GetNumGroupMembers, UNKNOWN
+local tonumber, tinsert, GetTime, UnitGUID, UnitName, sformat, UnitClass, GetRaidRosterInfo, sfind, mfloor, smatch, sgsub, strsplit, tostring, GetClassInfo, GetSpellLink, UnitHealth, UnitHealthMax, UnitExists, GetNumGroupMembers, UNKNOWN, GetSpellName =
+	tonumber, table.insert, GetTime, UnitGUID, UnitName, string.format, UnitClass, GetRaidRosterInfo, string.find, math.floor, string.match, string.gsub, strsplit, tostring, GetClassInfo, GetSpellLink, UnitHealth, UnitHealthMax, UnitExists, GetNumGroupMembers, UNKNOWN, C_Spell.GetSpellName
 
 local addon = CreateFrame('frame')
 addon:RegisterEvent('ENCOUNTER_START')
@@ -132,6 +132,16 @@ local function GetSpawnData(guid)
 			spawnTime = spawnTime - ((2^23) - 1)
 	end
 	return date("%Y-%m-%d %H:%M:%S", spawnTime), spawnIndex
+end
+local GetLocalizedSpellName = C_Spell.GetSpellName
+local spellNameCache = setmetatable({}, {
+	__index = function(t, k)
+		t[k] = GetSpellName(k) or false
+		return t[k]
+	end,
+})
+function GetLocalizedSpellName(spellID, spellName)
+	return iEETConfig.translateSpellNames and spellNameCache[spellID] or spellName
 end
 local function addToTooltip(spellID, ...)
 	if spellID then
@@ -288,7 +298,7 @@ defaults.unitEvents.gui = function(args, getGUID)
 	end
 	return guid, -- 1
 	checkForSpecialCategory(args[d.spellID], args[d.event]), -- 2
-	args[d.spellName], -- 3
+	GetLocalizedSpellName(args[d.spellID], args[d.spellName]), -- 3
 	args[d.sourceName], -- 4
 	args[d.unitID], -- 5
 	args[d.hp], -- 6
@@ -511,6 +521,8 @@ local function defaultFiltering(args, keyIDList, filters, eventID, timestampsOnl
 						end
 					elseif f.key == "time" then
 						shouldShow = checkValid(args[keyIDList[f.key]]-startTime, f.val, f.operator)
+					elseif f.key == "spellName" and keyIDList.spellID and args[keyIDList.spellID] then
+						shouldShow = checkValid(GetLocalizedSpellName(args[keyIDList.spellID], args[keyIDList.spellName]), f.val, f.operator)
 					elseif keyIDList[f.key] and checkValid(args[keyIDList[f.key]], f.val, f.operator) then
 						shouldShow = true
 					else
@@ -1631,7 +1643,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 		local guid = sformat("%s-%s-%s", args[defaultCLEUData.event], (args[defaultCLEUData.sourceGUID] or args[defaultCLEUData.sourceName] or ""), args[defaultCLEUData.spellID]) -- Create unique string from event + sourceGUID
 		return guid, -- 1
 			checkForSpecialCategory(args[defaultCLEUData.spellID], args[defaultCLEUData.event]), -- 2
-			args[defaultCLEUData.spellName], -- 3
+			GetLocalizedSpellName(args[defaultCLEUData.spellID], args[defaultCLEUData.spellName]), -- 3
 			args[defaultCLEUData.sourceName], -- 4
 			args[defaultCLEUData.destName], -- 5
 			nil, -- 6
@@ -1727,7 +1739,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					if getGUID then return guid end
 					return guid, -- 1
 						checkForSpecialCategory(args[d.spellID]), -- 2
-						args[d.spellName], -- 3
+						GetLocalizedSpellName(args[d.spellID], args[d.spellName]), -- 3
 						args[defaultCLEUData.sourceName], -- 4
 						args[defaultCLEUData.destName], -- 5
 						args[d.extraSpellName], -- 6
@@ -1840,7 +1852,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					if getGUID then return guid end
 					return guid, -- 1
 					checkForSpecialCategory(args[d.spellID], args[d.event]), -- 2
-					args[d.spellName], -- 3
+					GetLocalizedSpellName(args[d.spellID], args[d.spellName]), -- 3
 					args[d.sourceName], -- 4,
 					args[d.destName], -- 5
 					(args[d.auraType] == "1" and "BUFF" or "DEBUFF"), -- 6
@@ -1939,7 +1951,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 					if getGUID then return guid end
 					return guid, -- 1
 					nil, -- 2 TODO ADD SPECIAL
-					args[d.spellName], -- 3
+					GetLocalizedSpellName(args[d.spellID], args[d.spellName]), -- 3
 					args[d.sourceName], -- 4,
 					args[d.destName], -- 5
 					sformat("%s (%s)",args[d.stacks] or "Error", args[d.auraType] == "1" and "BUFF" or "DEBUFF"), -- 6
@@ -2086,7 +2098,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				if getGUID then return guid end
 				return guid, -- 1
 				checkForSpecialCategory(args[d.spellID]), -- 2
-				args[d.spellName], -- 3
+				GetLocalizedSpellName(args[d.spellID], args[d.spellName]), -- 3
 				args[d.sourceName], -- 4,
 				args[d.destName], -- 5
 				args[d.amount], -- 6
@@ -2189,7 +2201,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				if getGUID then return guid end
 				return guid, -- 1
 				checkForSpecialCategory(args[d.spellID]), -- 2
-				args[d.spellName], -- 3
+				GetLocalizedSpellName(args[d.spellID], args[d.spellName]), -- 3
 				args[d.sourceName], -- 4,
 				args[d.destName], -- 5
 				args[d.amount], -- 6
@@ -2292,7 +2304,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				if getGUID then return guid end
 				return guid, -- 1
 				checkForSpecialCategory(args[d.spellID]), -- 2
-				args[d.spellName], -- 3
+				GetLocalizedSpellName(args[d.spellID], args[d.spellName]), -- 3
 				args[d.sourceName], -- 4,
 				args[d.destName], -- 5
 				args[d.missType], -- 6
@@ -2553,7 +2565,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				if getGUID then return guid end
 				return guid, -- 1
 					checkForSpecialCategory(args[d.spellID], eventID), -- 2
-					args[d.spellName], -- 3
+					GetLocalizedSpellName(args[d.spellID], args[d.spellName]), -- 3
 					args[defaultCLEUData.sourceName], -- 4
 					args[defaultCLEUData.destName], -- 5
 					args[d.extraSpellName], -- 6
@@ -2658,7 +2670,7 @@ do -- COMBAT_LOG_EVENT_UNFILTERED
 				if getGUID then return guid end
 				return guid, -- 1
 				checkForSpecialCategory(args[d.spellID]), -- 2
-				args[d.spellName], -- 3
+				GetLocalizedSpellName(args[d.spellID], args[d.spellName]), -- 3
 				args[d.sourceName], -- 4,
 				args[d.destName], -- 5
 				args[d.amount], -- 6
@@ -4065,6 +4077,7 @@ do -- UPDATE_UI_WIDGET
 			return
 		end
 		local widgetData = _widgetHandlers[widgetInfo.widgetType](widgetInfo.widgetID)
+		if not widgetData then return 0 end
 		local sourceName, sourceGUID
 		local shown = widgetData.shownState
 		if shown == 0 and not seenWidgets[widgetInfo.widgetID] then return 0 end
